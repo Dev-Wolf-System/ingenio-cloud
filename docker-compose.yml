@@ -105,15 +105,22 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=n8n_evoapi
-      # Router unificado: mismo dominio del frontend, paths /api/* y /ws/*
-      # (evita necesidad de cert separado para api.* — usa cert válido de ${DOMAIN_NAME})
-      - traefik.http.routers.ingenio-api.rule=Host(`${DOMAIN_NAME}`) && (PathPrefix(`/api`) || PathPrefix(`/ws`))
-      - traefik.http.routers.ingenio-api.priority=100
-      - traefik.http.routers.ingenio-api.tls=true
+      # Backend service único
+      - traefik.http.services.ingenio-api.loadbalancer.server.port=3001
+      # Router /api/* (REST) — priority alto para ganar a catch-all frontend
+      - traefik.http.routers.ingenio-api.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/api`)
+      - traefik.http.routers.ingenio-api.priority=200
       - traefik.http.routers.ingenio-api.entrypoints=web,websecure
+      - traefik.http.routers.ingenio-api.tls=true
       - traefik.http.routers.ingenio-api.tls.certresolver=mytlschallenge
       - traefik.http.routers.ingenio-api.service=ingenio-api
-      - traefik.http.services.ingenio-api.loadbalancer.server.port=3001
+      # Router /ws/* (WebSocket) — mismo service, priority alto
+      - traefik.http.routers.ingenio-ws.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/ws`)
+      - traefik.http.routers.ingenio-ws.priority=200
+      - traefik.http.routers.ingenio-ws.entrypoints=web,websecure
+      - traefik.http.routers.ingenio-ws.tls=true
+      - traefik.http.routers.ingenio-ws.tls.certresolver=mytlschallenge
+      - traefik.http.routers.ingenio-ws.service=ingenio-api
       # Headers seguridad
       - traefik.http.middlewares.ingenio-api-headers.headers.STSSeconds=315360000
       - traefik.http.middlewares.ingenio-api-headers.headers.browserXSSFilter=true

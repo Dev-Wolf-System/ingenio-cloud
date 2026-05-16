@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useReducer } from 'react';
+import { useEffect, useReducer, useId } from 'react';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
 
 export interface DashboardItem {
@@ -33,6 +33,7 @@ function reducer(state: Map<string, DashboardItem>, action: Action) {
 
 export function useDashboardData(area: 'energia' | 'produccion') {
   const [data, dispatch] = useReducer(reducer, new Map<string, DashboardItem>());
+  const instanceId = useId();
 
   useEffect(() => {
     let mounted = true;
@@ -53,10 +54,18 @@ export function useDashboardData(area: 'energia' | 'produccion') {
     }
     loadSnapshot();
 
-    // Realtime — orden correcto: definir channel + on() ANTES de subscribe()
+    // Polling de respaldo si Realtime no llega o falla
+    const startPolling = () => {
+      if (pollInterval || !mounted) return;
+      pollInterval = setInterval(loadSnapshot, 5000);
+    };
+
+    // Realtime — channel name único por instance evita "cannot add after subscribe"
+    const channelName = `dashboard_${area}_${instanceId.replace(/[^a-z0-9]/gi, '')}_${Date.now()}`;
+
     try {
       const supabase = getSupabaseBrowser();
-      const ch = supabase.channel(`dashboard_data_${area}`);
+      const ch = supabase.channel(channelName);
 
       ch.on(
         'postgres_changes' as never,
@@ -90,17 +99,14 @@ export function useDashboardData(area: 'energia' | 'produccion') {
           status === 'TIMED_OUT' ||
           status === 'CLOSED'
         ) {
-          if (!pollInterval && mounted) {
-            console.warn(`Realtime ${area} ${status}, fallback polling 5s`);
-            pollInterval = setInterval(loadSnapshot, 5000);
-          }
+          startPolling();
         }
       });
 
       channelRef = ch;
     } catch (err) {
       console.warn('Realtime setup failed, fallback polling 5s', err);
-      pollInterval = setInterval(loadSnapshot, 5000);
+      startPolling();
     }
 
     return () => {
@@ -115,7 +121,7 @@ export function useDashboardData(area: 'energia' | 'produccion') {
       }
       if (pollInterval) clearInterval(pollInterval);
     };
-  }, [area]);
+  }, [area, instanceId]);
 
   return data;
 }
