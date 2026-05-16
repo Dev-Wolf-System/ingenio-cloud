@@ -60,9 +60,8 @@ pnpm dev
 cd /opt/ingenio-cloud
 cp .env.example .env
 nano .env                              # completar credenciales reales
-cd infra
-docker compose --env-file ../.env build
-docker compose --env-file ../.env up -d
+docker compose --env-file ./.env build
+docker compose --env-file ./.env up -d
 ```
 
 Ver detalles completos en [`docs/deploy.md`](./docs/deploy.md) (referencia a `../plan/11_DEPLOY_VPS_DOCKER.md` del root).

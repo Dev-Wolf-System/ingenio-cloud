@@ -225,6 +225,6 @@ Antes de hacer push a VPS:
 1. SSH a VPS Hostinger
 2. `cd /opt && git clone <repo> ingenio-cloud && cd ingenio-cloud`
 3. `cp .env.example .env && nano .env` (completar secrets prod)
-4. `cd infra && docker compose --env-file ../.env build`
-5. `docker compose --env-file ../.env up -d`
+4. `docker compose --env-file ./.env build`
+5. `docker compose --env-file ./.env up -d`
 6. Verificar SSL en `https://ingcloud.srv878399.hstgr.cloud` + `https://api.ingcloud.srv878399.hstgr.cloud/api/health`

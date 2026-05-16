@@ -1,15 +1,46 @@
 # =============================================================================
 # Ingenio Cloud — Docker Compose (VPS Hostinger srv878399)
-# Patrón: split backend + frontend, Traefik labels, redes externas n8n_evoapi + supabase_network
+# Patrón split backend + frontend, redes externas compartidas con stack existente
+#
+# Pre-requisitos en VPS:
+#   docker network ls | grep -E "n8n_evoapi|supabase_network"
+#   (ambas tienen que existir; si no: docker network create <name>)
+#
+# Deploy:
+#   cd /opt/ingenio-cloud
+#   cp .env.example .env && nano .env   # completar secrets
+#   cd infra
+#   docker compose --env-file ../.env build
+#   docker compose --env-file ../.env up -d
+#
+# Logs:
+#   docker compose --env-file ../.env logs -f --tail=100 ingenio-backend
+#
+# Update:
+#   git pull && docker compose --env-file ../.env build --pull && \
+#     docker compose --env-file ../.env up -d --remove-orphans
 # =============================================================================
 
+name: ingenio-cloud
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
+  # ───────────────────────────────────────────────────────────────────────────
+  # BACKEND NestJS API · puerto 3001 · WebSocket /ws/dashboard/*
+  # ───────────────────────────────────────────────────────────────────────────
   ingenio-backend:
     build:
-      context: ../backend
+      context: ./backend
       dockerfile: Dockerfile
+    image: ingenio-cloud/backend:latest
     container_name: ingenio-backend
-    restart: always
+    restart: unless-stopped
+    logging: *default-logging
     environment:
       - NODE_ENV=production
       - TZ=America/Argentina/Buenos_Aires
@@ -18,43 +49,43 @@ services:
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
       - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
-      - DB_HOST=supabase-db
-      - DB_PORT=5432
+      - DB_HOST=${DB_HOST:-supabase-db}
+      - DB_PORT=${DB_PORT:-5432}
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_DATABASE=${DB_DATABASE}
       - DATABASE_URL=${DATABASE_URL}
       # JWT internal
       - JWT_SECRET=${JWT_SECRET}
-      - JWT_EXPIRATION=${JWT_EXPIRATION}
-      - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
+      - JWT_EXPIRATION=${JWT_EXPIRATION:-15m}
+      - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION:-7d}
       # URLs
       - FRONTEND_URL=https://${DOMAIN_NAME}
       - BACKEND_URL=https://api.${DOMAIN_NAME}/api
-      # Webhooks
+      # Webhooks + WS auth
       - N8N_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET}
       - MILL_SPEED_WEBHOOK_SECRET=${MILL_SPEED_WEBHOOK_SECRET}
-      # MSSQL CORONA legacy
-      - MSSQL_HOST=${MSSQL_HOST}
-      - MSSQL_PORT=${MSSQL_PORT}
-      - MSSQL_DATABASE=${MSSQL_DATABASE}
-      - MSSQL_USER=${MSSQL_USER}
+      # MSSQL CORONA legacy (via Tailscale en host VPS)
+      - MSSQL_HOST=${MSSQL_HOST:-192.168.0.177}
+      - MSSQL_PORT=${MSSQL_PORT:-1433}
+      - MSSQL_DATABASE=${MSSQL_DATABASE:-CORONA}
+      - MSSQL_USER=${MSSQL_USER:-fs1}
       - MSSQL_PASSWORD=${MSSQL_PASSWORD}
       - MSSQL_ENCRYPT=false
       - MSSQL_TRUST_SERVER_CERTIFICATE=true
-      # External HTTP molienda
+      # HTTP molienda
       - MOLIENDA_HTTP_URL=${MOLIENDA_HTTP_URL}
       - MOLIENDA_HTTP_AUTH=${MOLIENDA_HTTP_AUTH}
-      # InfluxDB
-      - INFLUX_URL=${INFLUX_URL}
+      # InfluxDB 3 (mismo network n8n_evoapi, hostname container)
+      - INFLUX_URL=${INFLUX_URL:-http://influxdb3:8181}
       - INFLUX_TOKEN=${INFLUX_TOKEN}
-      - INFLUX_DATABASE=${INFLUX_DATABASE}
-      # IA (preparado Sprint 1+)
+      - INFLUX_DATABASE=${INFLUX_DATABASE:-corona2026}
+      # IA APIs (Sprint 1+)
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY}
       # Comms
-      - EVOLUTION_API_URL=${EVOLUTION_API_URL}
+      - EVOLUTION_API_URL=${EVOLUTION_API_URL:-http://evolution-api:8080}
       - EVOLUTION_API_KEY=${EVOLUTION_API_KEY}
       - RESEND_API_KEY=${RESEND_API_KEY}
       - MAIL_FROM=${MAIL_FROM}
@@ -62,25 +93,39 @@ services:
       - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
       - LANGFUSE_HOST=${LANGFUSE_HOST}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
     labels:
       - traefik.enable=true
       - traefik.docker.network=n8n_evoapi
+      # Router API REST
       - traefik.http.routers.ingenio-api.rule=Host(`api.${DOMAIN_NAME}`)
       - traefik.http.routers.ingenio-api.tls=true
       - traefik.http.routers.ingenio-api.entrypoints=web,websecure
       - traefik.http.routers.ingenio-api.tls.certresolver=mytlschallenge
+      - traefik.http.routers.ingenio-api.service=ingenio-api
       - traefik.http.services.ingenio-api.loadbalancer.server.port=3001
+      # Headers seguridad
       - traefik.http.middlewares.ingenio-api-headers.headers.STSSeconds=315360000
       - traefik.http.middlewares.ingenio-api-headers.headers.browserXSSFilter=true
       - traefik.http.middlewares.ingenio-api-headers.headers.contentTypeNosniff=true
       - traefik.http.routers.ingenio-api.middlewares=ingenio-api-headers@docker
+      # CORS manejado por NestJS (origin: *)
+      # WebSocket Traefik soporta WS nativo en mismo router; sin config extra
     networks:
       - n8n_evoapi
       - supabase_network
 
+  # ───────────────────────────────────────────────────────────────────────────
+  # FRONTEND Next.js 14 standalone · puerto 3000
+  # ───────────────────────────────────────────────────────────────────────────
   ingenio-frontend:
     build:
-      context: ../frontend
+      context: ./frontend
       dockerfile: Dockerfile
       args:
         - NEXT_PUBLIC_API_URL=https://api.${DOMAIN_NAME}/api
@@ -92,19 +137,31 @@ services:
         - NEXT_PUBLIC_DEFAULT_PLANT_SLUG=planta-sur
         - NEXT_PUBLIC_COPILOT_ENABLED=false
         - NEXT_PUBLIC_TV_AUTO_FULLSCREEN=true
+    image: ingenio-cloud/frontend:latest
     container_name: ingenio-frontend
-    restart: always
+    restart: unless-stopped
+    logging: *default-logging
     environment:
       - NODE_ENV=production
       - TZ=America/Argentina/Buenos_Aires
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-I", "http://localhost:3000"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
     labels:
       - traefik.enable=true
-      - traefik.http.services.ingenio-web.loadbalancer.server.port=3000
+      - traefik.docker.network=n8n_evoapi
       - traefik.http.routers.ingenio-web.rule=Host(`${DOMAIN_NAME}`)
       - traefik.http.routers.ingenio-web.tls=true
       - traefik.http.routers.ingenio-web.entrypoints=web,websecure
       - traefik.http.routers.ingenio-web.tls.certresolver=mytlschallenge
-      - traefik.http.middlewares.ingenio-web-headers.headers.SSLRedirect=true
+      - traefik.http.routers.ingenio-web.service=ingenio-web
+      - traefik.http.services.ingenio-web.loadbalancer.server.port=3000
+      # Headers
       - traefik.http.middlewares.ingenio-web-headers.headers.STSSeconds=315360000
       - traefik.http.middlewares.ingenio-web-headers.headers.browserXSSFilter=true
       - traefik.http.middlewares.ingenio-web-headers.headers.contentTypeNosniff=true
@@ -112,6 +169,7 @@ services:
     networks:
       - n8n_evoapi
 
+# ─── Redes externas (creadas por stacks existentes en VPS) ───────────────────
 networks:
   n8n_evoapi:
     external: true

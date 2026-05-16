@@ -161,13 +161,12 @@ docker network ls | grep -E "n8n_evoapi|supabase_network"
 # Si no existen → ya deberían estar por stack n8n + supabase existente
 
 # 5. Build + up
-cd infra
-docker compose --env-file ../.env build
-docker compose --env-file ../.env up -d
+docker compose --env-file ./.env build
+docker compose --env-file ./.env up -d
 
 # 6. Logs
-docker compose --env-file ../.env logs -f ingenio-backend
-docker compose --env-file ../.env logs -f ingenio-frontend
+docker compose --env-file ./.env logs -f ingenio-backend
+docker compose --env-file ./.env logs -f ingenio-frontend
 
 # 7. Verificar SSL Traefik
 curl -I https://api.ingcloud.srv878399.hstgr.cloud/api/health
@@ -185,15 +184,14 @@ git fetch --all
 git reset --hard origin/main
 
 # Rebuild + restart
-cd infra
-docker compose --env-file ../.env build --pull
-docker compose --env-file ../.env up -d --remove-orphans
+docker compose --env-file ./.env build --pull
+docker compose --env-file ./.env up -d --remove-orphans
 
 # Limpiar imágenes viejas
 docker image prune -af
 ```
 
-### 3.3 Script automatizado `infra/scripts/deploy.sh`
+### 3.3 Script automatizado `scripts/deploy.sh`
 
 ```bash
 #!/bin/bash
@@ -201,9 +199,8 @@ set -e
 cd /opt/ingenio-cloud
 git fetch --all
 git reset --hard origin/main
-cd infra
-docker compose --env-file ../.env build --pull
-docker compose --env-file ../.env up -d --remove-orphans
+docker compose --env-file ./.env build --pull
+docker compose --env-file ./.env up -d --remove-orphans
 docker image prune -af
 echo "✓ Deploy completo"
 ```
@@ -227,7 +224,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /opt/ingenio-cloud
-            bash infra/scripts/deploy.sh
+            bash scripts/deploy.sh
 ```
 
 ---
@@ -613,15 +610,15 @@ openssl rand -hex 32
 
 ```bash
 # Ver logs en vivo
-docker compose -f infra/docker-compose.yml logs -f --tail=100 ingenio-backend
-docker compose -f infra/docker-compose.yml logs -f --tail=100 ingenio-frontend
+docker compose -f docker-compose.yml logs -f --tail=100 ingenio-backend
+docker compose -f docker-compose.yml logs -f --tail=100 ingenio-frontend
 
 # Restart un servicio
-docker compose -f infra/docker-compose.yml restart ingenio-backend
+docker compose -f docker-compose.yml restart ingenio-backend
 
 # Rebuild sin cache
-docker compose -f infra/docker-compose.yml build --no-cache ingenio-frontend
-docker compose -f infra/docker-compose.yml up -d --force-recreate ingenio-frontend
+docker compose -f docker-compose.yml build --no-cache ingenio-frontend
+docker compose -f docker-compose.yml up -d --force-recreate ingenio-frontend
 
 # Stats recursos
 docker stats ingenio-backend ingenio-frontend
