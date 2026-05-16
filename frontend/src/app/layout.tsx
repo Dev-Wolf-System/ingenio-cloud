@@ -33,6 +33,7 @@ const bricolage = Bricolage_Grotesque({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://ingcloud.srv878399.hstgr.cloud'),
   title: {
     default: 'Ingenio Cloud · Panel de Monitoreo de Turno',
     template: '%s · Ingenio Cloud',
