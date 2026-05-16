@@ -37,6 +37,10 @@ const envSchema = z.object({
   MOLIENDA_HTTP_URL: z.string().optional(),
   MOLIENDA_HTTP_AUTH: z.string().optional(),
 
+  // Node-RED endpoint para consultar guardia anterior (PULL)
+  NODERED_GUARDIA_URL: z.string().optional().default('https://nodered.srv878399.hstgr.cloud/api/guardia/'),
+  NODERED_AUTH: z.string().optional(),
+
   // InfluxDB 3 (histórico raw)
   INFLUX_URL: z.string().optional(),
   INFLUX_TOKEN: z.string().optional(),

@@ -1,0 +1,67 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { GuardiaService } from '../guardia/guardia.service';
+
+/**
+ * Cron jobs internos del backend.
+ * Timezone forzado America/Argentina/Buenos_Aires.
+ */
+@Injectable()
+export class SchedulerService {
+  private readonly logger = new Logger(SchedulerService.name);
+
+  constructor(private readonly guardia: GuardiaService) {}
+
+  /**
+   * Refrescar resumen guardia desde Node-RED a los 15 min de cada cambio de turno.
+   * Disparos: 05:15, 13:15, 21:15 ART (hora local AR).
+   * Cron format: minute hour day month dayOfWeek
+   */
+  @Cron('15 5,13,21 * * *', {
+    name: 'refresh_guardia_resumen',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  })
+  async refreshGuardiaResumen() {
+    this.logger.log('Cron: refresh guardia resumen (force=true)');
+    try {
+      const result = await this.guardia.getResumenGuardia(true);
+      this.logger.log(`Cron: refresh OK turno=${(result as { turno_anterior?: string }).turno_anterior ?? 'n/a'}`);
+    } catch (err) {
+      this.logger.error('Cron refresh guardia failed', err as Error);
+    }
+  }
+
+  /**
+   * Retry suave 5 min después por si Node-RED tardó (cron principal pudo perder el dato).
+   * Si cache ya está fresco, no hace nada.
+   */
+  @Cron('20 5,13,21 * * *', {
+    name: 'retry_guardia_resumen',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  })
+  async retryGuardiaResumen() {
+    this.logger.log('Cron: retry guardia resumen (force=true) por si principal falló');
+    try {
+      await this.guardia.getResumenGuardia(true);
+    } catch (err) {
+      this.logger.warn('Cron retry guardia failed', err as Error);
+    }
+  }
+
+  /**
+   * Bootstrap: al iniciar el backend, intenta cargar resumen guardia inmediatamente.
+   * Útil después de un reinicio.
+   */
+  @Cron(CronExpression.EVERY_30_MINUTES, {
+    name: 'bootstrap_guardia_resumen',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  })
+  async warmupCache() {
+    // Solo intenta si no hay cache válido — getResumenGuardia ya tiene logic interna
+    try {
+      await this.guardia.getResumenGuardia(false);
+    } catch {
+      // silent
+    }
+  }
+}

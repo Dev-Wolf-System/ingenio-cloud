@@ -4,6 +4,16 @@ import axios from 'axios';
 import { SupabaseService } from '../supabase/supabase.service';
 import { getCurrentShift, getPreviousShift, shiftDateKey, type Shift } from '../../common/shift';
 
+interface ResumenGuardia {
+  turno_anterior: string;
+  desde: string;
+  hasta: string;
+  timestamp_consulta?: string;
+  paradasFabrica: Record<string, unknown>;
+  moliendaPromedio: Record<string, unknown>;
+  consumoGas: Record<string, unknown>;
+}
+
 @Injectable()
 export class GuardiaService {
   private readonly logger = new Logger(GuardiaService.name);
@@ -17,21 +27,87 @@ export class GuardiaService {
     const industrial = this.supabase.schema('industrial');
     const { data } = await industrial
       .from('shift_kpis_cache')
-      .select('payload, fetched_at')
+      .select('payload, fetched_at, valid_until')
       .eq('kpi_id', kpiId)
       .eq('shift_date', shiftDateKey(shift))
       .eq('shift_name', shift.name)
       .maybeSingle();
-    return data?.payload ?? null;
+    if (!data) return null;
+    if (data.valid_until && new Date(data.valid_until) < new Date()) return null;
+    return data.payload;
   }
 
-  /** Molienda promedio turno actual — HTTP externo + cache 5min */
+  private async setCached(
+    kpiId: string,
+    shift: Shift,
+    payload: unknown,
+    ttlMinutes = 60,
+  ) {
+    const industrial = this.supabase.schema('industrial');
+    const validUntil = new Date(Date.now() + ttlMinutes * 60_000).toISOString();
+    await industrial.from('shift_kpis_cache').upsert(
+      [
+        {
+          kpi_id: kpiId,
+          shift_date: shiftDateKey(shift),
+          shift_name: shift.name,
+          shift_ref: 'previous',
+          payload: payload as never,
+          fetched_at: new Date().toISOString(),
+          valid_until: validUntil,
+        },
+      ],
+      { onConflict: 'kpi_id,shift_date,shift_name,tenant_id,plant_id' },
+    );
+  }
+
+  /**
+   * Consulta Node-RED endpoint guardia anterior.
+   * Cache server-side 30min para no martillar.
+   */
+  private async fetchResumenFromNodeRed(force = false): Promise<ResumenGuardia | null> {
+    const prev = getPreviousShift();
+    if (!force) {
+      const cached = await this.getCached('resumen_guardia', prev);
+      if (cached) return cached as ResumenGuardia;
+    }
+
+    const url = this.config.get<string>('NODERED_GUARDIA_URL');
+    if (!url) {
+      this.logger.warn('NODERED_GUARDIA_URL no configurado');
+      return null;
+    }
+    try {
+      const auth = this.config.get<string>('NODERED_AUTH');
+      const res = await axios.get<ResumenGuardia>(url, {
+        headers: auth ? { Authorization: auth } : undefined,
+        timeout: 15_000,
+      });
+      const data = res.data;
+      if (!data || !data.turno_anterior) {
+        this.logger.warn('Node-RED guardia respuesta inválida', data as never);
+        return null;
+      }
+      // Cache 30min (next refresh manual o cambio turno)
+      await this.setCached('resumen_guardia', prev, data, 30);
+      await this.setCached('gas_previo', prev, data.consumoGas, 30);
+      await this.setCached('paradas_previo', prev, data.paradasFabrica, 30);
+      await this.setCached('molienda_previo', prev, data.moliendaPromedio, 30);
+      this.logger.log(`Resumen guardia fetched from Node-RED (turno ${data.turno_anterior})`);
+      return data;
+    } catch (err) {
+      this.logger.error('Fetch guardia Node-RED failed', err as Error);
+      return null;
+    }
+  }
+
+  /** Molienda promedio TURNO ACTUAL — HTTP externo + cache 5min */
   async getMolienda() {
     const current = getCurrentShift();
     const cached = await this.getCached('molienda_promedio', current);
     if (cached) return cached;
     const url = this.config.get<string>('MOLIENDA_HTTP_URL');
-    if (!url) return { error: 'MOLIENDA_HTTP_URL no configurado' };
+    if (!url) return { mensaje: 'Endpoint molienda actual no configurado' };
     try {
       const auth = this.config.get<string>('MOLIENDA_HTTP_AUTH');
       const res = await axios.get(url, {
@@ -45,38 +121,33 @@ export class GuardiaService {
     }
   }
 
-  /** Gas turno previo — desde cache (poblado por POST /api/guardia/ingest) */
+  /** Gas turno previo — desde resumen Node-RED */
   async getGasPrevio() {
-    const prev = getPreviousShift();
-    const cached = await this.getCached('gas_previo', prev);
-    if (!cached) return { mensaje: 'Sin datos del turno anterior' };
-    return cached;
+    const resumen = await this.fetchResumenFromNodeRed();
+    if (!resumen) return { mensaje: 'Sin datos del turno anterior' };
+    return resumen.consumoGas;
   }
 
-  /** Paradas turno previo — desde cache */
   async getParadasPrevio() {
-    const prev = getPreviousShift();
-    const cached = await this.getCached('paradas_previo', prev);
-    if (!cached) return { mensaje: 'Sin datos del turno anterior' };
-    return cached;
+    const resumen = await this.fetchResumenFromNodeRed();
+    if (!resumen) return { mensaje: 'Sin datos del turno anterior' };
+    return resumen.paradasFabrica;
   }
 
-  /** Molienda turno previo — desde cache */
   async getMoliendaPrevio() {
-    const prev = getPreviousShift();
-    const cached = await this.getCached('molienda_previo', prev);
-    if (!cached) return { mensaje: 'Sin datos del turno anterior' };
-    return cached;
+    const resumen = await this.fetchResumenFromNodeRed();
+    if (!resumen) return { mensaje: 'Sin datos del turno anterior' };
+    return resumen.moliendaPromedio;
   }
 
-  /** Resumen completo turno previo */
-  async getResumenGuardia() {
-    const prev = getPreviousShift();
-    const cached = await this.getCached('resumen_guardia', prev);
-    if (!cached) return { mensaje: 'Sin datos del turno anterior' };
-    return cached;
+  /** Resumen completo turno previo (objeto completo desde Node-RED) */
+  async getResumenGuardia(force = false) {
+    const resumen = await this.fetchResumenFromNodeRed(force);
+    if (!resumen) return { mensaje: 'Sin datos del turno anterior' };
+    return resumen;
   }
 
+  /** Vel molino — siempre cache (llega por WS de Node-RED) */
   async getMillSpeedPrevio() {
     const prev = getPreviousShift();
     const cached = await this.getCached('vel_primer_molino', prev);
