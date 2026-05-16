@@ -47,13 +47,14 @@ export class RealtimeService {
     if (Array.isArray(body)) {
       for (const item of body as ArrayItem[]) {
         if (!item || typeof item.value !== 'number' || !Number.isFinite(item.value)) continue;
+        const clamped = Math.max(0, item.value);
         rows.push({
           area,
           key: item.alias,
-          value: item.value,
-          display: item.unit ? `${item.value} ${item.unit}` : null,
+          value: clamped,
+          display: item.unit ? `${clamped} ${item.unit}` : null,
           unit: item.unit ?? null,
-          raw: null,
+          raw: item.value,
           updated_at: item.time ? new Date(item.time).toISOString() : new Date().toISOString(),
         });
       }
@@ -69,13 +70,14 @@ export class RealtimeService {
         for (const [key, raw] of Object.entries(inner as Record<string, unknown>)) {
           const item = raw as WrappedItem;
           if (!item || typeof item.value !== 'number' || !Number.isFinite(item.value)) continue;
+          const clamped = Math.max(0, item.value);
           rows.push({
             area,
             key,
-            value: item.value,
-            display: item.display ?? null,
+            value: clamped,
+            display: item.display ?? (item.unit ? `${clamped} ${item.unit}` : null),
             unit: item.unit ?? null,
-            raw: item.raw ?? null,
+            raw: item.raw ?? item.value,
             updated_at: item.timestamp ?? new Date().toISOString(),
           });
         }
