@@ -81,10 +81,17 @@ export class GuardiaService {
     }
     try {
       const auth = this.config.get<string>('NODERED_AUTH');
-      const res = await axios.get<ResumenGuardia>(url, {
-        headers: auth ? { Authorization: auth } : undefined,
-        timeout: 15_000,
-      });
+      const res = await axios.post<ResumenGuardia>(
+        url,
+        {},
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(auth ? { Authorization: auth } : {}),
+          },
+          timeout: 15_000,
+        },
+      );
       const data = res.data;
       if (!data || !data.turno_anterior) {
         this.logger.warn('Node-RED guardia respuesta inválida', data as never);
