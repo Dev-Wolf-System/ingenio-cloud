@@ -1,5 +1,5 @@
 # ---- Stage 1: Builder ----
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@9 --activate
@@ -13,7 +13,7 @@ COPY src ./src
 RUN pnpm build && pnpm prune --prod
 
 # ---- Stage 2: Runtime ----
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
