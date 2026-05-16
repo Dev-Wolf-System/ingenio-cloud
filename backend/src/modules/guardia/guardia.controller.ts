@@ -40,4 +40,10 @@ export class GuardiaController {
   resumen() {
     return this.svc.getResumenGuardia();
   }
+
+  /** GET /api/guardia/analisis-ia — análisis IA del turno previo */
+  @Get('analisis-ia')
+  analisisIA() {
+    return this.svc.getAnalisisIA();
+  }
 }

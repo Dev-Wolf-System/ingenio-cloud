@@ -11,6 +11,7 @@ import { AlertsModule } from './modules/alerts/alerts.module';
 import { HealthModule } from './modules/health/health.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module';
     MetricsModule,
     AlertsModule,
     HealthModule,
+    AiModule,
     RealtimeModule,
     SchedulerModule,
   ],

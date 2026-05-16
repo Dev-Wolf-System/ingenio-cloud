@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { IconClock, IconRefresh } from '@tabler/icons-react';
 import { PanelHeader } from './PanelHeader';
 import { MillSpeedChart, type MillSpeedPayload } from './MillSpeedChart';
+import { AnalisisIA } from './AnalisisIA';
 import { formatNumber } from '@/lib/utils/format';
 import { cn } from '@/lib/utils/cn';
 
@@ -102,13 +103,8 @@ export function ShiftSummaryPanel() {
         <MillSpeedChart data={vel.data as MillSpeedPayload | null | undefined} />
       </div>
 
-      <div className="mt-3 flex-1 overflow-auto">
-        <div className="text-2xs uppercase tracking-[0.12em] text-text-muted mb-2">
-          Asistente Vigía
-        </div>
-        <div className="rounded-md border border-dashed border-border bg-bg-card/40 p-3 text-xs text-text-muted leading-relaxed">
-          Sistema proactivo de detección y diagnóstico en desarrollo. Disponible <b className="text-text-secondary">Sprint 1</b>.
-        </div>
+      <div className="mt-3">
+        <AnalisisIA />
       </div>
     </section>
   );

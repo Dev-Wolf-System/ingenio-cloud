@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { SupabaseService } from '../supabase/supabase.service';
+import { AiService } from '../ai/ai.service';
 import { getCurrentShift, getPreviousShift, shiftDateKey, type Shift } from '../../common/shift';
 
 interface ResumenGuardia {
@@ -21,6 +22,7 @@ export class GuardiaService {
   constructor(
     private readonly supabase: SupabaseService,
     private readonly config: ConfigService,
+    private readonly ai: AiService,
   ) {}
 
   private async getCached(kpiId: string, shift: Shift) {
@@ -94,6 +96,12 @@ export class GuardiaService {
       await this.setCached('paradas_previo', prev, data.paradasFabrica, 30);
       await this.setCached('molienda_previo', prev, data.moliendaPromedio, 30);
       this.logger.log(`Resumen guardia fetched from Node-RED (turno ${data.turno_anterior})`);
+
+      // Análisis IA fire-and-forget (no bloquea respuesta)
+      this.runAnalisisIA(prev, data).catch((err) =>
+        this.logger.warn('Análisis IA falló: ' + (err as Error).message),
+      );
+
       return data;
     } catch (err) {
       this.logger.error('Fetch guardia Node-RED failed', err as Error);
@@ -145,6 +153,22 @@ export class GuardiaService {
     const resumen = await this.fetchResumenFromNodeRed(force);
     if (!resumen) return { mensaje: 'Sin datos del turno anterior' };
     return resumen;
+  }
+
+  /** Análisis IA del resumen — corre fire-and-forget post-fetch */
+  private async runAnalisisIA(shift: Shift, payload: ResumenGuardia) {
+    if (!this.ai.isAvailable()) return;
+    const result = await this.ai.analizarResumenGuardia(payload);
+    if (!result) return;
+    await this.setCached('analisis_ia', shift, result, 60 * 12);
+  }
+
+  /** Análisis IA cacheado del turno previo */
+  async getAnalisisIA() {
+    const prev = getPreviousShift();
+    const cached = await this.getCached('analisis_ia', prev);
+    if (!cached) return { mensaje: 'Análisis IA aún no disponible' };
+    return cached;
   }
 
   /** Vel molino — siempre cache (llega por WS de Node-RED) */
