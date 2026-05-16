@@ -36,10 +36,16 @@ export function useDashboardData(area: 'energia' | 'produccion') {
 
   useEffect(() => {
     let mounted = true;
-    const supabase = getSupabaseBrowser();
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+    let channel: ReturnType<ReturnType<typeof getSupabaseBrowser>['channel']> | null = null;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-    async function init() {
+    if (!apiUrl) {
+      console.warn('NEXT_PUBLIC_API_URL no configurado');
+      return;
+    }
+
+    async function loadSnapshot() {
       try {
         const res = await fetch(`${apiUrl}/metrics/dashboard-snapshot?area=${area}`);
         if (!res.ok) return;
@@ -50,40 +56,60 @@ export function useDashboardData(area: 'energia' | 'produccion') {
         console.warn('dashboard snapshot failed', err);
       }
     }
-    init();
+    loadSnapshot();
 
-    const channel = supabase
-      .channel(`dashboard_data_${area}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'industrial',
-          table: 'dashboard_data',
-          filter: `area=eq.${area}`,
-        },
-        (payload: { new: DashboardItem & { area: string } }) => {
-          if (!mounted) return;
-          if (payload.new && payload.new.area === area) {
-            dispatch({
-              type: 'update',
-              payload: {
-                key: payload.new.key,
-                value: Number(payload.new.value),
-                display: payload.new.display,
-                unit: payload.new.unit,
-                raw: payload.new.raw,
-                updated_at: payload.new.updated_at,
-              },
-            });
+    // Realtime subscribe (con fallback a polling 5s si falla)
+    try {
+      const supabase = getSupabaseBrowser();
+      channel = supabase
+        .channel(`dashboard_data_${area}`)
+        .on(
+          'postgres_changes' as never,
+          {
+            event: '*',
+            schema: 'industrial',
+            table: 'dashboard_data',
+            filter: `area=eq.${area}`,
+          },
+          (payload: { new: DashboardItem & { area: string } }) => {
+            if (!mounted) return;
+            if (payload.new && payload.new.area === area) {
+              dispatch({
+                type: 'update',
+                payload: {
+                  key: payload.new.key,
+                  value: Number(payload.new.value),
+                  display: payload.new.display,
+                  unit: payload.new.unit,
+                  raw: payload.new.raw,
+                  updated_at: payload.new.updated_at,
+                },
+              });
+            }
+          },
+        )
+        .subscribe((status: string) => {
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            console.warn(`Realtime ${area} status: ${status}, fallback polling 5s`);
+            if (!pollInterval) {
+              pollInterval = setInterval(loadSnapshot, 5000);
+            }
           }
-        },
-      )
-      .subscribe();
+        });
+    } catch (err) {
+      console.warn('Realtime subscribe failed, fallback polling 5s', err);
+      pollInterval = setInterval(loadSnapshot, 5000);
+    }
 
     return () => {
       mounted = false;
-      supabase.removeChannel(channel);
+      if (channel) {
+        try {
+          const supabase = getSupabaseBrowser();
+          supabase.removeChannel(channel);
+        } catch { /* noop */ }
+      }
+      if (pollInterval) clearInterval(pollInterval);
     };
   }, [area]);
 
