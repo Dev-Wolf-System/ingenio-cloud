@@ -1,7 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { IconClock } from '@tabler/icons-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { IconClock, IconRefresh } from '@tabler/icons-react';
 import { PanelHeader } from './PanelHeader';
 import { formatNumber } from '@/lib/utils/format';
 
@@ -13,6 +13,11 @@ async function fetchGuardia(path: string) {
 }
 
 export function ShiftSummaryPanel() {
+  const queryClient = useQueryClient();
+  const refreshAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['guardia'] });
+  };
+
   const molienda = useQuery({
     queryKey: ['guardia', 'molienda'],
     queryFn: () => fetchGuardia('molienda'),
@@ -36,7 +41,20 @@ export function ShiftSummaryPanel() {
 
   return (
     <section className="flex flex-col rounded-lg border border-border bg-bg-surface p-4 overflow-hidden">
-      <PanelHeader title="Resumen Guardia" icon={<IconClock size={18} />} />
+      <PanelHeader
+        title="Resumen Guardia"
+        icon={<IconClock size={18} />}
+        badge={
+          <button
+            onClick={refreshAll}
+            className="inline-flex items-center gap-1 text-2xs text-text-muted hover:text-primary-light transition-colors px-1.5 py-0.5 rounded hover:bg-bg-hover"
+            title="Refrescar KPIs turno anterior"
+          >
+            <IconRefresh size={12} />
+            Refrescar
+          </button>
+        }
+      />
 
       <div className="grid grid-cols-2 gap-2">
         <KpiCell

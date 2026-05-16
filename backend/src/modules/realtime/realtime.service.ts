@@ -102,7 +102,33 @@ export class RealtimeService {
     return { ingested: rows.length };
   }
 
-  /** Mill speed turno previo (websocket) */
+  private mapTurno(t: string): 'morning' | 'afternoon' | 'night' | 'unknown' {
+    if (t === 'MAÑANA') return 'morning';
+    if (t === 'TARDE') return 'afternoon';
+    if (t === 'NOCHE') return 'night';
+    return 'unknown';
+  }
+
+  /**
+   * Fecha del turno previo en formato YYYY-MM-DD.
+   * Ej: si recibo a las 05:15 hoy = "MAÑANA actual" → previo es turno NOCHE que arrancó AYER 21:00.
+   *     `shift_date` debe ser fecha INICIO del turno previo (consistente con shiftDateKey).
+   */
+  private resolveShiftDate(turnoPrevio: 'morning' | 'afternoon' | 'night'): string {
+    const now = new Date();
+    // Turno actual cuando recibimos = el turno que YA empezó hace ~15min
+    // Previo NOCHE → empezó ayer 21:00 → shift_date = ayer
+    // Previo MAÑANA → empezó hoy 05:00 → shift_date = hoy
+    // Previo TARDE → empezó hoy 13:00 → shift_date = hoy
+    if (turnoPrevio === 'night') {
+      const yesterday = new Date(now);
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      return yesterday.toISOString().slice(0, 10);
+    }
+    return now.toISOString().slice(0, 10);
+  }
+
+  /** Mill speed turno previo (websocket — llega 1x cada cambio de turno +15min) */
   async ingestMillSpeed(payload: {
     turno: string;
     desde?: string;
@@ -114,17 +140,17 @@ export class RealtimeService {
     labels: string[];
     valores: number[];
   }) {
-    const today = new Date().toISOString().slice(0, 10);
-    const shiftName =
-      payload.turno === 'MAÑANA' ? 'morning' :
-      payload.turno === 'TARDE' ? 'afternoon' :
-      payload.turno === 'NOCHE' ? 'night' : 'unknown';
+    const shiftName = this.mapTurno(payload.turno);
+    if (shiftName === 'unknown') {
+      this.logger.warn(`Mill speed turno desconocido: ${payload.turno}`);
+      return { ok: false, error: 'turno desconocido' };
+    }
     const industrial = this.supabase.schema('industrial');
     const { error } = await industrial.from('shift_kpis_cache').upsert(
       [
         {
           kpi_id: 'vel_primer_molino',
-          shift_date: today,
+          shift_date: shiftDate,
           shift_name: shiftName,
           shift_ref: 'previous',
           payload: payload as never,
@@ -151,12 +177,13 @@ export class RealtimeService {
     moliendaPromedio: unknown;
     consumoGas: unknown;
   }) {
-    const desde = new Date(payload.desde);
-    const shiftDate = desde.toISOString().slice(0, 10);
-    const shiftName =
-      payload.turno_anterior === 'MAÑANA' ? 'morning' :
-      payload.turno_anterior === 'TARDE' ? 'afternoon' :
-      payload.turno_anterior === 'NOCHE' ? 'night' : 'unknown';
+    const shiftName = this.mapTurno(payload.turno_anterior);
+    if (shiftName === 'unknown') {
+      this.logger.warn(`Guardia turno desconocido: ${payload.turno_anterior}`);
+      return { ok: false, error: 'turno desconocido' };
+    }
+    // Fecha consistente con shiftDateKey: inicio del turno previo
+    const shiftDate = this.resolveShiftDate(shiftName);
 
     const industrial = this.supabase.schema('industrial');
 
