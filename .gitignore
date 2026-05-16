@@ -51,3 +51,7 @@ secrets/
 
 # ─── Drizzle ───
 drizzle/
+
+# Env prod-ready (contiene secrets reales, NUNCA commitear)
+.env.prod-ready
+
