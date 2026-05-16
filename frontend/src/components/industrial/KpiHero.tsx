@@ -1,7 +1,12 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { IconActivity, IconChartBar, IconBolt, IconAlertTriangle } from '@tabler/icons-react';
+import {
+  IconActivity,
+  IconChartBar,
+  IconBolt,
+  IconAlertTriangle,
+} from '@tabler/icons-react';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import { KpiCard } from './KpiCard';
 
@@ -21,7 +26,6 @@ export function KpiHero() {
     refetchInterval: 30_000,
   });
 
-  // Heurísticas: buscar keys que parezcan los KPI hero
   const findItem = (map: Map<string, { value: number; unit: string | null }>, candidates: string[]) => {
     for (const c of candidates) {
       if (map.has(c)) return map.get(c)!;
@@ -33,17 +37,17 @@ export function KpiHero() {
     'Promedio_Molienda',
     'Molienda_Promedio',
     'Caudal_Molienda',
+    'Produccion_Bolsas_Dia',
   ]);
   const azucar = findItem(produccion, [
     'Produccion_Bolsas_Dia',
     'Produccion_Azucar_Dia',
     'Azucar_Diaria',
   ]);
-  const generacion = findItem(energia, [
-    'Generacion_Total',
-    'Potencia_Total',
-    'Potencia_WEG',
-  ]);
+  const potenciaSiemens = findItem(energia, ['Potencia_Activa_Siemens']);
+  const potenciaWeg = findItem(energia, ['Potencia_Activa_Weg']);
+  const generacionTotal =
+    (potenciaSiemens?.value ?? 0) + (potenciaWeg?.value ?? 0) || null;
 
   const activeCount = (alerts.data as { alerts?: unknown[] } | undefined)?.alerts?.length ?? 0;
   const criticalCount =
@@ -54,7 +58,7 @@ export function KpiHero() {
   return (
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 px-4 py-3">
       <KpiCard
-        label="Molienda promedio"
+        label="Molienda actual"
         value={molienda?.value ?? '—'}
         unit={molienda?.unit ?? 't/h'}
         precision={0}
@@ -62,7 +66,7 @@ export function KpiHero() {
         status="accent"
       />
       <KpiCard
-        label="Azúcar diaria"
+        label="Producción azúcar"
         value={azucar?.value ?? '—'}
         unit={azucar?.unit ?? 'bolsas'}
         precision={0}
@@ -71,11 +75,16 @@ export function KpiHero() {
       />
       <KpiCard
         label="Generación eléctrica"
-        value={generacion?.value ?? '—'}
-        unit={generacion?.unit ?? 'MW'}
-        precision={2}
+        value={generacionTotal ?? '—'}
+        unit={potenciaSiemens?.unit ?? 'kW'}
+        precision={0}
         icon={IconBolt}
         status="accent"
+        footer={
+          potenciaSiemens || potenciaWeg
+            ? `S: ${potenciaSiemens?.value ?? 0} · W: ${potenciaWeg?.value ?? 0}`
+            : undefined
+        }
       />
       <KpiCard
         label="Alertas activas"
@@ -84,7 +93,13 @@ export function KpiHero() {
         icon={IconAlertTriangle}
         status={criticalCount > 0 ? 'alarm' : activeCount > 0 ? 'warn' : 'ok'}
         pulse={criticalCount > 0}
-        footer={criticalCount > 0 ? `${criticalCount} críticas` : 'Sin alertas críticas'}
+        footer={
+          criticalCount > 0
+            ? `${criticalCount} críticas`
+            : activeCount > 0
+            ? `${activeCount} pendientes`
+            : 'Operación normal'
+        }
       />
     </div>
   );

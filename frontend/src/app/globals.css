@@ -3,53 +3,60 @@
 @tailwind utilities;
 
 /* =============================================================================
-   INGENIO_CLOUD_DARK · Design tokens (derivado del logo)
+   INGENIO_CLOUD_DARK · Premium editorial industrial
+   Derivado del logo: azul profundo + cyan acento
    ========================================================================== */
 :root,
 [data-theme='dark'] {
-  /* Backgrounds */
-  --bg-base: #0a1018;
-  --bg-surface: #0f1825;
-  --bg-card: #18233a;
-  --bg-hover: #1f2d4a;
+  /* Backgrounds — paleta profunda con personalidad */
+  --bg-base: #060b14;
+  --bg-surface: #0c1422;
+  --bg-card: #131e33;
+  --bg-card-2: #18253e;
+  --bg-hover: #1e2d4a;
 
-  /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.12);
+  /* Borders refinados */
+  --border-subtle: rgba(120, 160, 220, 0.08);
+  --border-strong: rgba(120, 160, 220, 0.18);
   --border-focus: #4a9cd8;
 
-  /* Text */
-  --text-primary: #f0f4ff;
-  --text-secondary: #a6b0cc;
-  --text-muted: #6b7a9e;
-  --text-disabled: #4a5670;
+  /* Text con jerarquía clara */
+  --text-primary: #f1f5fb;
+  --text-secondary: #a6b3cc;
+  --text-muted: #6878a0;
+  --text-disabled: #455373;
 
-  /* Brand — derivado del logo Ingenio Cloud */
+  /* Brand (logo) */
   --primary: #2e7ab5;
   --primary-light: #4a9cd8;
   --primary-dark: #1e5a87;
   --primary-soft: rgba(46, 122, 181, 0.14);
-  --primary-glow: rgba(74, 156, 216, 0.32);
+  --primary-glow: rgba(74, 156, 216, 0.35);
 
+  /* Accent cyan vivo (red neuronal logo) */
   --accent: #4fbfe5;
   --accent-soft: rgba(79, 191, 229, 0.12);
+  --accent-glow: rgba(79, 191, 229, 0.4);
 
-  /* Semantic */
-  --ok: #00c896;
-  --ok-soft: rgba(0, 200, 150, 0.12);
-  --warn: #ffb020;
-  --warn-soft: rgba(255, 176, 32, 0.12);
-  --danger: #ff4757;
-  --danger-soft: rgba(255, 71, 87, 0.12);
+  /* Semantic refinados */
+  --ok: #2dd4a4;
+  --ok-soft: rgba(45, 212, 164, 0.12);
+  --warn: #f5b942;
+  --warn-soft: rgba(245, 185, 66, 0.12);
+  --danger: #ff5a6b;
+  --danger-soft: rgba(255, 90, 107, 0.14);
   --info: #4a9cd8;
   --info-soft: rgba(74, 156, 216, 0.12);
 
-  /* Gradients */
-  --gradient-hero: linear-gradient(135deg, #2e7ab522, #4fbfe511);
-  --gradient-brand: linear-gradient(135deg, #1e5a87, #4a9cd8);
+  /* Gradients atmosféricos */
+  --gradient-brand: linear-gradient(135deg, #1e5a87 0%, #4a9cd8 60%, #4fbfe5 100%);
+  --gradient-hero: radial-gradient(ellipse at top, rgba(74, 156, 216, 0.12), transparent 60%);
+  --gradient-card: linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 50%);
+  --gradient-ambient: radial-gradient(circle at 15% 20%, rgba(46, 122, 181, 0.08), transparent 50%),
+                      radial-gradient(circle at 85% 80%, rgba(79, 191, 229, 0.06), transparent 50%);
 
-  /* Fonts */
-  --font-display: 'Geist', -apple-system, system-ui, sans-serif;
+  /* Tipografía */
+  --font-display: 'Bricolage Grotesque', 'Geist', 'Cabinet Grotesk', system-ui, sans-serif;
   --font-body: 'Geist', -apple-system, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'Geist Mono', 'SF Mono', Menlo, monospace;
 
@@ -59,52 +66,45 @@
   --duration-slow: 600ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* TV Ambient — fondo más oscuro + accent honey para sala de control */
 [data-mode='tv'] {
-  --bg-base: #0a0e12;
-  --bg-surface: #11161d;
-  --bg-card: #1a2129;
-  --bg-hover: #232c36;
+  --bg-base: #050a12;
+  --bg-surface: #0a121f;
+  --bg-card: #111c2e;
   --accent: #e6a817;
   --accent-soft: rgba(230, 168, 23, 0.12);
-  --text-primary: #e8ebf0;
-  --text-secondary: #8b95a3;
-  --text-muted: #5a6573;
-  --ok: #6fcf5c;
-  --warn: #ffb020;
-  --danger: #ff4c4c;
 }
 
-/* Light mode (disponible en PC/mobile, no en TV) */
 [data-theme='light'] {
-  --bg-base: #ffffff;
-  --bg-surface: #f8fafc;
-  --bg-card: #f1f5f9;
-  --bg-hover: #e2e8f0;
-  --border-subtle: rgba(0, 0, 0, 0.06);
-  --border-strong: rgba(0, 0, 0, 0.12);
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
+  --bg-base: #f6f8fc;
+  --bg-surface: #ffffff;
+  --bg-card: #f0f4fa;
+  --border-subtle: rgba(30, 60, 100, 0.08);
+  --text-primary: #0a1428;
+  --text-secondary: #3b4d6e;
+  --text-muted: #6878a0;
   --primary: #1e5a87;
-  --primary-light: #2e7ab5;
-  --primary-dark: #173f5f;
   --accent: #4fbfe5;
   --ok: #059669;
   --warn: #d97706;
   --danger: #dc2626;
-  --info: #2e7ab5;
 }
 
 /* =============================================================================
-   Base
+   Base reset + body
    ========================================================================== */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 html,
@@ -116,29 +116,66 @@ body {
   font-family: var(--font-body);
   font-weight: 400;
   font-size: 14px;
-  line-height: 1.4;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.45;
+  font-feature-settings: 'ss01', 'cv11';
   min-height: 100vh;
+}
+
+/* Atmosphere global */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: var(--gradient-ambient);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Grain texture sutil (industrial editorial feel) */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.025;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
 
 body[data-mode='tv'] {
   overflow: hidden;
 }
 
+#__next, body > div:first-child {
+  position: relative;
+  z-index: 2;
+}
+
 /* =============================================================================
    Utilities
    ========================================================================== */
 @layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+  }
+
   .text-balance {
     text-wrap: balance;
   }
 
   .glass-card {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(19, 30, 51, 0.55);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
     border: 1px solid var(--border-subtle);
+  }
+
+  .glass-card-strong {
+    background: rgba(24, 37, 62, 0.75);
+    backdrop-filter: blur(28px) saturate(180%);
+    border: 1px solid var(--border-strong);
   }
 
   .gradient-text {
@@ -152,21 +189,59 @@ body[data-mode='tv'] {
   .mono {
     font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum', 'zero';
+  }
+
+  .ring-glow {
+    box-shadow: 0 0 0 1px var(--border-subtle), 0 0 32px -8px var(--primary-glow);
+  }
+
+  .ring-glow-accent {
+    box-shadow: 0 0 0 1px rgba(79, 191, 229, 0.2), 0 0 24px -6px var(--accent-glow);
+  }
+
+  /* Corner accent — micro-detalle distintivo industrial */
+  .corner-accents::before,
+  .corner-accents::after {
+    content: '';
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--primary-light);
+    opacity: 0.6;
+  }
+  .corner-accents::before {
+    top: 4px;
+    left: 4px;
+    border-right: none;
+    border-bottom: none;
+  }
+  .corner-accents::after {
+    bottom: 4px;
+    right: 4px;
+    border-left: none;
+    border-top: none;
   }
 }
 
-/* Scrollbar refinada dark */
+/* Scrollbar refinada */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-base);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 4px;
+  background: rgba(120, 160, 220, 0.15);
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: rgba(120, 160, 220, 0.3);
+}
+
+/* Selection */
+::selection {
+  background: var(--primary-soft);
+  color: var(--text-primary);
 }
