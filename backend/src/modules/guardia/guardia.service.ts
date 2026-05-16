@@ -5,7 +5,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { AiService } from '../ai/ai.service';
 import { getCurrentShift, getPreviousShift, shiftDateKey, type Shift } from '../../common/shift';
 
-interface ResumenGuardia {
+export interface ResumenGuardia {
   turno_anterior: string;
   desde: string;
   hasta: string;

@@ -145,6 +145,7 @@ export class RealtimeService {
       this.logger.warn(`Mill speed turno desconocido: ${payload.turno}`);
       return { ok: false, error: 'turno desconocido' };
     }
+    const shiftDate = this.resolveShiftDate(shiftName);
     const industrial = this.supabase.schema('industrial');
     const { error } = await industrial.from('shift_kpis_cache').upsert(
       [
@@ -163,7 +164,7 @@ export class RealtimeService {
       this.logger.error('Mill speed upsert failed', error);
       throw new Error(error.message);
     }
-    this.logger.log(`Mill speed cached ${today} ${shiftName} (${payload.cantidad_puntos} pts)`);
+    this.logger.log(`Mill speed cached ${shiftDate} ${shiftName} (${payload.cantidad_puntos} pts)`);
     return { ok: true };
   }
 
