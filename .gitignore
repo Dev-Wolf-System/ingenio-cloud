@@ -1,0 +1,53 @@
+# ─── Env files (NUNCA commitear) ───
+.env
+.env.local
+.env.production
+.env.development
+.env.dev
+backend/.env*
+frontend/.env*
+!**/.env.example
+!**/.env.*.example
+
+# ─── Node ───
+node_modules/
+.pnpm-store/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# ─── Next.js ───
+.next/
+out/
+.vercel/
+next-env.d.ts
+
+# ─── NestJS ───
+dist/
+
+# ─── Builds ───
+build/
+*.tsbuildinfo
+
+# ─── IDE ───
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Tests ───
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# ─── Secrets ───
+*.pem
+*.key
+*.p12
+secrets/
+
+# ─── Drizzle ───
+drizzle/

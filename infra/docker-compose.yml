@@ -1,0 +1,119 @@
+# =============================================================================
+# Ingenio Cloud — Docker Compose (VPS Hostinger srv878399)
+# Patrón: split backend + frontend, Traefik labels, redes externas n8n_evoapi + supabase_network
+# =============================================================================
+
+services:
+  ingenio-backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: ingenio-backend
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - TZ=America/Argentina/Buenos_Aires
+      - PORT=3001
+      # Supabase
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - SUPABASE_JWT_SECRET=${SUPABASE_JWT_SECRET}
+      - DB_HOST=supabase-db
+      - DB_PORT=5432
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${DB_DATABASE}
+      - DATABASE_URL=${DATABASE_URL}
+      # JWT internal
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=${JWT_EXPIRATION}
+      - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION}
+      # URLs
+      - FRONTEND_URL=https://${DOMAIN_NAME}
+      - BACKEND_URL=https://api.${DOMAIN_NAME}/api
+      # Webhooks
+      - N8N_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET}
+      - MILL_SPEED_WEBHOOK_SECRET=${MILL_SPEED_WEBHOOK_SECRET}
+      # MSSQL CORONA legacy
+      - MSSQL_HOST=${MSSQL_HOST}
+      - MSSQL_PORT=${MSSQL_PORT}
+      - MSSQL_DATABASE=${MSSQL_DATABASE}
+      - MSSQL_USER=${MSSQL_USER}
+      - MSSQL_PASSWORD=${MSSQL_PASSWORD}
+      - MSSQL_ENCRYPT=false
+      - MSSQL_TRUST_SERVER_CERTIFICATE=true
+      # External HTTP molienda
+      - MOLIENDA_HTTP_URL=${MOLIENDA_HTTP_URL}
+      - MOLIENDA_HTTP_AUTH=${MOLIENDA_HTTP_AUTH}
+      # InfluxDB
+      - INFLUX_URL=${INFLUX_URL}
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_DATABASE=${INFLUX_DATABASE}
+      # IA (preparado Sprint 1+)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GOOGLE_AI_API_KEY=${GOOGLE_AI_API_KEY}
+      # Comms
+      - EVOLUTION_API_URL=${EVOLUTION_API_URL}
+      - EVOLUTION_API_KEY=${EVOLUTION_API_KEY}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - MAIL_FROM=${MAIL_FROM}
+      # Observabilidad
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+      - LANGFUSE_HOST=${LANGFUSE_HOST}
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=n8n_evoapi
+      - traefik.http.routers.ingenio-api.rule=Host(`api.${DOMAIN_NAME}`)
+      - traefik.http.routers.ingenio-api.tls=true
+      - traefik.http.routers.ingenio-api.entrypoints=web,websecure
+      - traefik.http.routers.ingenio-api.tls.certresolver=mytlschallenge
+      - traefik.http.services.ingenio-api.loadbalancer.server.port=3001
+      - traefik.http.middlewares.ingenio-api-headers.headers.STSSeconds=315360000
+      - traefik.http.middlewares.ingenio-api-headers.headers.browserXSSFilter=true
+      - traefik.http.middlewares.ingenio-api-headers.headers.contentTypeNosniff=true
+      - traefik.http.routers.ingenio-api.middlewares=ingenio-api-headers@docker
+    networks:
+      - n8n_evoapi
+      - supabase_network
+
+  ingenio-frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://api.${DOMAIN_NAME}/api
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        - NEXT_PUBLIC_APP_NAME=Ingenio Cloud
+        - NEXT_PUBLIC_APP_URL=https://${DOMAIN_NAME}
+        - NEXT_PUBLIC_DEFAULT_TENANT_SLUG=lacorona
+        - NEXT_PUBLIC_DEFAULT_PLANT_SLUG=planta-sur
+        - NEXT_PUBLIC_COPILOT_ENABLED=false
+        - NEXT_PUBLIC_TV_AUTO_FULLSCREEN=true
+    container_name: ingenio-frontend
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - TZ=America/Argentina/Buenos_Aires
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.ingenio-web.loadbalancer.server.port=3000
+      - traefik.http.routers.ingenio-web.rule=Host(`${DOMAIN_NAME}`)
+      - traefik.http.routers.ingenio-web.tls=true
+      - traefik.http.routers.ingenio-web.entrypoints=web,websecure
+      - traefik.http.routers.ingenio-web.tls.certresolver=mytlschallenge
+      - traefik.http.middlewares.ingenio-web-headers.headers.SSLRedirect=true
+      - traefik.http.middlewares.ingenio-web-headers.headers.STSSeconds=315360000
+      - traefik.http.middlewares.ingenio-web-headers.headers.browserXSSFilter=true
+      - traefik.http.middlewares.ingenio-web-headers.headers.contentTypeNosniff=true
+      - traefik.http.routers.ingenio-web.middlewares=ingenio-web-headers@docker
+    networks:
+      - n8n_evoapi
+
+networks:
+  n8n_evoapi:
+    external: true
+  supabase_network:
+    external: true
