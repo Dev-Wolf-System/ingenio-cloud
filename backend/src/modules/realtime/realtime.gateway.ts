@@ -1,10 +1,7 @@
 import {
-  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
-  SubscribeMessage,
   WebSocketGateway,
-  WsException,
 } from '@nestjs/websockets';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from '@nestjs/common';
@@ -16,15 +13,18 @@ interface UpgradeReq extends IncomingMessage {
   __secretOk?: boolean;
 }
 
-function parseBody(body: unknown): unknown {
-  if (typeof body === 'string') {
-    try { return JSON.parse(body); } catch { throw new WsException('invalid json'); }
+function parseRawMessage(raw: unknown): unknown {
+  try {
+    const text = typeof raw === 'string' ? raw : raw instanceof Buffer ? raw.toString('utf-8') : String(raw);
+    return JSON.parse(text);
+  } catch {
+    return null;
   }
-  return body;
 }
 
 abstract class BaseGw implements OnGatewayConnection, OnGatewayDisconnect {
   protected readonly logger: Logger;
+
   constructor(
     protected readonly svc: RealtimeService,
     protected readonly config: ConfigService,
@@ -33,21 +33,22 @@ abstract class BaseGw implements OnGatewayConnection, OnGatewayDisconnect {
     this.logger = new Logger(`WS:${name}`);
   }
 
-  handleConnection(client: WebSocket, req: UpgradeReq) {
+  protected checkAuth(req: UpgradeReq, client: WebSocket): boolean {
     const secret = this.config.get<string>('N8N_WEBHOOK_SECRET');
-    if (secret) {
-      const url = new URL(req.url ?? '', 'http://x');
-      const got = url.searchParams.get('secret') ?? req.headers['x-webhook-secret'];
-      if (got !== secret) {
-        this.logger.warn(`Auth failed from ${req.socket.remoteAddress}`);
-        client.close(1008, 'unauthorized');
-        return;
-      }
+    if (!secret) return true;
+    const url = new URL(req.url ?? '', 'http://x');
+    const got = url.searchParams.get('secret') ?? req.headers['x-webhook-secret'];
+    if (got !== secret) {
+      this.logger.warn(`Auth failed from ${req.socket.remoteAddress}`);
+      client.close(1008, 'unauthorized');
+      return false;
     }
-    this.logger.log(`Connected ${req.socket.remoteAddress}`);
+    return true;
   }
 
-  handleDisconnect() {
+  abstract handleConnection(client: WebSocket, req: UpgradeReq): void;
+
+  handleDisconnect(_client: WebSocket) {
     this.logger.log('Disconnected');
   }
 }
@@ -57,9 +58,19 @@ export class EnergiaGateway extends BaseGw {
   constructor(svc: RealtimeService, config: ConfigService) {
     super(svc, config, 'energia');
   }
-  @SubscribeMessage('message')
-  async onMessage(@MessageBody() body: unknown) {
-    return this.svc.ingestDashboard('energia', parseBody(body));
+
+  handleConnection(client: WebSocket, req: UpgradeReq) {
+    if (!this.checkAuth(req, client)) return;
+    this.logger.log(`Connected ${req.socket.remoteAddress}`);
+    client.on('message', async (raw) => {
+      const body = parseRawMessage(raw);
+      if (!body) return;
+      try {
+        await this.svc.ingestDashboard('energia', body);
+      } catch (err) {
+        this.logger.warn('ingest failed: ' + (err as Error).message);
+      }
+    });
   }
 }
 
@@ -68,9 +79,19 @@ export class ProduccionGateway extends BaseGw {
   constructor(svc: RealtimeService, config: ConfigService) {
     super(svc, config, 'produccion');
   }
-  @SubscribeMessage('message')
-  async onMessage(@MessageBody() body: unknown) {
-    return this.svc.ingestDashboard('produccion', parseBody(body));
+
+  handleConnection(client: WebSocket, req: UpgradeReq) {
+    if (!this.checkAuth(req, client)) return;
+    this.logger.log(`Connected ${req.socket.remoteAddress}`);
+    client.on('message', async (raw) => {
+      const body = parseRawMessage(raw);
+      if (!body) return;
+      try {
+        await this.svc.ingestDashboard('produccion', body);
+      } catch (err) {
+        this.logger.warn('ingest failed: ' + (err as Error).message);
+      }
+    });
   }
 }
 
@@ -91,13 +112,23 @@ export class MolinoGateway extends BaseGw {
   constructor(svc: RealtimeService, config: ConfigService) {
     super(svc, config, 'molino');
   }
-  @SubscribeMessage('message')
-  async onMessage(@MessageBody() body: unknown) {
-    const parsed = parseBody(body);
-    if (!parsed || typeof parsed !== 'object') throw new WsException('invalid payload');
-    const obj = parsed as Record<string, unknown>;
-    const payload = (obj.payload && typeof obj.payload === 'object' ? obj.payload : obj) as MillSpeedPayload;
-    if (typeof payload.cantidad_puntos !== 'number') throw new WsException('missing cantidad_puntos');
-    return this.svc.ingestMillSpeed(payload);
+
+  handleConnection(client: WebSocket, req: UpgradeReq) {
+    if (!this.checkAuth(req, client)) return;
+    this.logger.log(`Connected ${req.socket.remoteAddress}`);
+    client.on('message', async (raw) => {
+      const parsed = parseRawMessage(raw) as Record<string, unknown> | null;
+      if (!parsed) return;
+      const payload = (parsed.payload && typeof parsed.payload === 'object' ? parsed.payload : parsed) as MillSpeedPayload;
+      if (typeof payload.cantidad_puntos !== 'number') {
+        this.logger.warn('missing cantidad_puntos');
+        return;
+      }
+      try {
+        await this.svc.ingestMillSpeed(payload);
+      } catch (err) {
+        this.logger.warn('mill ingest failed: ' + (err as Error).message);
+      }
+    });
   }
 }
