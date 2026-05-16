@@ -36,14 +36,9 @@ export function useDashboardData(area: 'energia' | 'produccion') {
 
   useEffect(() => {
     let mounted = true;
-    let channel: ReturnType<ReturnType<typeof getSupabaseBrowser>['channel']> | null = null;
+    let channelRef: ReturnType<ReturnType<typeof getSupabaseBrowser>['channel']> | null = null;
     let pollInterval: ReturnType<typeof setInterval> | null = null;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
-    if (!apiUrl) {
-      console.warn('NEXT_PUBLIC_API_URL no configurado');
-      return;
-    }
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
     async function loadSnapshot() {
       try {
@@ -58,56 +53,65 @@ export function useDashboardData(area: 'energia' | 'produccion') {
     }
     loadSnapshot();
 
-    // Realtime subscribe (con fallback a polling 5s si falla)
+    // Realtime — orden correcto: definir channel + on() ANTES de subscribe()
     try {
       const supabase = getSupabaseBrowser();
-      channel = supabase
-        .channel(`dashboard_data_${area}`)
-        .on(
-          'postgres_changes' as never,
-          {
-            event: '*',
-            schema: 'industrial',
-            table: 'dashboard_data',
-            filter: `area=eq.${area}`,
-          },
-          (payload: { new: DashboardItem & { area: string } }) => {
-            if (!mounted) return;
-            if (payload.new && payload.new.area === area) {
-              dispatch({
-                type: 'update',
-                payload: {
-                  key: payload.new.key,
-                  value: Number(payload.new.value),
-                  display: payload.new.display,
-                  unit: payload.new.unit,
-                  raw: payload.new.raw,
-                  updated_at: payload.new.updated_at,
-                },
-              });
-            }
-          },
-        )
-        .subscribe((status: string) => {
-          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-            console.warn(`Realtime ${area} status: ${status}, fallback polling 5s`);
-            if (!pollInterval) {
-              pollInterval = setInterval(loadSnapshot, 5000);
-            }
+      const ch = supabase.channel(`dashboard_data_${area}`);
+
+      ch.on(
+        'postgres_changes' as never,
+        {
+          event: '*',
+          schema: 'industrial',
+          table: 'dashboard_data',
+          filter: `area=eq.${area}`,
+        },
+        (payload: { new: DashboardItem & { area: string } }) => {
+          if (!mounted) return;
+          if (payload.new && payload.new.area === area) {
+            dispatch({
+              type: 'update',
+              payload: {
+                key: payload.new.key,
+                value: Number(payload.new.value),
+                display: payload.new.display,
+                unit: payload.new.unit,
+                raw: payload.new.raw,
+                updated_at: payload.new.updated_at,
+              },
+            });
           }
-        });
+        },
+      );
+
+      ch.subscribe((status: string) => {
+        if (
+          status === 'CHANNEL_ERROR' ||
+          status === 'TIMED_OUT' ||
+          status === 'CLOSED'
+        ) {
+          if (!pollInterval && mounted) {
+            console.warn(`Realtime ${area} ${status}, fallback polling 5s`);
+            pollInterval = setInterval(loadSnapshot, 5000);
+          }
+        }
+      });
+
+      channelRef = ch;
     } catch (err) {
-      console.warn('Realtime subscribe failed, fallback polling 5s', err);
+      console.warn('Realtime setup failed, fallback polling 5s', err);
       pollInterval = setInterval(loadSnapshot, 5000);
     }
 
     return () => {
       mounted = false;
-      if (channel) {
+      if (channelRef) {
         try {
           const supabase = getSupabaseBrowser();
-          supabase.removeChannel(channel);
-        } catch { /* noop */ }
+          supabase.removeChannel(channelRef);
+        } catch {
+          // noop
+        }
       }
       if (pollInterval) clearInterval(pollInterval);
     };

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { IconMaximize, IconCircleFilled, IconActivity } from '@tabler/icons-react';
 import { useClock } from '@/lib/hooks/useClock';
@@ -7,6 +8,8 @@ import { useShift } from '@/lib/hooks/useShift';
 import { formatTime } from '@/lib/utils/format';
 
 export function TopBar({ plant = 'Planta Sur' }: { plant?: string }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const now = useClock();
   const shift = useShift();
 
@@ -66,28 +69,32 @@ export function TopBar({ plant = 'Planta Sur' }: { plant?: string }) {
         </span>
 
         {/* Shift chip */}
-        <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-md bg-bg-card border border-border">
+        <div className="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-md bg-bg-card border border-border" suppressHydrationWarning>
           <IconActivity size={13} className="text-primary-light" />
           <div className="flex flex-col leading-none">
-            <span className="text-[10px] uppercase tracking-wider text-text-muted">{shift.displayName}</span>
+            <span className="text-[10px] uppercase tracking-wider text-text-muted">
+              {mounted ? shift.displayName : '—'}
+            </span>
             <span className="text-2xs mono text-text-secondary">
-              {Math.round(shift.progress * 100)}% transcurrido
+              {mounted ? `${Math.round(shift.progress * 100)}% transcurrido` : '— %'}
             </span>
           </div>
         </div>
 
         {/* Reloj */}
-        <div className="flex flex-col items-end leading-tight">
+        <div className="flex flex-col items-end leading-tight" suppressHydrationWarning>
           <span className="mono text-base font-medium text-text-primary tabular-nums">
-            {formatTime(now)}
+            {mounted ? formatTime(now) : '--:--:--'}
           </span>
           <span className="text-[10px] uppercase tracking-wider text-text-muted">
-            {new Intl.DateTimeFormat('es-AR', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-              timeZone: 'America/Argentina/Buenos_Aires',
-            }).format(now)}
+            {mounted
+              ? new Intl.DateTimeFormat('es-AR', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                  timeZone: 'America/Argentina/Buenos_Aires',
+                }).format(now)
+              : '—'}
           </span>
         </div>
 

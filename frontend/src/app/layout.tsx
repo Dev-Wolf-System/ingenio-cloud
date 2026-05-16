@@ -39,7 +39,6 @@ export const metadata: Metadata = {
     template: '%s · Ingenio Cloud',
   },
   description: 'Plataforma Inteligente de Monitoreo, Producción y Asistencia Operativa Industrial',
-  manifest: '/manifest.webmanifest',
   icons: {
     icon: [
       { url: '/logo-ingenio-cloud.png', sizes: 'any' },
