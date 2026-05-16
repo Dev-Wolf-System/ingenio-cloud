@@ -61,7 +61,7 @@ services:
       - JWT_REFRESH_EXPIRATION=${JWT_REFRESH_EXPIRATION:-7d}
       # URLs
       - FRONTEND_URL=https://${DOMAIN_NAME}
-      - BACKEND_URL=https://api.${DOMAIN_NAME}/api
+      - BACKEND_URL=https://${DOMAIN_NAME}/api
       # Webhooks + WS auth
       - N8N_WEBHOOK_SECRET=${N8N_WEBHOOK_SECRET}
       - MILL_SPEED_WEBHOOK_SECRET=${MILL_SPEED_WEBHOOK_SECRET}
@@ -105,8 +105,10 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=n8n_evoapi
-      # Router API REST
-      - traefik.http.routers.ingenio-api.rule=Host(`api.${DOMAIN_NAME}`)
+      # Router unificado: mismo dominio del frontend, paths /api/* y /ws/*
+      # (evita necesidad de cert separado para api.* — usa cert válido de ${DOMAIN_NAME})
+      - traefik.http.routers.ingenio-api.rule=Host(`${DOMAIN_NAME}`) && (PathPrefix(`/api`) || PathPrefix(`/ws`))
+      - traefik.http.routers.ingenio-api.priority=100
       - traefik.http.routers.ingenio-api.tls=true
       - traefik.http.routers.ingenio-api.entrypoints=web,websecure
       - traefik.http.routers.ingenio-api.tls.certresolver=mytlschallenge
@@ -117,8 +119,6 @@ services:
       - traefik.http.middlewares.ingenio-api-headers.headers.browserXSSFilter=true
       - traefik.http.middlewares.ingenio-api-headers.headers.contentTypeNosniff=true
       - traefik.http.routers.ingenio-api.middlewares=ingenio-api-headers@docker
-      # CORS manejado por NestJS (origin: *)
-      # WebSocket Traefik soporta WS nativo en mismo router; sin config extra
     networks:
       - n8n_evoapi
       - supabase_network
@@ -131,7 +131,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=https://api.${DOMAIN_NAME}/api
+        - NEXT_PUBLIC_API_URL=/api
         - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
         - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
         - NEXT_PUBLIC_APP_NAME=Ingenio Cloud
@@ -159,6 +159,7 @@ services:
       - traefik.enable=true
       - traefik.docker.network=n8n_evoapi
       - traefik.http.routers.ingenio-web.rule=Host(`${DOMAIN_NAME}`)
+      - traefik.http.routers.ingenio-web.priority=10
       - traefik.http.routers.ingenio-web.tls=true
       - traefik.http.routers.ingenio-web.entrypoints=web,websecure
       - traefik.http.routers.ingenio-web.tls.certresolver=mytlschallenge
