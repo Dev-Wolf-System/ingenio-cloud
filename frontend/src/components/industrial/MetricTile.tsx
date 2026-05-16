@@ -5,8 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils/cn';
 import { formatNumber } from '@/lib/utils/format';
 import type { MetricStatus } from '@/types/metrics';
-import { Sparkline } from '@/components/charts/Sparkline';
-import { useSparkline } from '@/lib/hooks/useSparkline';
 
 const tileVariants = cva(
   'relative rounded-md transition-all duration-200 border border-border bg-bg-card',
@@ -38,9 +36,6 @@ export interface MetricTileProps extends VariantProps<typeof tileVariants> {
   precision?: number;
   status?: MetricStatus;
   className?: string;
-  /** Si se pasa area+sensorKey, fetch sparkline desde Influx via /api/metrics/sparkline */
-  area?: 'energia' | 'produccion';
-  sensorKey?: string;
 }
 
 export function MetricTile({
@@ -51,8 +46,6 @@ export function MetricTile({
   status = 'unknown',
   size,
   className,
-  area,
-  sensorKey,
 }: MetricTileProps) {
   const [flash, setFlash] = useState(false);
   const prev = useRef(value);
@@ -67,18 +60,10 @@ export function MetricTile({
     prev.current = value;
   }, [value]);
 
-  const sparkQuery = useSparkline(area ?? 'energia', area && sensorKey ? sensorKey : null, 30);
-  const sparklineData = sparkQuery.data ?? [];
-
   const displayValue =
     typeof value === 'number' && Number.isFinite(value)
       ? formatNumber(value, precision)
       : value ?? '—';
-
-  const sparkColor =
-    status === 'alarm' ? 'var(--danger)' :
-    status === 'warn' ? 'var(--warn)' :
-    status === 'ok' ? 'var(--ok)' : 'var(--primary-light)';
 
   return (
     <div className={cn(tileVariants({ status, size }), flash && 'animate-flash', className)}>
@@ -89,9 +74,6 @@ export function MetricTile({
         <span className="mono text-fluid-value font-medium text-text-primary">{displayValue}</span>
         {unit && <span className="text-xs text-text-muted">{unit}</span>}
       </div>
-      {area && sensorKey && sparklineData.length >= 2 && (
-        <Sparkline data={sparklineData} color={sparkColor} className="mt-1.5 opacity-70" />
-      )}
     </div>
   );
 }

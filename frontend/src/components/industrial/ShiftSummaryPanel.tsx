@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { IconClock, IconRefresh } from '@tabler/icons-react';
 import { PanelHeader } from './PanelHeader';
+import { MillSpeedChart, type MillSpeedPayload } from './MillSpeedChart';
 import { formatNumber } from '@/lib/utils/format';
 
 async function fetchGuardia(path: string) {
@@ -99,7 +100,11 @@ export function ShiftSummaryPanel() {
         />
       </div>
 
-      <div className="mt-4 flex-1 overflow-auto">
+      <div className="mt-3">
+        <MillSpeedChart data={vel.data as MillSpeedPayload | null | undefined} />
+      </div>
+
+      <div className="mt-3 flex-1 overflow-auto">
         <div className="text-2xs uppercase tracking-wide text-text-muted mb-2">Alertas activas</div>
         <p className="text-xs text-text-muted">
           (Aún sin alertas activas — sistema Vigía Mesh disponible Sprint 1)

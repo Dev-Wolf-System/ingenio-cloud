@@ -10,7 +10,6 @@ import { MetricsModule } from './modules/metrics/metrics.module';
 import { AlertsModule } from './modules/alerts/alerts.module';
 import { HealthModule } from './modules/health/health.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
-import { InfluxModule } from './modules/influx/influx.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 
 @Module({
@@ -37,7 +36,6 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module';
     AlertsModule,
     HealthModule,
     RealtimeModule,
-    InfluxModule,
     SchedulerModule,
   ],
 })

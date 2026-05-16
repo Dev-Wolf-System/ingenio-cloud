@@ -35,8 +35,6 @@ export function ProductionPanel() {
               unit={item.unit ?? ''}
               precision={2}
               status="ok"
-              area="produccion"
-              sensorKey={key}
             />
           ))}
         </div>

@@ -39,8 +39,6 @@ export function EnergyPanel() {
               unit={item.unit ?? ''}
               precision={2}
               status="ok"
-              area="energia"
-              sensorKey={key}
             />
           ))}
         </div>
