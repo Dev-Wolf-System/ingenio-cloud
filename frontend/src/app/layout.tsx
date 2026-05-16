@@ -34,7 +34,7 @@ const bricolage = Bricolage_Grotesque({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Ingenio Cloud · Panel de Monitoreo',
+    default: 'Ingenio Cloud · Panel de Monitoreo de Turno',
     template: '%s · Ingenio Cloud',
   },
   description: 'Plataforma Inteligente de Monitoreo, Producción y Asistencia Operativa Industrial',
