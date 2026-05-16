@@ -4,7 +4,6 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { validateEnv } from './config/env';
 import { SupabaseModule } from './modules/supabase/supabase.module';
-import { MssqlModule } from './modules/mssql/mssql.module';
 import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { GuardiaModule } from './modules/guardia/guardia.module';
 import { MetricsModule } from './modules/metrics/metrics.module';
@@ -31,7 +30,6 @@ import { InfluxModule } from './modules/influx/influx.module';
     }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     SupabaseModule,
-    MssqlModule,
     WebhooksModule,
     GuardiaModule,
     MetricsModule,

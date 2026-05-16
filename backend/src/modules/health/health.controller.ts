@@ -1,18 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
-import { MssqlService } from '../mssql/mssql.service';
 
 @Controller()
 export class HealthController {
-  constructor(
-    private readonly supabase: SupabaseService,
-    private readonly mssql: MssqlService,
-  ) {}
+  constructor(private readonly supabase: SupabaseService) {}
 
   @Get('health')
   async health() {
     const checks: Record<string, { ok: boolean; detail?: string }> = {};
-
     try {
       const { error } = await this.supabase
         .schema('industrial')
@@ -22,14 +17,7 @@ export class HealthController {
     } catch (e) {
       checks.supabase = { ok: false, detail: (e as Error).message };
     }
-
-    checks.mssql = { ok: this.mssql.isAvailable() };
-
     const ok = Object.values(checks).every((c) => c.ok);
-    return {
-      status: ok ? 'ok' : 'degraded',
-      checks,
-      timestamp: new Date().toISOString(),
-    };
+    return { status: ok ? 'ok' : 'degraded', checks, timestamp: new Date().toISOString() };
   }
 }

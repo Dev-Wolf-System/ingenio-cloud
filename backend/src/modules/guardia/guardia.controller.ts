@@ -28,4 +28,16 @@ export class GuardiaController {
   velMolino() {
     return this.svc.getMillSpeedPrevio();
   }
+
+  /** GET /api/guardia/molienda-previo — molienda turno previo (cache) */
+  @Get('molienda-previo')
+  moliendaPrevio() {
+    return this.svc.getMoliendaPrevio();
+  }
+
+  /** GET /api/guardia/resumen — resumen completo turno anterior (todos los KPIs) */
+  @Get('resumen')
+  resumen() {
+    return this.svc.getResumenGuardia();
+  }
 }
