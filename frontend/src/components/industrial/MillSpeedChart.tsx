@@ -78,7 +78,7 @@ export function MillSpeedChart({ data, className, height = 120 }: MillSpeedChart
                   fontSize: 12,
                 }}
                 labelStyle={{ color: 'var(--text-muted)' }}
-                formatter={(v: number) => [formatNumber(v, 2) + ' rpm', 'velocidad']}
+                formatter={(v) => [formatNumber(Number(v), 2) + ' rpm', 'velocidad']}
               />
               <Area
                 type="monotone"
