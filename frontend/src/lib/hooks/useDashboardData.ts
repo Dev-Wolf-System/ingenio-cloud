@@ -31,7 +31,7 @@ function reducer(state: Map<string, DashboardItem>, action: Action) {
   }
 }
 
-export function useDashboardData(area: 'energia' | 'produccion') {
+export function useDashboardData(area: 'energia' | 'produccion' | 'trapiche') {
   const [data, dispatch] = useReducer(reducer, new Map<string, DashboardItem>());
   const instanceId = useId();
 

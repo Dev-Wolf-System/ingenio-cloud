@@ -7,13 +7,13 @@ export class MetricsController {
 
   /** GET /api/metrics/snapshot?area=energia|produccion */
   @Get('snapshot')
-  snapshot(@Query('area') area?: 'energia' | 'produccion') {
+  snapshot(@Query('area') area?: 'energia' | 'produccion' | 'trapiche') {
     return this.svc.snapshot(area);
   }
 
   /** GET /api/metrics/dashboard-snapshot?area=energia|produccion — datos Node-RED dashboard */
   @Get('dashboard-snapshot')
-  dashboardSnapshot(@Query('area') area?: 'energia' | 'produccion') {
+  dashboardSnapshot(@Query('area') area?: 'energia' | 'produccion' | 'trapiche') {
     return this.svc.dashboardSnapshot(area);
   }
 

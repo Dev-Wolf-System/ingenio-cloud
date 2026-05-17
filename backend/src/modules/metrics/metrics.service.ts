@@ -5,7 +5,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 export class MetricsService {
   constructor(private readonly supabase: SupabaseService) {}
 
-  async snapshot(area?: 'energia' | 'produccion') {
+  async snapshot(area?: 'energia' | 'produccion' | 'trapiche') {
     const industrial = this.supabase.schema('industrial');
     let q = industrial
       .from('metrics_live')
@@ -18,7 +18,7 @@ export class MetricsService {
     return { metrics: data ?? [] };
   }
 
-  async dashboardSnapshot(area?: 'energia' | 'produccion') {
+  async dashboardSnapshot(area?: 'energia' | 'produccion' | 'trapiche') {
     const industrial = this.supabase.schema('industrial');
     let q = industrial
       .from('dashboard_data')

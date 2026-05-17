@@ -95,6 +95,27 @@ export class ProduccionGateway extends BaseGw {
   }
 }
 
+@WebSocketGateway({ path: '/ws/dashboard/trapiche', cors: { origin: '*' } })
+export class TrapicheGateway extends BaseGw {
+  constructor(svc: RealtimeService, config: ConfigService) {
+    super(svc, config, 'trapiche');
+  }
+
+  handleConnection(client: WebSocket, req: UpgradeReq) {
+    if (!this.checkAuth(req, client)) return;
+    this.logger.log(`Connected ${req.socket.remoteAddress}`);
+    client.on('message', async (raw) => {
+      const body = parseRawMessage(raw);
+      if (!body) return;
+      try {
+        await this.svc.ingestDashboard('trapiche', body);
+      } catch (err) {
+        this.logger.warn('ingest failed: ' + (err as Error).message);
+      }
+    });
+  }
+}
+
 interface MillSpeedPayload {
   turno: string;
   desde?: string;

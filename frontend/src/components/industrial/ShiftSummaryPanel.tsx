@@ -26,6 +26,11 @@ export function ShiftSummaryPanel() {
     queryFn: () => fetchGuardia('molienda'),
     staleTime: 5 * 60_000,
   });
+  const moliendaPrev = useQuery({
+    queryKey: ['guardia', 'molienda-previo'],
+    queryFn: () => fetchGuardia('molienda-previo'),
+    staleTime: 60 * 60_000,
+  });
   const gas = useQuery({
     queryKey: ['guardia', 'gas-previo'],
     queryFn: () => fetchGuardia('gas-previo'),
@@ -60,7 +65,7 @@ export function ShiftSummaryPanel() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         <KpiCell
           label="Molienda actual"
           value={(molienda.data as { promedio_t_h?: number } | undefined)?.promedio_t_h}
@@ -68,7 +73,26 @@ export function ShiftSummaryPanel() {
           loading={molienda.isLoading}
         />
         <KpiCell
-          label="Gas turno previo"
+          label="Molienda turno previo"
+          value={(() => {
+            const kg = (moliendaPrev.data as { molienda_promedio_kg_h?: number } | undefined)
+              ?.molienda_promedio_kg_h;
+            return typeof kg === 'number' ? kg / 1000 : undefined;
+          })()}
+          unit="t/h"
+          precision={1}
+          loading={moliendaPrev.isLoading}
+          context={
+            (moliendaPrev.data as { molienda_total_kg?: number } | undefined)?.molienda_total_kg
+              ? `${formatNumber(
+                  (moliendaPrev.data as { molienda_total_kg: number }).molienda_total_kg / 1000,
+                  0,
+                )} t total`
+              : undefined
+          }
+        />
+        <KpiCell
+          label="Gas promedio turno previo"
           value={(gas.data as { 'consumo_promedio_m3/h'?: number } | undefined)?.['consumo_promedio_m3/h']}
           unit="m³/h"
           loading={gas.isLoading}

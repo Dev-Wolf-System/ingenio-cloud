@@ -32,7 +32,7 @@ export class RealtimeService {
   constructor(private readonly supabase: SupabaseService) {}
 
   /** Detecta formato (array o wrapped) y normaliza a rows DB */
-  private normalizeDashboard(area: 'energia' | 'produccion', body: unknown) {
+  private normalizeDashboard(area: 'energia' | 'produccion' | 'trapiche', body: unknown) {
     const rows: Array<{
       area: string;
       key: string;
@@ -64,7 +64,10 @@ export class RealtimeService {
     // Formato B: wrapped { dashboard_<area>: {...} }
     if (body && typeof body === 'object') {
       const obj = body as Record<string, unknown>;
-      const wrappedKey = area === 'energia' ? 'dashboard_energia' : 'dashboard_produccion';
+      const wrappedKey =
+        area === 'energia' ? 'dashboard_energia'
+        : area === 'produccion' ? 'dashboard_produccion'
+        : 'dashboard_trapiche';
       const inner = obj[wrappedKey] ?? obj;
       if (inner && typeof inner === 'object') {
         for (const [key, raw] of Object.entries(inner as Record<string, unknown>)) {
@@ -86,7 +89,7 @@ export class RealtimeService {
     return rows;
   }
 
-  async ingestDashboard(area: 'energia' | 'produccion', body: unknown) {
+  async ingestDashboard(area: 'energia' | 'produccion' | 'trapiche', body: unknown) {
     const rows = this.normalizeDashboard(area, body);
     if (rows.length === 0) {
       this.logger.warn(`Empty payload for area ${area}`);
