@@ -22,7 +22,6 @@ import { cn } from '@/lib/utils/cn';
 type EstadoTrapiche = 'funcionando' | 'parado';
 
 const ESTADO_KEYS = ['estado', 'estado_trapiche', 'trapiche_estado', 'status'];
-const MOLIENDA_KEYS = ['molienda_actual', 'molienda', 'molienda_actual_t_h', 'molienda_t_h'];
 const ACTIVIDAD_MAX_SEG = 300; // 5 min sin updates → parado
 
 /**
