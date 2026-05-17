@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { IconMaximize, IconCircleFilled, IconActivity } from '@tabler/icons-react';
+import Link from 'next/link';
+import { IconMaximize, IconCircleFilled, IconActivity, IconBell } from '@tabler/icons-react';
 import { useClock } from '@/lib/hooks/useClock';
 import { useShift } from '@/lib/hooks/useShift';
 import { formatTime } from '@/lib/utils/format';
@@ -97,6 +98,16 @@ export function TopBar({ plant = 'Planta Sur' }: { plant?: string }) {
               : '—'}
           </span>
         </div>
+
+        {/* Configurar alertas */}
+        <Link
+          href="/alertas"
+          className="p-2 rounded-md hover:bg-bg-hover transition-colors text-text-muted hover:text-warn"
+          aria-label="Configurar alertas"
+          title="Configurar alertas (mín/máx)"
+        >
+          <IconBell size={17} />
+        </Link>
 
         {/* Fullscreen */}
         <button
