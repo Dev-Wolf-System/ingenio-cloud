@@ -8,6 +8,7 @@ import {
   IconRotateClockwise,
   IconRipple,
   IconTemperature,
+  IconScale,
   IconActivity,
   IconChartBar,
   IconWaveSine,
