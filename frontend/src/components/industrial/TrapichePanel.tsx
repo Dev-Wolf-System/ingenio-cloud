@@ -25,6 +25,28 @@ const ESTADO_KEYS = ['estado', 'estado_trapiche', 'trapiche_estado', 'status'];
 const MOLIENDA_KEYS = ['molienda_actual', 'molienda', 'molienda_actual_t_h', 'molienda_t_h'];
 const ACTIVIDAD_MAX_SEG = 300; // 5 min sin updates → parado
 
+/**
+ * Whitelist KPIs del trapiche real. Solo keys que matcheen alguna entrada
+ * se renderizan. Evita contaminación si Node-RED mezcla areas.
+ */
+interface TrapicheSlot {
+  id: string;             // slot identificador
+  label: string;          // label UI
+  match: string[];        // aliases tolerantes (lowercase substring match)
+  unit: string;           // unidad default
+  precision: number;
+}
+
+const TRAPICHE_SLOTS: TrapicheSlot[] = [
+  { id: 'molienda_actual',         label: 'Molienda actual',       match: ['molienda_actual', 'molienda'], unit: 't/h',     precision: 1 },
+  { id: 'pol',                     label: 'Pol',                   match: ['pol_jugo', 'pol_cana', 'pol_caña', 'pol'], unit: '%',       precision: 2 },
+  { id: 'humedad_cana',            label: 'Humedad caña',          match: ['humedad_jugo', 'humedad_cana', 'humedad_caña', 'humedad'], unit: '%',  precision: 2 },
+  { id: 'presion_sexto_molino',    label: 'Presión 6° molino',     match: ['presion_sexto_molino', 'presion_6to_molino', 'presion_6_molino', 'p_sexto_molino'], unit: 'kg/cm²', precision: 2 },
+  { id: 'rpm_primer_molino',       label: 'RPM primer molino',     match: ['rpm_primer_molino', 'rpm_1er_molino', 'rpm_1_molino', 'velocidad_primer_molino', 'vel_primer_molino'], unit: 'rpm', precision: 1 },
+  { id: 'caudal_imbibicion',       label: 'Caudal imbibición',     match: ['caudal_imbibicion', 'caudal_imb', 'flujo_imbibicion'], unit: 'm³/h', precision: 2 },
+  { id: 'temperatura_imbibicion',  label: 'Temp. imbibición',      match: ['temperatura_imbibicion', 'temp_imbibicion', 't_imbibicion'], unit: '°C', precision: 1 },
+];
+
 function pickItem(map: Map<string, DashboardItem>, candidates: string[]): DashboardItem | null {
   const entries = Array.from(map.entries());
   for (const cand of candidates) {
@@ -74,6 +96,17 @@ function iconFor(key: string): React.ReactNode {
   return <IconActivity size={14} />;
 }
 
+function pickBySlot(map: Map<string, DashboardItem>, slot: TrapicheSlot): DashboardItem | null {
+  const entries = Array.from(map.entries());
+  for (const m of slot.match) {
+    const lower = m.toLowerCase();
+    for (const [key, item] of entries) {
+      if (key.toLowerCase().includes(lower)) return item;
+    }
+  }
+  return null;
+}
+
 export function TrapichePanel() {
   const data = useDashboardData('trapiche');
 
@@ -83,78 +116,73 @@ export function TrapichePanel() {
     return deriveEstadoFromActivity(data);
   }, [data]);
 
-  const molienda = pickItem(data, MOLIENDA_KEYS);
+  // Resolver cada slot del whitelist a su item correspondiente (o null)
+  const resolvedSlots = useMemo(
+    () => TRAPICHE_SLOTS.map((slot) => ({ slot, item: pickBySlot(data, slot) })),
+    [data],
+  );
 
-  // Resto de keys (excluye estado + molienda principal)
-  const otherEntries = useMemo(() => {
-    const excludeSet = new Set([...ESTADO_KEYS, ...MOLIENDA_KEYS].map((k) => k.toLowerCase()));
-    return Array.from(data.entries())
-      .filter(([k]) => !excludeSet.has(k.toLowerCase()))
-      .sort(([a], [b]) => a.localeCompare(b));
-  }, [data]);
+  const moliendaSlot = resolvedSlots.find((r) => r.slot.id === 'molienda_actual');
+  const otherSlots = resolvedSlots.filter((r) => r.slot.id !== 'molienda_actual');
 
-  const empty = data.size === 0;
-  const count = data.size;
+  const present = resolvedSlots.filter((r) => r.item != null).length;
+  const expected = TRAPICHE_SLOTS.length;
 
   return (
     <PremiumPanel
       title="TRAPICHE"
-      subtitle={`Línea de molienda · Tiempo real · ${count} señal${count === 1 ? '' : 'es'}`}
+      subtitle={`Línea de molienda · ${present}/${expected} KPIs activos${present < expected ? ' · faltan datos de Node-RED' : ''}`}
       icon={<IconBolt size={18} className="text-primary-light" />}
       accent="primary"
-      headerRight={<EstadoHero estado={estado} />}
     >
-      {empty ? (
-        <EmptyState />
-      ) : (
-        <div className="space-y-3">
-          {molienda && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <div className="md:col-span-1">
-                <PremiumTile
-                  icon={<IconScale size={14} />}
-                  label="Molienda actual"
-                  value={molienda.value}
-                  unit={molienda.unit ?? 't/h'}
-                  precision={1}
-                  accent="primary"
-                  big
-                  updatedAt={molienda.updated_at}
-                />
-              </div>
-              <div className="md:col-span-2 grid grid-cols-2 gap-2">
-                {otherEntries.slice(0, 2).map(([key, item]) => (
-                  <PremiumTile
-                    key={key}
-                    icon={iconFor(key)}
-                    label={key.replaceAll('_', ' ')}
-                    value={item.value}
-                    unit={item.unit ?? ''}
-                    precision={2}
-                    accent="accent"
-                    updatedAt={item.updated_at}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
-            {(molienda ? otherEntries.slice(2) : otherEntries).map(([key, item]) => (
+      <div className="space-y-3">
+        <EstadoBanner estado={estado} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div className="md:col-span-1">
+            <PremiumTile
+              icon={<IconScale size={14} />}
+              label={moliendaSlot!.slot.label}
+              value={moliendaSlot!.item?.value}
+              unit={moliendaSlot!.item?.unit ?? moliendaSlot!.slot.unit}
+              precision={moliendaSlot!.slot.precision}
+              accent="primary"
+              big
+              updatedAt={moliendaSlot!.item?.updated_at}
+            />
+          </div>
+          <div className="md:col-span-2 grid grid-cols-2 gap-2">
+            {otherSlots.slice(0, 2).map(({ slot, item }) => (
               <PremiumTile
-                key={key}
-                icon={iconFor(key)}
-                label={key.replaceAll('_', ' ')}
-                value={item.value}
-                unit={item.unit ?? ''}
-                precision={2}
-                accent={accentForKey(key)}
-                updatedAt={item.updated_at}
+                key={slot.id}
+                icon={iconFor(slot.id)}
+                label={slot.label}
+                value={item?.value}
+                unit={item?.unit ?? slot.unit}
+                precision={slot.precision}
+                accent="accent"
+                updatedAt={item?.updated_at}
               />
             ))}
           </div>
         </div>
-      )}
+
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
+          {otherSlots.slice(2).map(({ slot, item }) => (
+            <PremiumTile
+              key={slot.id}
+              icon={iconFor(slot.id)}
+              label={slot.label}
+              value={item?.value}
+              unit={item?.unit ?? slot.unit}
+              precision={slot.precision}
+              accent={accentForKey(slot.id)}
+              updatedAt={item?.updated_at}
+            />
+          ))}
+        </div>
+
+        {present === 0 && <EmptyState />}
+      </div>
     </PremiumPanel>
   );
 }
@@ -166,53 +194,72 @@ function accentForKey(key: string): TileAccent {
   return 'neutral';
 }
 
-function EstadoHero({ estado }: { estado: EstadoTrapiche }) {
-  const config = {
-    funcionando: {
-      label: 'Funcionando',
-      color: '#00E5A0',
-      bg: 'rgba(0,229,160,0.12)',
-      border: 'rgba(0,229,160,0.45)',
-      glow: '0 0 32px rgba(0,229,160,0.40), inset 0 0 18px rgba(0,229,160,0.10)',
-      pulse: true,
-    },
-    parado: {
-      label: 'Parado',
-      color: '#FF4757',
-      bg: 'rgba(255,71,87,0.12)',
-      border: 'rgba(255,71,87,0.45)',
-      glow: '0 0 28px rgba(255,71,87,0.35), inset 0 0 14px rgba(255,71,87,0.08)',
-      pulse: false,
-    },
-  }[estado];
+const ESTADO_CONFIG = {
+  funcionando: {
+    label: 'Funcionando',
+    color: '#00E5A0',
+    bg: 'rgba(0,229,160,0.14)',
+    border: 'rgba(0,229,160,0.55)',
+    glow: '0 0 48px rgba(0,229,160,0.50), inset 0 0 24px rgba(0,229,160,0.14)',
+    pulse: true,
+  },
+  parado: {
+    label: 'Parado',
+    color: '#FF4757',
+    bg: 'rgba(255,71,87,0.14)',
+    border: 'rgba(255,71,87,0.55)',
+    glow: '0 0 40px rgba(255,71,87,0.40), inset 0 0 20px rgba(255,71,87,0.12)',
+    pulse: false,
+  },
+} as const;
 
+function EstadoBanner({ estado }: { estado: EstadoTrapiche }) {
+  const config = ESTADO_CONFIG[estado];
   return (
     <div
-      className="flex items-center gap-3 px-5 py-2.5 rounded-full border-2 shrink-0"
+      className="relative flex items-center justify-center gap-4 px-6 py-3 rounded-xl border-2 overflow-hidden"
       style={{
-        background: config.bg,
+        background: `linear-gradient(90deg, ${config.bg} 0%, rgba(15,24,37,0.4) 50%, ${config.bg} 100%)`,
         borderColor: config.border,
         boxShadow: config.glow,
       }}
     >
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-30"
+        style={{
+          background: `radial-gradient(ellipse at center, ${config.color}22, transparent 70%)`,
+          animation: config.pulse ? 'pulse 2.5s ease-in-out infinite' : undefined,
+        }}
+      />
+
+      <span className="text-2xs uppercase tracking-[0.22em] text-text-muted font-medium relative">
+        Estado actual
+      </span>
+
       <span
         className={cn(
-          'relative flex items-center justify-center w-3.5 h-3.5 rounded-full',
+          'relative flex items-center justify-center w-4 h-4 rounded-full',
           config.pulse && 'animate-pulse',
         )}
-        style={{ background: config.color, boxShadow: `0 0 16px ${config.color}` }}
+        style={{ background: config.color, boxShadow: `0 0 20px ${config.color}` }}
       >
         {config.pulse && (
           <span
             aria-hidden
             className="absolute inset-0 rounded-full animate-ping"
-            style={{ background: config.color, opacity: 0.6 }}
+            style={{ background: config.color, opacity: 0.65 }}
           />
         )}
       </span>
+
       <span
-        className="text-base font-bold uppercase tracking-[0.16em] mono"
-        style={{ color: config.color, textShadow: `0 0 12px ${config.color}66` }}
+        className="text-2xl font-bold uppercase tracking-[0.22em] mono relative"
+        style={{
+          color: config.color,
+          textShadow: `0 0 18px ${config.color}AA, 0 0 4px ${config.color}`,
+          fontFamily: 'var(--font-display)',
+        }}
       >
         {config.label}
       </span>
