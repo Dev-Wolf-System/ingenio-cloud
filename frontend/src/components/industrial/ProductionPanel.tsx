@@ -1,55 +1,95 @@
 'use client';
 
-import { IconChartLine, IconRadar } from '@tabler/icons-react';
-import Image from 'next/image';
+import {
+  IconChartLine,
+  IconGauge,
+  IconTemperature,
+  IconRipple,
+  IconChartBar,
+  IconDroplet,
+  IconActivity,
+  IconScale,
+  IconFlask,
+  IconWaveSine,
+} from '@tabler/icons-react';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
-import { MetricTile } from './MetricTile';
-import { PanelHeader } from './PanelHeader';
+import { PremiumPanel } from './PremiumPanel';
+import { PremiumTile, type TileAccent } from './PremiumTile';
+
+function iconFor(key: string): React.ReactNode {
+  const k = key.toLowerCase();
+  if (k.includes('temp')) return <IconTemperature size={14} />;
+  if (k.includes('press') || k.includes('pres')) return <IconGauge size={14} />;
+  if (k.includes('caudal') || k.includes('flujo')) return <IconRipple size={14} />;
+  if (k.includes('nivel')) return <IconChartBar size={14} />;
+  if (k.includes('humed') || k.includes('agua')) return <IconDroplet size={14} />;
+  if (k.includes('ph') || k.includes('encal')) return <IconFlask size={14} />;
+  if (k.includes('color')) return <IconWaveSine size={14} />;
+  if (k.includes('molienda') || k.includes('peso')) return <IconScale size={14} />;
+  return <IconActivity size={14} />;
+}
+
+function accentForKey(key: string): TileAccent {
+  const k = key.toLowerCase();
+  if (k.includes('temp')) return 'warn';
+  if (k.includes('press') || k.includes('pres')) return 'accent';
+  if (k.includes('nivel')) return 'primary';
+  return 'neutral';
+}
 
 export function ProductionPanel() {
   const data = useDashboardData('produccion');
   const entries = Array.from(data.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  const count = entries.length;
 
   return (
-    <section className="flex flex-col rounded-xl border border-border bg-bg-surface/60 p-4 overflow-hidden backdrop-blur-sm relative">
-      <PanelHeader
-        title="Producción"
-        subtitle="Clarificación · Tachos · Destilería · Azúcar"
-        icon={<IconChartLine size={15} />}
-        badge={
-          <span className="inline-flex items-center gap-1.5 text-2xs mono text-text-muted px-2 py-1 rounded-md bg-bg-card border border-border">
-            <span className="w-1.5 h-1.5 rounded-full bg-ok animate-pulse" />
-            <span className="tabular-nums">{entries.length}</span>
-            <span>{entries.length === 1 ? 'señal' : 'señales'}</span>
-          </span>
-        }
-      />
-      {entries.length === 0 ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-3 text-center p-6">
-          <div className="relative w-16 h-16 opacity-40">
-            <Image src="/logo-ingenio-cloud.png" alt="" fill className="object-contain" />
-          </div>
-          <div className="flex items-center gap-2 text-xs text-text-muted">
-            <IconRadar size={14} style={{ animation: 'spin 3s linear infinite' }} />
-            Esperando datos de Node-RED...
-          </div>
-        </div>
+    <PremiumPanel
+      title="PRODUCCIÓN"
+      subtitle={`Clarificación · Tachos · Destilería · Azúcar · ${count} señal${count === 1 ? '' : 'es'}`}
+      icon={<IconChartLine size={18} className="text-ok" />}
+      accent="accent"
+      headerRight={
+        <span className="inline-flex items-center gap-1.5 text-2xs mono text-text-muted px-2 py-1 rounded-md bg-bg-card/60 border border-border shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-ok animate-pulse" />
+          <span className="tabular-nums">{count}</span>
+        </span>
+      }
+    >
+      {count === 0 ? (
+        <EmptyState />
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 flex-1 content-start overflow-auto">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-2">
           {entries.map(([key, item]) => (
-            <MetricTile
+            <PremiumTile
               key={key}
-              size="sm"
+              icon={iconFor(key)}
               label={key.replaceAll('_', ' ')}
               value={item.value}
               unit={item.unit ?? ''}
               precision={2}
-              status="ok"
-              timestamp={item.updated_at}
+              accent={accentForKey(key)}
+              updatedAt={item.updated_at}
             />
           ))}
         </div>
       )}
-    </section>
+    </PremiumPanel>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center gap-3 py-8">
+      <div
+        className="relative w-12 h-12 rounded-full flex items-center justify-center"
+        style={{
+          background: 'radial-gradient(circle, rgba(0,229,160,0.15), transparent)',
+          animation: 'pulse 2s ease-in-out infinite',
+        }}
+      >
+        <IconChartLine size={24} className="text-ok/60" />
+      </div>
+      <p className="text-xs text-text-muted">Esperando datos de producción…</p>
+    </div>
   );
 }
