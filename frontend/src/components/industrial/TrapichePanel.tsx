@@ -19,10 +19,11 @@ import { PremiumPanel } from './PremiumPanel';
 import { PremiumTile, type TileAccent } from './PremiumTile';
 import { cn } from '@/lib/utils/cn';
 
-type EstadoTrapiche = 'funcionando' | 'parado' | 'desconocido';
+type EstadoTrapiche = 'funcionando' | 'parado';
 
 const ESTADO_KEYS = ['estado', 'estado_trapiche', 'trapiche_estado', 'status'];
 const MOLIENDA_KEYS = ['molienda_actual', 'molienda', 'molienda_actual_t_h', 'molienda_t_h'];
+const ACTIVIDAD_MAX_SEG = 300; // 5 min sin updates → parado
 
 function pickItem(map: Map<string, DashboardItem>, candidates: string[]): DashboardItem | null {
   const entries = Array.from(map.entries());
@@ -35,8 +36,8 @@ function pickItem(map: Map<string, DashboardItem>, candidates: string[]): Dashbo
   return null;
 }
 
-function parseEstado(item: DashboardItem | null): EstadoTrapiche {
-  if (!item) return 'desconocido';
+function parseEstadoExplicit(item: DashboardItem | null): EstadoTrapiche | null {
+  if (!item) return null;
   if (typeof item.value === 'number') {
     if (item.value === 1) return 'funcionando';
     if (item.value === 0) return 'parado';
@@ -44,7 +45,19 @@ function parseEstado(item: DashboardItem | null): EstadoTrapiche {
   const s = (item.display ?? '').toString().toLowerCase();
   if (s.includes('func') || s === 'on' || s === 'true' || s === '1') return 'funcionando';
   if (s.includes('par') || s === 'off' || s === 'false' || s === '0') return 'parado';
-  return 'desconocido';
+  return null;
+}
+
+function deriveEstadoFromActivity(map: Map<string, DashboardItem>): EstadoTrapiche {
+  if (map.size === 0) return 'parado';
+  let mostRecent = 0;
+  Array.from(map.values()).forEach((i) => {
+    const t = new Date(i.updated_at).getTime();
+    if (t > mostRecent) mostRecent = t;
+  });
+  if (!mostRecent) return 'parado';
+  const segDesdeUltimo = (Date.now() - mostRecent) / 1000;
+  return segDesdeUltimo <= ACTIVIDAD_MAX_SEG ? 'funcionando' : 'parado';
 }
 
 function iconFor(key: string): React.ReactNode {
@@ -65,8 +78,9 @@ export function TrapichePanel() {
   const data = useDashboardData('trapiche');
 
   const estado = useMemo<EstadoTrapiche>(() => {
-    const item = pickItem(data, ESTADO_KEYS);
-    return parseEstado(item);
+    const explicit = parseEstadoExplicit(pickItem(data, ESTADO_KEYS));
+    if (explicit) return explicit;
+    return deriveEstadoFromActivity(data);
   }, [data]);
 
   const molienda = pickItem(data, MOLIENDA_KEYS);
@@ -157,32 +171,24 @@ function EstadoHero({ estado }: { estado: EstadoTrapiche }) {
     funcionando: {
       label: 'Funcionando',
       color: '#00E5A0',
-      bg: 'rgba(0,229,160,0.10)',
-      border: 'rgba(0,229,160,0.35)',
-      glow: '0 0 24px rgba(0,229,160,0.35)',
+      bg: 'rgba(0,229,160,0.12)',
+      border: 'rgba(0,229,160,0.45)',
+      glow: '0 0 32px rgba(0,229,160,0.40), inset 0 0 18px rgba(0,229,160,0.10)',
       pulse: true,
     },
     parado: {
       label: 'Parado',
       color: '#FF4757',
-      bg: 'rgba(255,71,87,0.10)',
-      border: 'rgba(255,71,87,0.35)',
-      glow: '0 0 20px rgba(255,71,87,0.25)',
-      pulse: false,
-    },
-    desconocido: {
-      label: 'Sin señal',
-      color: '#6B7A9E',
-      bg: 'rgba(107,122,158,0.08)',
-      border: 'rgba(107,122,158,0.25)',
-      glow: 'none',
+      bg: 'rgba(255,71,87,0.12)',
+      border: 'rgba(255,71,87,0.45)',
+      glow: '0 0 28px rgba(255,71,87,0.35), inset 0 0 14px rgba(255,71,87,0.08)',
       pulse: false,
     },
   }[estado];
 
   return (
     <div
-      className="flex items-center gap-2.5 px-3.5 py-2 rounded-full border shrink-0"
+      className="flex items-center gap-3 px-5 py-2.5 rounded-full border-2 shrink-0"
       style={{
         background: config.bg,
         borderColor: config.border,
@@ -190,8 +196,11 @@ function EstadoHero({ estado }: { estado: EstadoTrapiche }) {
       }}
     >
       <span
-        className={cn('relative flex items-center justify-center w-2.5 h-2.5 rounded-full', config.pulse && 'animate-pulse')}
-        style={{ background: config.color, boxShadow: `0 0 12px ${config.color}` }}
+        className={cn(
+          'relative flex items-center justify-center w-3.5 h-3.5 rounded-full',
+          config.pulse && 'animate-pulse',
+        )}
+        style={{ background: config.color, boxShadow: `0 0 16px ${config.color}` }}
       >
         {config.pulse && (
           <span
@@ -202,8 +211,8 @@ function EstadoHero({ estado }: { estado: EstadoTrapiche }) {
         )}
       </span>
       <span
-        className="text-xs font-semibold uppercase tracking-[0.14em] mono"
-        style={{ color: config.color }}
+        className="text-base font-bold uppercase tracking-[0.16em] mono"
+        style={{ color: config.color, textShadow: `0 0 12px ${config.color}66` }}
       >
         {config.label}
       </span>
