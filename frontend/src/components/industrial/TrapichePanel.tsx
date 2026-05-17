@@ -29,9 +29,11 @@ const KEY_MAP: Record<string, string[]> = {
 };
 
 function pickItem(map: Map<string, DashboardItem>, candidates: string[]): DashboardItem | null {
+  const entries = Array.from(map.entries());
   for (const cand of candidates) {
-    for (const [key, item] of map) {
-      if (key.toLowerCase() === cand.toLowerCase()) return item;
+    const lower = cand.toLowerCase();
+    for (const [key, item] of entries) {
+      if (key.toLowerCase() === lower) return item;
     }
   }
   return null;
