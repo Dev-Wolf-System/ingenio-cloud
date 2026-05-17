@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { IconCircleFilled } from '@tabler/icons-react';
 import { cn } from '@/lib/utils/cn';
 import { formatNumber, formatRelative } from '@/lib/utils/format';
+import { m } from 'motion/react';
 
 export type TileAccent = 'primary' | 'neutral' | 'accent' | 'warn' | 'danger';
 
@@ -109,9 +110,13 @@ export function PremiumTile({
   }, [value]);
 
   return (
-    <div
+    <m.div
+      initial={{ opacity: 0, y: 10, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
       className={cn(
-        'relative rounded-xl border overflow-hidden group transition-all duration-300',
+        'relative rounded-xl border overflow-hidden group',
         style.borderIdle,
         style.borderHover,
       )}
@@ -164,15 +169,19 @@ export function PremiumTile({
         </div>
 
         <div className="flex items-baseline gap-1 mono">
-          <span
+          <m.span
+            key={display}
+            initial={{ scale: 1.08, opacity: 0.7 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 380, damping: 22 }}
             className={cn(
-              'font-semibold tabular-nums leading-none',
+              'font-semibold tabular-nums leading-none inline-block',
               big ? 'text-2xl' : 'text-lg',
               style.valueColor,
             )}
           >
             {display}
-          </span>
+          </m.span>
           {unit && <span className="text-2xs text-text-muted font-medium">{unit}</span>}
         </div>
 
@@ -183,6 +192,6 @@ export function PremiumTile({
           <div className="text-[9px] text-text-disabled mono mt-1">{formatRelative(updatedAt)}</div>
         )}
       </div>
-    </div>
+    </m.div>
   );
 }

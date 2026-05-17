@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { m, AnimatePresence } from 'motion/react';
 import {
   IconBolt,
   IconDroplet,
@@ -189,14 +190,20 @@ const ESTADO_CONFIG = {
 function EstadoBanner({ estado }: { estado: EstadoTrapiche }) {
   const config = ESTADO_CONFIG[estado];
   return (
-    <div
-      className="relative flex items-center justify-center gap-4 px-6 py-3 rounded-xl border-2 overflow-hidden"
-      style={{
-        background: `linear-gradient(90deg, ${config.bg} 0%, rgba(15,24,37,0.4) 50%, ${config.bg} 100%)`,
-        borderColor: config.border,
-        boxShadow: config.glow,
-      }}
-    >
+    <AnimatePresence mode="wait">
+      <m.div
+        key={estado}
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.98 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+        className="relative flex items-center justify-center gap-4 px-6 py-3 rounded-xl border-2 overflow-hidden"
+        style={{
+          background: `linear-gradient(90deg, ${config.bg} 0%, rgba(15,24,37,0.4) 50%, ${config.bg} 100%)`,
+          borderColor: config.border,
+          boxShadow: config.glow,
+        }}
+      >
       <div
         aria-hidden
         className="absolute inset-0 opacity-30"
@@ -236,7 +243,8 @@ function EstadoBanner({ estado }: { estado: EstadoTrapiche }) {
       >
         {config.label}
       </span>
-    </div>
+      </m.div>
+    </AnimatePresence>
   );
 }
 

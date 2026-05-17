@@ -1,7 +1,6 @@
 'use client';
 
 import { cn } from '@/lib/utils/cn';
-import { formatNumber } from '@/lib/utils/format';
 import type { MetricStatus } from '@/types/metrics';
 import {
   IconArrowUpRight,
@@ -10,6 +9,8 @@ import {
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
 import type { ComponentType } from 'react';
+import { m } from 'motion/react';
+import { AnimatedNumber } from './AnimatedNumber';
 
 export interface KpiCardProps {
   label: string;
@@ -52,15 +53,17 @@ export function KpiCard({
   pulse,
   className,
 }: KpiCardProps) {
-  const displayValue =
-    typeof value === 'number' && Number.isFinite(value)
-      ? formatNumber(value, precision)
-      : value ?? '—';
+  const isNumber = typeof value === 'number' && Number.isFinite(value);
+  const fallbackText = !isNumber ? (value as string | null | undefined) ?? '—' : null;
 
   return (
-    <div
+    <m.div
+      initial={{ opacity: 0, y: 16, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -2 }}
       className={cn(
-        'relative overflow-hidden rounded-xl p-4 group transition-all duration-300',
+        'relative overflow-hidden rounded-xl p-4 group',
         'bg-gradient-to-br from-bg-card to-bg-surface',
         'border border-border hover:border-border-strong',
         pulse && 'animate-pulse-alarm',
@@ -92,7 +95,11 @@ export function KpiCard({
           className="mono font-semibold text-text-primary leading-none tabular-nums"
           style={{ fontSize: 'clamp(1.6rem, 2.4vw, 2.4rem)' }}
         >
-          {displayValue}
+          {isNumber ? (
+            <AnimatedNumber value={value as number} decimals={precision} />
+          ) : (
+            fallbackText
+          )}
         </span>
         {unit && (
           <span className="text-sm text-text-secondary font-medium">{unit}</span>
@@ -119,6 +126,6 @@ export function KpiCard({
           <span className="text-2xs text-text-muted truncate">{footer}</span>
         )}
       </div>
-    </div>
+    </m.div>
   );
 }

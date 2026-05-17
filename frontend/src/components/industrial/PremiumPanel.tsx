@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { m } from 'motion/react';
 
 export type PanelAccent = 'primary' | 'accent' | 'warn' | 'neutral';
 
@@ -57,7 +58,10 @@ export function PremiumPanel({
   const a = ACCENT_GLOW[accent];
 
   return (
-    <section
+    <m.section
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className={
         'relative flex flex-col rounded-2xl border border-primary-light/15 overflow-hidden ' +
         (className ?? '')
@@ -112,6 +116,6 @@ export function PremiumPanel({
       </header>
 
       <div className="flex-1 p-3 overflow-auto">{children}</div>
-    </section>
+    </m.section>
   );
 }

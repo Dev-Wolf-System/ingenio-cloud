@@ -92,7 +92,12 @@ export function KpiHero() {
     ).length;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
+    <div
+      className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3 px-3 sm:px-4 py-3"
+      style={{
+        // Stagger natural via animation-delay (los KpiCard ya animan entrada)
+      }}
+    >
       <KpiCard
         label="Molienda actual"
         value={moliendaItem?.value ?? '—'}
