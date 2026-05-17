@@ -26,27 +26,27 @@
   --text-muted: #6878a0;
   --text-disabled: #455373;
 
-  /* Brand (logo) */
-  --primary: #2e7ab5;
-  --primary-light: #4a9cd8;
-  --primary-dark: #1e5a87;
-  --primary-soft: rgba(46, 122, 181, 0.14);
-  --primary-glow: rgba(74, 156, 216, 0.35);
+  /* Brand (logo) — azul corporativo sobrio */
+  --primary: #3573a6;
+  --primary-light: #5b9bc9;
+  --primary-dark: #1f4f7a;
+  --primary-soft: rgba(53, 115, 166, 0.12);
+  --primary-glow: rgba(91, 155, 201, 0.22);
 
-  /* Accent cyan vivo (red neuronal logo) */
-  --accent: #4fbfe5;
-  --accent-soft: rgba(79, 191, 229, 0.12);
-  --accent-glow: rgba(79, 191, 229, 0.4);
+  /* Accent — teal apagado profesional */
+  --accent: #5fa8b8;
+  --accent-soft: rgba(95, 168, 184, 0.10);
+  --accent-glow: rgba(95, 168, 184, 0.22);
 
-  /* Semantic refinados */
-  --ok: #2dd4a4;
-  --ok-soft: rgba(45, 212, 164, 0.12);
-  --warn: #f5b942;
-  --warn-soft: rgba(245, 185, 66, 0.12);
-  --danger: #ff5a6b;
-  --danger-soft: rgba(255, 90, 107, 0.14);
-  --info: #4a9cd8;
-  --info-soft: rgba(74, 156, 216, 0.12);
+  /* Semantic — saturación baja editorial */
+  --ok: #4ab896;
+  --ok-soft: rgba(74, 184, 150, 0.10);
+  --warn: #d9a04a;
+  --warn-soft: rgba(217, 160, 74, 0.10);
+  --danger: #d96570;
+  --danger-soft: rgba(217, 101, 112, 0.12);
+  --info: #5b9bc9;
+  --info-soft: rgba(91, 155, 201, 0.10);
 
   /* Gradients atmosféricos */
   --gradient-brand: linear-gradient(135deg, #1e5a87 0%, #4a9cd8 60%, #4fbfe5 100%);

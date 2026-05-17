@@ -2,12 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  IconActivity,
+  IconScale,
   IconChartBar,
-  IconBolt,
+  IconFlame,
   IconAlertTriangle,
 } from '@tabler/icons-react';
-import { useDashboardData } from '@/lib/hooks/useDashboardData';
+import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
 import { KpiCard } from './KpiCard';
 
 async function fetchAlerts() {
@@ -17,37 +17,62 @@ async function fetchAlerts() {
   return res.json();
 }
 
+function pickIncludes(map: Map<string, DashboardItem>, patterns: string[]): DashboardItem | null {
+  const entries = Array.from(map.entries());
+  for (const p of patterns) {
+    const lower = p.toLowerCase();
+    for (const [k, item] of entries) {
+      if (k.toLowerCase().includes(lower)) return item;
+    }
+  }
+  return null;
+}
+
+function sumKeysIncluding(map: Map<string, DashboardItem>, patterns: string[]): number | null {
+  const entries = Array.from(map.entries());
+  let total = 0;
+  let found = false;
+  for (const [k, item] of entries) {
+    const kl = k.toLowerCase();
+    if (patterns.some((p) => kl.includes(p.toLowerCase()))) {
+      if (Number.isFinite(item.value)) {
+        total += item.value;
+        found = true;
+      }
+    }
+  }
+  return found ? total : null;
+}
+
 export function KpiHero() {
   const energia = useDashboardData('energia');
   const produccion = useDashboardData('produccion');
+  const trapiche = useDashboardData('trapiche');
   const alerts = useQuery({
     queryKey: ['alerts', 'active'],
     queryFn: fetchAlerts,
     refetchInterval: 30_000,
   });
 
-  const findItem = (map: Map<string, { value: number; unit: string | null }>, candidates: string[]) => {
-    for (const c of candidates) {
-      if (map.has(c)) return map.get(c)!;
-    }
-    return null;
-  };
+  // Molienda actual: Molienda_Kilos (kg/h o kg total) → /1000 = t/h
+  const moliendaItem = pickIncludes(trapiche, ['molienda_kilos', 'molienda_actual', 'molienda']);
+  const moliendaTH = moliendaItem ? moliendaItem.value / 1000 : null;
 
-  const molienda = findItem(produccion, [
-    'Promedio_Molienda',
-    'Molienda_Promedio',
-    'Caudal_Molienda',
-    'Produccion_Bolsas_Dia',
+  // Bolsas de azúcar producidas: busca varios aliases
+  const bolsasItem = pickIncludes(produccion, [
+    'produccion_bolsas',
+    'bolsas_dia',
+    'bolsas_azucar',
+    'azucar_diaria',
+    'bolsas',
   ]);
-  const azucar = findItem(produccion, [
-    'Produccion_Bolsas_Dia',
-    'Produccion_Azucar_Dia',
-    'Azucar_Diaria',
-  ]);
-  const potenciaSiemens = findItem(energia, ['Potencia_Activa_Siemens']);
-  const potenciaWeg = findItem(energia, ['Potencia_Activa_Weg']);
-  const generacionTotal =
-    (potenciaSiemens?.value ?? 0) + (potenciaWeg?.value ?? 0) || null;
+
+  // Consumo gas total: suma de Caudal_Gas_Cald2/3/6
+  const gasTotal = sumKeysIncluding(energia, ['caudal_gas']);
+
+  // Vapor Vg1 (referencia y estado tamiz K2)
+  const vaporVg1 = pickIncludes(energia, ['presion_vapor_vg1', 'vapor_vg1']);
+  const tamizK2Func = vaporVg1 != null && vaporVg1.value > 1.9;
 
   const activeCount = (alerts.data as { alerts?: unknown[] } | undefined)?.alerts?.length ?? 0;
   const criticalCount =
@@ -56,35 +81,43 @@ export function KpiHero() {
     ).length;
 
   return (
-    <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 px-4 py-3">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
       <KpiCard
         label="Molienda actual"
-        value={molienda?.value ?? '—'}
-        unit={molienda?.unit ?? 't/h'}
-        precision={0}
-        icon={IconActivity}
+        value={moliendaTH ?? '—'}
+        unit="t/h"
+        precision={1}
+        icon={IconScale}
         status="accent"
+        footer={moliendaItem ? `${(moliendaItem.value).toFixed(0)} kg/h` : 'Sin señal'}
       />
       <KpiCard
-        label="Producción azúcar"
-        value={azucar?.value ?? '—'}
-        unit={azucar?.unit ?? 'bolsas'}
+        label="Bolsas azúcar"
+        value={bolsasItem?.value ?? '—'}
+        unit={bolsasItem?.unit ?? 'bolsas'}
         precision={0}
         icon={IconChartBar}
         status="accent"
+        footer={bolsasItem ? 'Producidas hoy' : 'Esperando Node-RED'}
       />
       <KpiCard
-        label="Generación eléctrica"
-        value={generacionTotal ?? '—'}
-        unit={potenciaSiemens?.unit ?? 'kW'}
-        precision={0}
-        icon={IconBolt}
-        status="accent"
-        footer={
-          potenciaSiemens || potenciaWeg
-            ? `S: ${potenciaSiemens?.value ?? 0} · W: ${potenciaWeg?.value ?? 0}`
-            : undefined
-        }
+        label="Consumo gas total"
+        value={gasTotal ?? '—'}
+        unit="m³/h"
+        precision={1}
+        icon={IconFlame}
+        status="warn"
+        footer={gasTotal != null ? 'Suma calderas 2+3+6' : 'Sin caudales'}
+      />
+      <KpiCard
+        label="Vapor Vg1 · Tamiz K2"
+        value={vaporVg1?.value ?? '—'}
+        unit={vaporVg1?.unit ?? 'Kg/cm²'}
+        precision={2}
+        icon={IconFlame}
+        status={tamizK2Func ? 'ok' : 'warn'}
+        pulse={tamizK2Func}
+        footer={tamizK2Func ? 'K2: Funcionamiento' : vaporVg1 ? 'K2: Parado · Vg1 < 1.9' : 'Sin señal'}
       />
       <KpiCard
         label="Alertas activas"

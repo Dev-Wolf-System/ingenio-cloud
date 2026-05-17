@@ -8,7 +8,6 @@ import {
   IconRotateClockwise,
   IconRipple,
   IconTemperature,
-  IconScale,
   IconActivity,
   IconChartBar,
   IconWaveSine,
@@ -21,29 +20,31 @@ import { cn } from '@/lib/utils/cn';
 
 type EstadoTrapiche = 'funcionando' | 'parado';
 
-const ESTADO_KEYS = ['estado', 'estado_trapiche', 'trapiche_estado', 'status'];
-const ACTIVIDAD_MAX_SEG = 300; // 5 min sin updates → parado
+const ESTADO_KEYS = ['trapiche_estado', 'estado', 'estado_trapiche', 'status'];
+const VAPOR_VG1_KEY_PATTERNS = ['presion_vapor_vg1', 'vapor_vg1', 'p_vapor_vg1'];
+const VAPOR_VG1_THRESHOLD = 1.9; // Vg1 > 1.9 (Kg/cm² ≈ Bar) ⇒ Funcionamiento
 
 /**
- * Whitelist KPIs del trapiche real. Solo keys que matcheen alguna entrada
- * se renderizan. Evita contaminación si Node-RED mezcla areas.
+ * Whitelist KPIs del trapiche real. Solo keys del whitelist se renderizan.
+ * Molienda actual se quitó (vive en KpiHero superior).
  */
 interface TrapicheSlot {
-  id: string;             // slot identificador
-  label: string;          // label UI
-  match: string[];        // aliases tolerantes (lowercase substring match)
-  unit: string;           // unidad default
+  id: string;
+  label: string;
+  match: string[];      // substring match case-insensitive
+  unit: string;
   precision: number;
 }
 
 const TRAPICHE_SLOTS: TrapicheSlot[] = [
-  { id: 'molienda_actual',         label: 'Molienda actual',       match: ['molienda_actual', 'molienda'], unit: 't/h',     precision: 1 },
-  { id: 'pol',                     label: 'Pol',                   match: ['pol_jugo', 'pol_cana', 'pol_caña', 'pol'], unit: '%',       precision: 2 },
-  { id: 'humedad_cana',            label: 'Humedad caña',          match: ['humedad_jugo', 'humedad_cana', 'humedad_caña', 'humedad'], unit: '%',  precision: 2 },
-  { id: 'presion_sexto_molino',    label: 'Presión 6° molino',     match: ['presion_sexto_molino', 'presion_6to_molino', 'presion_6_molino', 'p_sexto_molino'], unit: 'kg/cm²', precision: 2 },
-  { id: 'rpm_primer_molino',       label: 'RPM primer molino',     match: ['rpm_primer_molino', 'rpm_1er_molino', 'rpm_1_molino', 'velocidad_primer_molino', 'vel_primer_molino'], unit: 'rpm', precision: 1 },
-  { id: 'caudal_imbibicion',       label: 'Caudal imbibición',     match: ['caudal_imbibicion', 'caudal_imb', 'flujo_imbibicion'], unit: 'm³/h', precision: 2 },
-  { id: 'temperatura_imbibicion',  label: 'Temp. imbibición',      match: ['temperatura_imbibicion', 'temp_imbibicion', 't_imbibicion'], unit: '°C', precision: 1 },
+  { id: 'bagazo_pol',              label: 'Pol bagazo',            match: ['bagazo_pol', 'pol_bagazo', 'pol'],                       unit: '%',        precision: 2 },
+  { id: 'bagazo_humedad',          label: 'Humedad bagazo',        match: ['bagazo_humedad', 'humedad_bagazo'],                      unit: '%',        precision: 2 },
+  { id: 'presion_6to_este',        label: 'Presión 6° molino Este', match: ['6to_molino_presion_este', 'presion_6to_este'],          unit: 'kg/cm²',  precision: 2 },
+  { id: 'presion_6to_oeste',       label: 'Presión 6° molino Oeste', match: ['6to_molino_presion_oeste', 'presion_6to_oeste'],       unit: 'kg/cm²',  precision: 2 },
+  { id: 'rpm_primer_molino',       label: 'RPM primer molino',     match: ['rpm_primer_molino', 'rpm_1er_molino', 'vel_primer_molino'], unit: 'rpm',  precision: 1 },
+  { id: 'caudal_imbibicion',       label: 'Caudal imbibición',     match: ['bb_imbibicion_caudal', 'caudal_imbibicion', 'caudal_imb'], unit: 'm³/h', precision: 2 },
+  { id: 'nivel_imbibicion',        label: 'Nivel imbibición',      match: ['bb_imbibicion_nivel', 'nivel_imbibicion'],                unit: '%',     precision: 1 },
+  { id: 'temperatura_imbibicion',  label: 'Temp. imbibición',      match: ['bb_imbibicion_temp', 'temperatura_imbibicion', 'temp_imbibicion'], unit: '°C', precision: 1 },
 ];
 
 function pickItem(map: Map<string, DashboardItem>, candidates: string[]): DashboardItem | null {
@@ -69,16 +70,16 @@ function parseEstadoExplicit(item: DashboardItem | null): EstadoTrapiche | null 
   return null;
 }
 
-function deriveEstadoFromActivity(map: Map<string, DashboardItem>): EstadoTrapiche {
-  if (map.size === 0) return 'parado';
-  let mostRecent = 0;
-  Array.from(map.values()).forEach((i) => {
-    const t = new Date(i.updated_at).getTime();
-    if (t > mostRecent) mostRecent = t;
-  });
-  if (!mostRecent) return 'parado';
-  const segDesdeUltimo = (Date.now() - mostRecent) / 1000;
-  return segDesdeUltimo <= ACTIVIDAD_MAX_SEG ? 'funcionando' : 'parado';
+function deriveEstadoFromVaporVg1(energia: Map<string, DashboardItem>): EstadoTrapiche | null {
+  const entries = Array.from(energia.entries());
+  for (const pattern of VAPOR_VG1_KEY_PATTERNS) {
+    for (const [k, item] of entries) {
+      if (k.toLowerCase().includes(pattern)) {
+        return item.value > VAPOR_VG1_THRESHOLD ? 'funcionando' : 'parado';
+      }
+    }
+  }
+  return null;
 }
 
 function iconFor(key: string): React.ReactNode {
@@ -108,21 +109,21 @@ function pickBySlot(map: Map<string, DashboardItem>, slot: TrapicheSlot): Dashbo
 
 export function TrapichePanel() {
   const data = useDashboardData('trapiche');
+  const energia = useDashboardData('energia');
 
   const estado = useMemo<EstadoTrapiche>(() => {
+    // Prioridad: 1) Trapiche_Estado explícito  2) Presion_Vapor_Vg1 > 1.9  3) Parado
     const explicit = parseEstadoExplicit(pickItem(data, ESTADO_KEYS));
     if (explicit) return explicit;
-    return deriveEstadoFromActivity(data);
-  }, [data]);
+    const derived = deriveEstadoFromVaporVg1(energia);
+    if (derived) return derived;
+    return 'parado';
+  }, [data, energia]);
 
-  // Resolver cada slot del whitelist a su item correspondiente (o null)
   const resolvedSlots = useMemo(
     () => TRAPICHE_SLOTS.map((slot) => ({ slot, item: pickBySlot(data, slot) })),
     [data],
   );
-
-  const moliendaSlot = resolvedSlots.find((r) => r.slot.id === 'molienda_actual');
-  const otherSlots = resolvedSlots.filter((r) => r.slot.id !== 'molienda_actual');
 
   const present = resolvedSlots.filter((r) => r.item != null).length;
   const expected = TRAPICHE_SLOTS.length;
@@ -130,43 +131,15 @@ export function TrapichePanel() {
   return (
     <PremiumPanel
       title="TRAPICHE"
-      subtitle={`Línea de molienda · ${present}/${expected} KPIs activos${present < expected ? ' · faltan datos de Node-RED' : ''}`}
+      subtitle={`Línea de molienda · ${present}/${expected} KPIs activos`}
       icon={<IconBolt size={18} className="text-primary-light" />}
       accent="primary"
     >
       <div className="space-y-3">
         <EstadoBanner estado={estado} />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-          <div className="md:col-span-1">
-            <PremiumTile
-              icon={<IconScale size={14} />}
-              label={moliendaSlot!.slot.label}
-              value={moliendaSlot!.item?.value}
-              unit={moliendaSlot!.item?.unit ?? moliendaSlot!.slot.unit}
-              precision={moliendaSlot!.slot.precision}
-              accent="primary"
-              big
-              updatedAt={moliendaSlot!.item?.updated_at}
-            />
-          </div>
-          <div className="md:col-span-2 grid grid-cols-2 gap-2">
-            {otherSlots.slice(0, 2).map(({ slot, item }) => (
-              <PremiumTile
-                key={slot.id}
-                icon={iconFor(slot.id)}
-                label={slot.label}
-                value={item?.value}
-                unit={item?.unit ?? slot.unit}
-                precision={slot.precision}
-                accent="accent"
-                updatedAt={item?.updated_at}
-              />
-            ))}
-          </div>
-        </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2">
-          {otherSlots.slice(2).map(({ slot, item }) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+          {resolvedSlots.map(({ slot, item }) => (
             <PremiumTile
               key={slot.id}
               icon={iconFor(slot.id)}
@@ -196,18 +169,18 @@ function accentForKey(key: string): TileAccent {
 const ESTADO_CONFIG = {
   funcionando: {
     label: 'Funcionando',
-    color: '#00E5A0',
-    bg: 'rgba(0,229,160,0.14)',
-    border: 'rgba(0,229,160,0.55)',
-    glow: '0 0 48px rgba(0,229,160,0.50), inset 0 0 24px rgba(0,229,160,0.14)',
+    color: '#4ab896',
+    bg: 'rgba(74,184,150,0.10)',
+    border: 'rgba(74,184,150,0.45)',
+    glow: '0 0 28px rgba(74,184,150,0.28), inset 0 0 16px rgba(74,184,150,0.08)',
     pulse: true,
   },
   parado: {
     label: 'Parado',
-    color: '#FF4757',
-    bg: 'rgba(255,71,87,0.14)',
-    border: 'rgba(255,71,87,0.55)',
-    glow: '0 0 40px rgba(255,71,87,0.40), inset 0 0 20px rgba(255,71,87,0.12)',
+    color: '#d96570',
+    bg: 'rgba(217,101,112,0.10)',
+    border: 'rgba(217,101,112,0.45)',
+    glow: '0 0 24px rgba(217,101,112,0.25), inset 0 0 14px rgba(217,101,112,0.08)',
     pulse: false,
   },
 } as const;
@@ -253,11 +226,11 @@ function EstadoBanner({ estado }: { estado: EstadoTrapiche }) {
       </span>
 
       <span
-        className="text-2xl font-bold uppercase tracking-[0.22em] mono relative"
+        className="text-2xl font-extrabold uppercase tracking-[0.18em] relative"
         style={{
           color: config.color,
-          textShadow: `0 0 18px ${config.color}AA, 0 0 4px ${config.color}`,
-          fontFamily: 'var(--font-display)',
+          textShadow: `0 0 10px ${config.color}66`,
+          fontFamily: 'var(--font-body)',
         }}
       >
         {config.label}

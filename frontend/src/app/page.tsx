@@ -9,29 +9,34 @@ import { CopilotBanner } from '@/components/industrial/CopilotBanner';
 
 export default function DashboardPage() {
   return (
-    <div className="grid grid-rows-[64px_3px_auto_auto_1fr_84px] min-h-screen xl:h-screen xl:max-h-screen overflow-hidden relative">
-      {/* Background accent — hero atmosphere */}
+    <div className="relative min-h-screen flex flex-col">
+      {/* Background accent */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 z-0"
         style={{
           background:
-            'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(74,156,216,0.07), transparent 70%)',
+            'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(91,155,201,0.05), transparent 70%)',
         }}
       />
 
-      <div className="relative z-10 contents">
+      <div className="relative z-10 flex flex-col flex-1">
         <TopBar plant="Planta Sur" />
         <ShiftTimeline />
         <KpiHero />
-        <section className="px-4 pt-2">
+
+        <section className="px-3 sm:px-4 pt-1 pb-2">
           <TrapichePanel />
         </section>
-        <main className="grid gap-3 px-4 pb-3 pt-3 grid-cols-1 xl:grid-cols-[1.05fr_1.6fr_1fr] overflow-hidden">
+
+        <main className="grid gap-3 px-3 sm:px-4 pb-3 pt-2 grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1.05fr_1.6fr_1fr] flex-1">
           <EnergyPanel />
           <ProductionPanel />
-          <ShiftSummaryPanel />
+          <div className="lg:col-span-2 xl:col-span-1">
+            <ShiftSummaryPanel />
+          </div>
         </main>
+
         <CopilotBanner />
       </div>
     </div>

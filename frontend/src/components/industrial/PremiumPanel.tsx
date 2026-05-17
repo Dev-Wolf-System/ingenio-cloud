@@ -6,32 +6,32 @@ export type PanelAccent = 'primary' | 'accent' | 'warn' | 'neutral';
 
 const ACCENT_GLOW: Record<PanelAccent, { ring: string; topLine: string; iconBg: string; title: string }> = {
   primary: {
-    ring: 'rgba(74,156,216,0.06)',
+    ring: 'rgba(91,155,201,0.05)',
     topLine:
-      'linear-gradient(90deg, transparent, rgba(74,156,216,0.6) 30%, rgba(0,229,160,0.6) 70%, transparent)',
-    iconBg: 'linear-gradient(135deg, rgba(74,156,216,0.12), rgba(0,229,160,0.08))',
-    title: 'linear-gradient(135deg, #4FBFE5 0%, #FFFFFF 60%, #00E5A0 100%)',
+      'linear-gradient(90deg, transparent, rgba(91,155,201,0.45) 30%, rgba(95,168,184,0.40) 70%, transparent)',
+    iconBg: 'linear-gradient(135deg, rgba(91,155,201,0.10), rgba(95,168,184,0.06))',
+    title: 'linear-gradient(135deg, #5b9bc9 0%, #f1f5fb 60%, #5fa8b8 100%)',
   },
   accent: {
-    ring: 'rgba(0,229,160,0.06)',
+    ring: 'rgba(74,184,150,0.05)',
     topLine:
-      'linear-gradient(90deg, transparent, rgba(0,229,160,0.6) 30%, rgba(74,156,216,0.5) 70%, transparent)',
-    iconBg: 'linear-gradient(135deg, rgba(0,229,160,0.14), rgba(74,156,216,0.06))',
-    title: 'linear-gradient(135deg, #00E5A0 0%, #FFFFFF 60%, #4FBFE5 100%)',
+      'linear-gradient(90deg, transparent, rgba(74,184,150,0.45) 30%, rgba(91,155,201,0.35) 70%, transparent)',
+    iconBg: 'linear-gradient(135deg, rgba(74,184,150,0.12), rgba(91,155,201,0.06))',
+    title: 'linear-gradient(135deg, #4ab896 0%, #f1f5fb 60%, #5b9bc9 100%)',
   },
   warn: {
-    ring: 'rgba(255,184,0,0.06)',
+    ring: 'rgba(217,160,74,0.05)',
     topLine:
-      'linear-gradient(90deg, transparent, rgba(255,184,0,0.5) 30%, rgba(255,107,53,0.5) 70%, transparent)',
-    iconBg: 'linear-gradient(135deg, rgba(255,184,0,0.12), rgba(255,107,53,0.06))',
-    title: 'linear-gradient(135deg, #FFB800 0%, #FFFFFF 60%, #FF6B35 100%)',
+      'linear-gradient(90deg, transparent, rgba(217,160,74,0.40) 30%, rgba(217,101,112,0.35) 70%, transparent)',
+    iconBg: 'linear-gradient(135deg, rgba(217,160,74,0.10), rgba(217,101,112,0.05))',
+    title: 'linear-gradient(135deg, #d9a04a 0%, #f1f5fb 60%, #d96570 100%)',
   },
   neutral: {
-    ring: 'rgba(255,255,255,0.04)',
+    ring: 'rgba(255,255,255,0.03)',
     topLine:
-      'linear-gradient(90deg, transparent, rgba(255,255,255,0.2) 50%, transparent)',
-    iconBg: 'rgba(255,255,255,0.04)',
-    title: 'linear-gradient(135deg, #FFFFFF 0%, #A1A1AA 100%)',
+      'linear-gradient(90deg, transparent, rgba(255,255,255,0.15) 50%, transparent)',
+    iconBg: 'rgba(255,255,255,0.03)',
+    title: 'linear-gradient(135deg, #f1f5fb 0%, #a6b3cc 100%)',
   },
 };
 

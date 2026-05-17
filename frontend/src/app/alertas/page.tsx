@@ -49,6 +49,18 @@ const SEVERITY_STYLE: Record<Severity, { color: string; bg: string; label: strin
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
 async function fetchSensors(): Promise<SensorKey[]> {
+  // Snapshot SIN filtro de area = devuelve TODAS las áreas en una sola request
+  // (evita problemas si algún área tira 500, las otras igual cargan)
+  try {
+    const res = await fetch(`${apiUrl}/metrics/dashboard-snapshot`);
+    if (res.ok) {
+      const json = (await res.json()) as { data: Array<{ area: Area; key: string; value: number; unit: string | null }> };
+      return (json.data ?? []).map((d) => ({ area: d.area, key: d.key, unit: d.unit, value: d.value }));
+    }
+  } catch {
+    // fallback siguiente
+  }
+  // Fallback: pedir cada área por separado
   const out: SensorKey[] = [];
   for (const a of AREAS) {
     try {
@@ -169,9 +181,9 @@ export default function AlertasConfigPage() {
       <div className="relative z-10">
         <TopBar plant="Planta Sur · Configuración Alertas" />
 
-        <main className="px-4 py-4 max-w-[1600px] mx-auto space-y-4">
+        <main className="px-3 sm:px-4 py-3 sm:py-4 max-w-[1600px] mx-auto space-y-3 sm:space-y-4">
           {/* Breadcrumb + actions */}
-          <header className="flex items-center justify-between gap-4">
+          <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
             <Link
               href="/"
               className="inline-flex items-center gap-2 text-xs text-text-muted hover:text-primary-light transition-colors px-3 py-1.5 rounded-md hover:bg-bg-hover border border-transparent hover:border-border"
@@ -180,8 +192,8 @@ export default function AlertasConfigPage() {
               Volver al dashboard
             </Link>
 
-            <div className="flex items-center gap-2">
-              <span className="text-2xs mono text-text-muted px-2.5 py-1 rounded-md bg-bg-card/60 border border-border">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-2xs mono text-text-muted px-2.5 py-1 rounded-md bg-bg-card/60 border border-border whitespace-nowrap">
                 <span className="text-ok font-semibold tabular-nums">{stats.enabled}</span>
                 <span className="text-text-muted"> / {stats.total} activos</span>
               </span>
@@ -199,11 +211,13 @@ export default function AlertasConfigPage() {
                 className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-md border-2 transition-all"
                 style={{
                   background: saveOk
-                    ? 'rgba(0,229,160,0.15)'
-                    : 'rgba(74,156,216,0.12)',
-                  borderColor: saveOk ? 'rgba(0,229,160,0.45)' : 'rgba(74,156,216,0.35)',
-                  color: saveOk ? '#00E5A0' : '#4FBFE5',
-                  boxShadow: saveOk ? '0 0 24px rgba(0,229,160,0.35)' : '0 0 16px rgba(74,156,216,0.15)',
+                    ? 'rgba(74,184,150,0.14)'
+                    : 'rgba(91,155,201,0.12)',
+                  borderColor: saveOk ? 'rgba(74,184,150,0.45)' : 'rgba(91,155,201,0.35)',
+                  color: saveOk ? '#4ab896' : '#5b9bc9',
+                  boxShadow: saveOk
+                    ? '0 0 18px rgba(74,184,150,0.28)'
+                    : '0 0 14px rgba(91,155,201,0.14)',
                   opacity: saving ? 0.5 : 1,
                 }}
               >
@@ -219,8 +233,8 @@ export default function AlertasConfigPage() {
             icon={<IconAlertTriangle size={18} className="text-warn" />}
             accent="warn"
             headerRight={
-              <div className="flex items-center gap-2 shrink-0">
-                <div className="flex items-center gap-1 bg-bg-card/60 border border-border rounded-md p-0.5">
+              <div className="flex flex-wrap items-center gap-2 shrink-0 max-w-full">
+                <div className="flex items-center gap-1 bg-bg-card/60 border border-border rounded-md p-0.5 overflow-x-auto">
                   <FilterPill active={areaFilter === 'all'} onClick={() => setAreaFilter('all')} label="Todas" />
                   {AREAS.map((a) => (
                     <FilterPill
@@ -239,7 +253,7 @@ export default function AlertasConfigPage() {
                     placeholder="Buscar sensor…"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
-                    className="text-xs bg-bg-card/60 border border-border rounded-md pl-7 pr-2 py-1.5 text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-primary-light/50 w-40"
+                    className="text-xs bg-bg-card/60 border border-border rounded-md pl-7 pr-2 py-1.5 text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-primary-light/50 w-36 sm:w-44"
                   />
                 </div>
               </div>
