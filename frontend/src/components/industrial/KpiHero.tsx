@@ -54,9 +54,8 @@ export function KpiHero() {
     refetchInterval: 30_000,
   });
 
-  // Molienda actual: Molienda_Kilos (kg/h o kg total) → /1000 = t/h
+  // Molienda actual: Molienda_Kilos en kg
   const moliendaItem = pickIncludes(trapiche, ['molienda_kilos', 'molienda_actual', 'molienda']);
-  const moliendaTH = moliendaItem ? moliendaItem.value / 1000 : null;
 
   // Bolsas de azúcar producidas: busca varios aliases
   const bolsasItem = pickIncludes(produccion, [
@@ -84,12 +83,12 @@ export function KpiHero() {
     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
       <KpiCard
         label="Molienda actual"
-        value={moliendaTH ?? '—'}
-        unit="t/h"
-        precision={1}
+        value={moliendaItem?.value ?? '—'}
+        unit={moliendaItem?.unit ?? 'kg'}
+        precision={0}
         icon={IconScale}
         status="accent"
-        footer={moliendaItem ? `${(moliendaItem.value).toFixed(0)} kg/h` : 'Sin señal'}
+        footer={moliendaItem ? `${(moliendaItem.value / 1000).toFixed(2)} t equivalente` : 'Sin señal'}
       />
       <KpiCard
         label="Bolsas azúcar"
