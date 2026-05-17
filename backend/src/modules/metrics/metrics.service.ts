@@ -29,6 +29,16 @@ export class MetricsService {
     return { data: data ?? [] };
   }
 
+  async canchonResumen() {
+    const production = this.supabase.schema('production');
+    const { data, error } = await production
+      .from('v_canchon_resumen')
+      .select('total_camiones')
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { total_camiones: (data as { total_camiones?: number } | null)?.total_camiones ?? 0 };
+  }
+
   async catalog() {
     const industrial = this.supabase.schema('industrial');
     const { data, error } = await industrial

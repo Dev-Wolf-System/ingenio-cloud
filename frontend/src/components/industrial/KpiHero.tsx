@@ -6,6 +6,7 @@ import {
   IconChartBar,
   IconFlame,
   IconAlertTriangle,
+  IconTruck,
 } from '@tabler/icons-react';
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
 import { KpiCard } from './KpiCard';
@@ -15,6 +16,13 @@ async function fetchAlerts() {
   const res = await fetch(`${apiUrl}/alerts/active`);
   if (!res.ok) return { alerts: [] };
   return res.json();
+}
+
+async function fetchCanchon() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+  const res = await fetch(`${apiUrl}/metrics/canchon`);
+  if (!res.ok) return { total_camiones: null as number | null };
+  return res.json() as Promise<{ total_camiones: number | null }>;
 }
 
 function pickIncludes(map: Map<string, DashboardItem>, patterns: string[]): DashboardItem | null {
@@ -53,6 +61,11 @@ export function KpiHero() {
     queryFn: fetchAlerts,
     refetchInterval: 30_000,
   });
+  const canchon = useQuery({
+    queryKey: ['canchon', 'resumen'],
+    queryFn: fetchCanchon,
+    refetchInterval: 60_000, // 1 min
+  });
 
   // Molienda actual: Molienda_Kilos en kg
   const moliendaItem = pickIncludes(trapiche, ['molienda_kilos', 'molienda_actual', 'molienda']);
@@ -69,9 +82,8 @@ export function KpiHero() {
   // Consumo gas total: suma de Caudal_Gas_Cald2/3/6
   const gasTotal = sumKeysIncluding(energia, ['caudal_gas']);
 
-  // Vapor Vg1 (referencia y estado tamiz K2)
-  const vaporVg1 = pickIncludes(energia, ['presion_vapor_vg1', 'vapor_vg1']);
-  const tamizK2Func = vaporVg1 != null && vaporVg1.value > 1.9;
+  // Total camiones en canchón (production.v_canchon_resumen) — refresca cada 60s
+  const totalCamiones = canchon.data?.total_camiones ?? null;
 
   const activeCount = (alerts.data as { alerts?: unknown[] } | undefined)?.alerts?.length ?? 0;
   const criticalCount =
@@ -109,14 +121,19 @@ export function KpiHero() {
         footer={gasTotal != null ? 'Suma calderas 2+3+6' : 'Sin caudales'}
       />
       <KpiCard
-        label="Vapor Vg1 · Tamiz K2"
-        value={vaporVg1?.value ?? '—'}
-        unit={vaporVg1?.unit ?? 'Kg/cm²'}
-        precision={2}
-        icon={IconFlame}
-        status={tamizK2Func ? 'ok' : 'warn'}
-        pulse={tamizK2Func}
-        footer={tamizK2Func ? 'K2: Funcionamiento' : vaporVg1 ? 'K2: Parado · Vg1 < 1.9' : 'Sin señal'}
+        label="Camiones en canchón"
+        value={totalCamiones ?? '—'}
+        unit="camiones"
+        precision={0}
+        icon={IconTruck}
+        status={totalCamiones != null && totalCamiones > 0 ? 'accent' : 'warn'}
+        footer={
+          canchon.isLoading
+            ? 'Consultando…'
+            : totalCamiones != null
+            ? 'Actualiza c/ 1 min'
+            : 'Sin señal'
+        }
       />
       <KpiCard
         label="Alertas activas"

@@ -23,4 +23,10 @@ export class MetricsController {
     return this.svc.catalog();
   }
 
+  /** GET /api/metrics/canchon — total de camiones en canchón (production.v_canchon_resumen) */
+  @Get('canchon')
+  canchon() {
+    return this.svc.canchonResumen();
+  }
+
 }
