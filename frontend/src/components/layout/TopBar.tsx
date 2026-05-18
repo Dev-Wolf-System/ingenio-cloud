@@ -25,18 +25,16 @@ export function TopBar({ plant = 'Planta Sur' }: { plant?: string }) {
     <header
       className="flex items-center justify-between gap-4 border-b border-border px-5 h-16 relative overflow-hidden"
       style={{
-        background:
-          'linear-gradient(180deg, rgba(30,90,135,0.08) 0%, rgba(15,24,37,0.95) 100%), var(--bg-surface)',
+        background: 'var(--header-bg)',
         backdropFilter: 'blur(20px)',
       }}
     >
-      {/* Decoración: mesh sutil esquina izquierda */}
+      {/* Decoración: mesh sutil esquina izquierda — adapta tema */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-30"
+        className="pointer-events-none absolute inset-0 opacity-40"
         style={{
-          background:
-            'radial-gradient(circle at 0% 50%, rgba(74,156,216,0.15) 0%, transparent 35%)',
+          background: 'radial-gradient(circle at 0% 50%, var(--primary-glow) 0%, transparent 38%)',
         }}
       />
 

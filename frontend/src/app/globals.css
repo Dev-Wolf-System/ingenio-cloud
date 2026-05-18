@@ -8,72 +8,78 @@
    - LIGHT → "Architect's Blueprint" (papel arquitectónico cálido)
    ========================================================================== */
 
-/* ───────────────── DARK · default ───────────────── */
+/* ───────────────── DARK · "Graphite Forge" ─────────────────
+   Gris grafito profundo con tinte azul muy sutil. Neutro industrial,
+   menos saturado que medianoche puro. Más cómodo para ojos en sala.
+   ──────────────────────────────────────────────────────────── */
 :root,
 [data-theme='dark'] {
-  /* Backgrounds — gradación profunda con tinte azul medianoche */
-  --bg-base:        #050810;
-  --bg-surface:     #0a111e;
-  --bg-card:        #0f1828;
-  --bg-card-2:      #142035;
-  --bg-hover:       #1a2845;
-  --bg-inset:       #060c18;
+  /* Backgrounds — grafito neutral con whisper azul */
+  --bg-base:        #14181f;
+  --bg-surface:     #1a1f28;
+  --bg-card:        #1f2530;
+  --bg-card-2:      #262d3a;
+  --bg-hover:       #2f3744;
+  --bg-inset:       #0f1218;
 
   /* Borders */
-  --border-subtle:  rgba(140, 180, 230, 0.06);
-  --border-strong:  rgba(140, 180, 230, 0.16);
-  --border-focus:   #5b9bc9;
+  --border-subtle:  rgba(195, 210, 230, 0.06);
+  --border-strong:  rgba(195, 210, 230, 0.14);
+  --border-focus:   #7fb3d8;
 
   /* Text */
-  --text-primary:   #e8eef9;
-  --text-secondary: #a4b2cc;
-  --text-muted:     #5d6e90;
-  --text-disabled:  #3d4a68;
+  --text-primary:   #eaeef5;
+  --text-secondary: #b3bdcc;
+  --text-muted:     #707b8e;
+  --text-disabled:  #4a5566;
 
-  /* Brand / Primary — azul corporativo profundo */
-  --primary:        #4a8fc4;
-  --primary-light:  #6cb1e0;
-  --primary-dark:   #234b75;
-  --primary-soft:   rgba(74, 143, 196, 0.10);
-  --primary-glow:   rgba(108, 177, 224, 0.22);
+  /* Brand / Primary — azul acero refinado */
+  --primary:        #5e94c4;
+  --primary-light:  #7fb3d8;
+  --primary-dark:   #3d6f99;
+  --primary-soft:   rgba(94, 148, 196, 0.10);
+  --primary-glow:   rgba(127, 179, 216, 0.22);
 
-  /* Accent — teal industrial apagado */
-  --accent:         #4eb3c2;
-  --accent-soft:    rgba(78, 179, 194, 0.10);
-  --accent-glow:    rgba(78, 179, 194, 0.20);
+  /* Accent — teal industrial sobrio */
+  --accent:         #5cb5b8;
+  --accent-soft:    rgba(92, 181, 184, 0.10);
+  --accent-glow:    rgba(92, 181, 184, 0.20);
 
-  /* Semantic — saturación moderada editorial */
-  --ok:             #3fb38a;
-  --ok-soft:        rgba(63, 179, 138, 0.10);
-  --warn:           #d49a3c;
-  --warn-soft:      rgba(212, 154, 60, 0.10);
-  --danger:         #d65c6a;
-  --danger-soft:    rgba(214, 92, 106, 0.12);
-  --info:           #6cb1e0;
-  --info-soft:      rgba(108, 177, 224, 0.10);
+  /* Semantic */
+  --ok:             #58b896;
+  --ok-soft:        rgba(88, 184, 150, 0.10);
+  --warn:           #d9a857;
+  --warn-soft:      rgba(217, 168, 87, 0.10);
+  --danger:         #db6a76;
+  --danger-soft:    rgba(219, 106, 118, 0.12);
+  --info:           #7fb3d8;
+  --info-soft:      rgba(127, 179, 216, 0.10);
 
-  /* Surfaces compuestas — usados por PremiumPanel/Tile (no hardcodear hex) */
-  --surface-panel-from: rgba(15, 24, 40, 0.96);
-  --surface-panel-to:   rgba(8, 14, 26, 0.99);
-  --surface-tile-from:  rgba(20, 32, 53, 0.65);
-  --surface-tile-to:    rgba(10, 17, 30, 0.85);
-  --surface-tile-primary-from: rgba(74, 143, 196, 0.10);
-  --surface-tile-accent-from:  rgba(78, 179, 194, 0.10);
-  --surface-tile-warn-from:    rgba(212, 154, 60, 0.10);
-  --surface-tile-danger-from:  rgba(214, 92, 106, 0.10);
-  --surface-glass:      rgba(20, 32, 53, 0.55);
+  /* Surfaces compuestas — pasadas a panels/tiles */
+  --surface-panel-from: rgba(31, 37, 48, 0.96);
+  --surface-panel-to:   rgba(21, 26, 34, 0.99);
+  --surface-tile-from:  rgba(38, 45, 58, 0.65);
+  --surface-tile-to:    rgba(26, 31, 40, 0.85);
+  --surface-tile-primary-from: rgba(94, 148, 196, 0.10);
+  --surface-tile-accent-from:  rgba(92, 181, 184, 0.10);
+  --surface-tile-warn-from:    rgba(217, 168, 87, 0.10);
+  --surface-tile-danger-from:  rgba(219, 106, 118, 0.10);
+  --surface-glass:      rgba(38, 45, 58, 0.65);
 
-  /* Mesh atmospheric panel */
-  --panel-mesh-1:   radial-gradient(ellipse 80% 60% at 30% 0%, rgba(108,177,224,0.08), transparent 60%);
-  --panel-mesh-2:   radial-gradient(ellipse 70% 50% at 90% 100%, rgba(78,179,194,0.05), transparent 60%);
-  --panel-accent-line: linear-gradient(90deg, transparent, rgba(108,177,224,0.55) 30%, rgba(78,179,194,0.45) 70%, transparent);
-  --panel-shadow:   0 12px 48px rgba(0, 0, 0, 0.50), 0 0 0 1px rgba(255,255,255,0.025);
-  --icon-box-bg:    linear-gradient(135deg, rgba(74,143,196,0.14), rgba(78,179,194,0.08));
+  /* Header glass — usado por TopBar */
+  --header-bg: linear-gradient(180deg, rgba(94,148,196,0.06) 0%, rgba(26,31,40,0.92) 100%), var(--bg-surface);
+
+  /* Mesh atmospheric */
+  --panel-mesh-1:   radial-gradient(ellipse 80% 60% at 30% 0%, rgba(127,179,216,0.07), transparent 60%);
+  --panel-mesh-2:   radial-gradient(ellipse 70% 50% at 90% 100%, rgba(92,181,184,0.04), transparent 60%);
+  --panel-accent-line: linear-gradient(90deg, transparent, rgba(127,179,216,0.50) 30%, rgba(92,181,184,0.40) 70%, transparent);
+  --panel-shadow:   0 12px 48px rgba(0, 0, 0, 0.40), 0 0 0 1px rgba(255,255,255,0.03);
+  --icon-box-bg:    linear-gradient(135deg, rgba(94,148,196,0.14), rgba(92,181,184,0.08));
 
   /* Body atmosphere */
-  --ambient: radial-gradient(circle at 15% 20%, rgba(74, 143, 196, 0.06), transparent 50%),
-             radial-gradient(circle at 85% 80%, rgba(78, 179, 194, 0.04), transparent 50%);
-  --grain-opacity: 0.025;
+  --ambient: radial-gradient(circle at 15% 20%, rgba(94, 148, 196, 0.05), transparent 50%),
+             radial-gradient(circle at 85% 80%, rgba(92, 181, 184, 0.04), transparent 50%);
+  --grain-opacity: 0.020;
   --grain-blend: overlay;
 
   /* Tipografía */
@@ -92,70 +98,76 @@
   color-scheme: dark;
 }
 
-/* ───────────────── LIGHT · Architect's Blueprint ───────────────── */
+/* ───────────────── LIGHT · "Mist Atelier" ─────────────────
+   Gris cálido neutro con base lavanda muy sutil. NO blanco genérico,
+   NO sepia papel. Cómodo a la vista, refinado editorial industrial.
+   ─────────────────────────────────────────────────────────── */
 [data-theme='light'] {
-  /* Backgrounds — papel sepia cálido */
-  --bg-base:        #f3ecd9;
-  --bg-surface:     #fbf6ea;
-  --bg-card:        #f6efdb;
-  --bg-card-2:      #ede4cd;
-  --bg-hover:       #e4dbc4;
-  --bg-inset:       #ede4cd;
+  /* Backgrounds — neblina cálida nórdica */
+  --bg-base:        #eef1f5;
+  --bg-surface:     #f7f8fb;
+  --bg-card:        #fafbfd;
+  --bg-card-2:      #e8ecf2;
+  --bg-hover:       #dfe4ec;
+  --bg-inset:       #e2e6ed;
 
-  /* Borders — tinta marrón cálida */
-  --border-subtle:  rgba(76, 51, 28, 0.10);
-  --border-strong:  rgba(76, 51, 28, 0.22);
-  --border-focus:   #1f3d5e;
+  /* Borders — tinta sutil */
+  --border-subtle:  rgba(36, 50, 75, 0.08);
+  --border-strong:  rgba(36, 50, 75, 0.18);
+  --border-focus:   #3a6996;
 
-  /* Text — tinta tipográfica */
-  --text-primary:   #1a2a3f;
-  --text-secondary: #3d4f6b;
-  --text-muted:     #7a6b54;
-  --text-disabled:  #b09e83;
+  /* Text — tinta refinada */
+  --text-primary:   #1c2535;
+  --text-secondary: #455066;
+  --text-muted:     #7a8499;
+  --text-disabled:  #aab2c2;
 
-  /* Brand — azul tinta profundo (planos de ingeniero) */
-  --primary:        #1f3d5e;
-  --primary-light:  #2f5a85;
-  --primary-dark:   #142a44;
-  --primary-soft:   rgba(31, 61, 94, 0.10);
-  --primary-glow:   rgba(31, 61, 94, 0.18);
+  /* Brand — azul profundo elegante */
+  --primary:        #3a6996;
+  --primary-light:  #4f81b0;
+  --primary-dark:   #284c70;
+  --primary-soft:   rgba(58, 105, 150, 0.08);
+  --primary-glow:   rgba(58, 105, 150, 0.16);
 
-  /* Accent — ocre cobre cálido */
-  --accent:         #b16d2d;
-  --accent-soft:    rgba(177, 109, 45, 0.10);
-  --accent-glow:    rgba(177, 109, 45, 0.20);
+  /* Accent — verde cobre suave */
+  --accent:         #5a9685;
+  --accent-soft:    rgba(90, 150, 133, 0.08);
+  --accent-glow:    rgba(90, 150, 133, 0.16);
 
-  /* Semantic — tonos terrosos */
-  --ok:             #4a8260;
-  --ok-soft:        rgba(74, 130, 96, 0.10);
-  --warn:           #b5732a;
-  --warn-soft:      rgba(181, 115, 42, 0.10);
-  --danger:         #a83a3a;
-  --danger-soft:    rgba(168, 58, 58, 0.10);
-  --info:           #1f3d5e;
-  --info-soft:      rgba(31, 61, 94, 0.10);
+  /* Semantic */
+  --ok:             #3d8a6a;
+  --ok-soft:        rgba(61, 138, 106, 0.10);
+  --warn:           #c08938;
+  --warn-soft:      rgba(192, 137, 56, 0.10);
+  --danger:         #b94d54;
+  --danger-soft:    rgba(185, 77, 84, 0.10);
+  --info:           #3a6996;
+  --info-soft:      rgba(58, 105, 150, 0.10);
 
   /* Surfaces compuestas */
-  --surface-panel-from: rgba(251, 246, 234, 0.94);
-  --surface-panel-to:   rgba(243, 236, 217, 0.98);
-  --surface-tile-from:  rgba(255, 252, 244, 0.85);
-  --surface-tile-to:    rgba(243, 236, 217, 0.95);
-  --surface-tile-primary-from: rgba(31, 61, 94, 0.07);
-  --surface-tile-accent-from:  rgba(177, 109, 45, 0.07);
-  --surface-tile-warn-from:    rgba(181, 115, 42, 0.07);
-  --surface-tile-danger-from:  rgba(168, 58, 58, 0.07);
-  --surface-glass:      rgba(255, 252, 244, 0.75);
+  --surface-panel-from: rgba(255, 255, 255, 0.92);
+  --surface-panel-to:   rgba(247, 248, 251, 0.98);
+  --surface-tile-from:  rgba(255, 255, 255, 0.90);
+  --surface-tile-to:    rgba(238, 241, 245, 0.95);
+  --surface-tile-primary-from: rgba(58, 105, 150, 0.06);
+  --surface-tile-accent-from:  rgba(90, 150, 133, 0.06);
+  --surface-tile-warn-from:    rgba(192, 137, 56, 0.07);
+  --surface-tile-danger-from:  rgba(185, 77, 84, 0.07);
+  --surface-glass:      rgba(255, 255, 255, 0.78);
 
-  --panel-mesh-1:   radial-gradient(ellipse 80% 60% at 30% 0%, rgba(31,61,94,0.07), transparent 60%);
-  --panel-mesh-2:   radial-gradient(ellipse 70% 50% at 90% 100%, rgba(177,109,45,0.05), transparent 60%);
-  --panel-accent-line: linear-gradient(90deg, transparent, rgba(31,61,94,0.40) 30%, rgba(177,109,45,0.35) 70%, transparent);
-  --panel-shadow:   0 4px 24px rgba(76, 51, 28, 0.12), 0 1px 3px rgba(76, 51, 28, 0.08), 0 0 0 1px rgba(76, 51, 28, 0.06);
-  --icon-box-bg:    linear-gradient(135deg, rgba(31,61,94,0.10), rgba(177,109,45,0.07));
+  /* Header glass */
+  --header-bg: linear-gradient(180deg, rgba(58,105,150,0.05) 0%, rgba(247,248,251,0.95) 100%), var(--bg-surface);
 
-  /* Ambient — textura papel + mesh tinta */
-  --ambient: radial-gradient(circle at 15% 20%, rgba(31, 61, 94, 0.05), transparent 50%),
-             radial-gradient(circle at 85% 80%, rgba(177, 109, 45, 0.04), transparent 50%);
-  --grain-opacity: 0.06;
+  --panel-mesh-1:   radial-gradient(ellipse 80% 60% at 30% 0%, rgba(58,105,150,0.06), transparent 60%);
+  --panel-mesh-2:   radial-gradient(ellipse 70% 50% at 90% 100%, rgba(90,150,133,0.04), transparent 60%);
+  --panel-accent-line: linear-gradient(90deg, transparent, rgba(58,105,150,0.40) 30%, rgba(90,150,133,0.30) 70%, transparent);
+  --panel-shadow:   0 4px 16px rgba(36, 50, 75, 0.08), 0 1px 3px rgba(36, 50, 75, 0.06), 0 0 0 1px rgba(36, 50, 75, 0.04);
+  --icon-box-bg:    linear-gradient(135deg, rgba(58,105,150,0.10), rgba(90,150,133,0.06));
+
+  /* Ambient — sutil sin distraer */
+  --ambient: radial-gradient(circle at 15% 20%, rgba(58, 105, 150, 0.04), transparent 50%),
+             radial-gradient(circle at 85% 80%, rgba(90, 150, 133, 0.03), transparent 50%);
+  --grain-opacity: 0.025;
   --grain-blend: multiply;
 
   color-scheme: light;
@@ -222,12 +234,12 @@ body::after {
   background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
 
-/* Blueprint líneas sutiles solo en light (papel cuadriculado fantasma) */
+/* Light: grilla técnica MUY sutil (whisper, no cuadriculado dominante) */
 [data-theme='light'] body::after {
   background-image:
-    repeating-linear-gradient(0deg, rgba(31,61,94,0.04) 0 1px, transparent 1px 32px),
-    repeating-linear-gradient(90deg, rgba(31,61,94,0.04) 0 1px, transparent 1px 32px);
-  opacity: 0.5;
+    repeating-linear-gradient(0deg, rgba(36,50,75,0.025) 0 1px, transparent 1px 56px),
+    repeating-linear-gradient(90deg, rgba(36,50,75,0.025) 0 1px, transparent 1px 56px);
+  opacity: 0.6;
   mix-blend-mode: multiply;
 }
 

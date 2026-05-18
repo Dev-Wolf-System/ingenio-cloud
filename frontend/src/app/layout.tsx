@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
-import { JetBrains_Mono, Bricolage_Grotesque } from 'next/font/google';
+import { JetBrains_Mono, Familjen_Grotesk, Onest } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 
@@ -25,10 +25,19 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap',
 });
 
-const bricolage = Bricolage_Grotesque({
+// Display — Familjen Grotesk (geométrica nórdica, alto carácter industrial)
+const familjen = Familjen_Grotesk({
   subsets: ['latin'],
-  variable: '--font-bricolage',
-  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-familjen',
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+});
+
+// Body — Onest (humanista moderna, excelente legibilidad pantalla)
+const onest = Onest({
+  subsets: ['latin'],
+  variable: '--font-onest',
+  weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
 });
 
@@ -40,9 +49,7 @@ export const metadata: Metadata = {
   },
   description: 'Plataforma Inteligente de Monitoreo, Producción y Asistencia Operativa Industrial',
   icons: {
-    icon: [
-      { url: '/logo-ingenio-cloud.png', sizes: 'any' },
-    ],
+    icon: [{ url: '/logo-ingenio-cloud.png', sizes: 'any' }],
     apple: '/logo-ingenio-cloud.png',
   },
   openGraph: {
@@ -57,7 +64,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0a1018',
+  themeColor: '#0d1218',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -72,10 +79,10 @@ export default function RootLayout({
   return (
     <html lang="es-AR" suppressHydrationWarning data-theme="dark">
       <body
-        className={`${geist.variable} ${geistMono.variable} ${jetbrainsMono.variable} ${bricolage.variable} antialiased font-body`}
+        className={`${geist.variable} ${geistMono.variable} ${jetbrainsMono.variable} ${familjen.variable} ${onest.variable} antialiased font-body`}
         style={{
-          ['--font-display' as never]: 'var(--font-bricolage)',
-          ['--font-body' as never]: 'var(--font-geist-sans)',
+          ['--font-display' as never]: 'var(--font-familjen)',
+          ['--font-body' as never]: 'var(--font-onest)',
           ['--font-mono' as never]: 'var(--font-jetbrains-mono)',
         }}
       >

@@ -19,9 +19,12 @@ type Action =
 function reducer(state: Map<string, DashboardItem>, action: Action) {
   switch (action.type) {
     case 'init': {
-      const map = new Map<string, DashboardItem>();
-      action.payload.forEach((item) => map.set(item.key, item));
-      return map;
+      // Merge no destructivo: si llega vacío (snapshot fallido) mantiene cache.
+      // Si llega con items, hace upsert (no elimina los previos que no vinieron).
+      if (action.payload.length === 0) return state;
+      const next = new Map(state);
+      action.payload.forEach((item) => next.set(item.key, item));
+      return next;
     }
     case 'update': {
       const next = new Map(state);
