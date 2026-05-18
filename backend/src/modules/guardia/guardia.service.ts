@@ -186,8 +186,37 @@ export class GuardiaService {
   async getAnalisisIA() {
     const prev = getPreviousShift();
     const cached = await this.getCached('analisis_ia', prev);
-    if (!cached) return { mensaje: 'Análisis IA aún no disponible' };
+    if (!cached) {
+      return {
+        mensaje: 'Análisis IA aún no disponible',
+        ia_available: this.ai.isAvailable(),
+      };
+    }
     return cached;
+  }
+
+  /** Disparar análisis IA manual ahora (await sincrónico) */
+  async forceAnalisisIA() {
+    if (!this.ai.isAvailable()) {
+      return { ok: false, error: 'OPENAI_API_KEY no configurada o cliente IA no iniciado' };
+    }
+    const resumen = await this.fetchResumenFromNodeRed(true);
+    if (!resumen) return { ok: false, error: 'Sin datos turno previo desde Node-RED' };
+    const prev = getPreviousShift();
+    this.logger.log(`forceAnalisisIA: iniciando para turno ${prev.name}`);
+    try {
+      const result = await this.ai.analizarResumenGuardia(resumen);
+      if (!result) {
+        return { ok: false, error: 'OpenAI devolvió respuesta vacía o JSON inválido' };
+      }
+      await this.setCached('analisis_ia', prev, result, 60 * 12);
+      this.logger.log(`forceAnalisisIA: cacheado OK turno ${prev.name}`);
+      return { ok: true, ...result };
+    } catch (err) {
+      const msg = (err as Error).message;
+      this.logger.error(`forceAnalisisIA exception: ${msg}`);
+      return { ok: false, error: `Error OpenAI: ${msg}` };
+    }
   }
 
   /** Vel molino — siempre cache (llega por WS de Node-RED) */

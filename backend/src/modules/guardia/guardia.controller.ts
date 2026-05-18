@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post } from '@nestjs/common';
 import { GuardiaService } from './guardia.service';
 
 @Controller('guardia')
@@ -45,5 +45,11 @@ export class GuardiaController {
   @Get('analisis-ia')
   analisisIA() {
     return this.svc.getAnalisisIA();
+  }
+
+  /** POST /api/guardia/analisis-ia/refresh — disparar IA manual ahora */
+  @Post('analisis-ia/refresh')
+  refreshAnalisisIA() {
+    return this.svc.forceAnalisisIA();
   }
 }
