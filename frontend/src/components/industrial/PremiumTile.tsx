@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils/cn';
 import { formatNumber, formatRelative } from '@/lib/utils/format';
 import { m } from 'motion/react';
 
-const STALE_WARN_SEC = 60;   // > 60s = amarillo
-const STALE_DEAD_SEC = 180;  // > 3min = rojo (sensor caído)
+const STALE_WARN_SEC = 15;   // > 15s = amarillo (sensor demorado)
+const STALE_DEAD_SEC = 30;   // > 30s = rojo (sensor caído)
 
 function getStaleness(updatedAt?: string): 'fresh' | 'warn' | 'dead' {
   if (!updatedAt) return 'fresh';
@@ -133,10 +133,10 @@ export function PremiumTile({
     ? formatNumber(value, precision)
     : hasValue ? String(value) : '—';
 
-  // Re-eval staleness cada 30s
+  // Re-eval staleness cada 5s (responsive a corte conexión)
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 30_000);
+    const id = setInterval(() => setNow(Date.now()), 5_000);
     return () => clearInterval(id);
   }, []);
   void now;

@@ -1,11 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { IconWifiOff, IconAlertTriangle } from '@tabler/icons-react';
+import { IconWifiOff, IconAlertTriangle, IconClockExclamation } from '@tabler/icons-react';
 import { AnimatePresence, m } from 'motion/react';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 
-const STALE_DEAD_SEC = 180; // 3 min sin updates → todos los sensores caídos
+const STALE_WARN_SEC = 15;   // > 15s → banner ámbar "demorados"
+const STALE_DEAD_SEC = 30;   // > 30s → banner rojo "sensores caídos"
+
+type BannerType = 'offline' | 'sensors-dead' | 'sensors-warn' | null;
 
 export function ConnectionBanner() {
   const [online, setOnline] = useState(true);
@@ -28,9 +31,9 @@ export function ConnectionBanner() {
     };
   }, []);
 
-  // Reevaluar staleness cada 15s
+  // Reevaluar staleness cada 5s (responsive a corte conexión)
   useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 15_000);
+    const id = setInterval(() => setNow(Date.now()), 5_000);
     return () => clearInterval(id);
   }, []);
 
@@ -48,36 +51,54 @@ export function ConnectionBanner() {
   });
 
   const hasData = allItems.length > 0;
-  const ageSec = hasData ? (now - mostRecent) / 1000 : Infinity;
-  const allSensorsDown = hasData && ageSec > STALE_DEAD_SEC;
+  const ageSec = hasData ? Math.floor((now - mostRecent) / 1000) : Infinity;
 
-  const show = !online || allSensorsDown;
-  const type = !online ? 'offline' : 'sensors-down';
+  let bannerType: BannerType = null;
+  if (!online) bannerType = 'offline';
+  else if (hasData && ageSec > STALE_DEAD_SEC) bannerType = 'sensors-dead';
+  else if (hasData && ageSec > STALE_WARN_SEC) bannerType = 'sensors-warn';
+
+  const config = {
+    offline: {
+      icon: <IconWifiOff size={16} />,
+      color: 'var(--danger)',
+      bg: 'var(--danger-soft)',
+      msg: 'Sin conexión a internet · datos pueden estar desactualizados',
+    },
+    'sensors-dead': {
+      icon: <IconAlertTriangle size={16} />,
+      color: 'var(--danger)',
+      bg: 'var(--danger-soft)',
+      msg: `Sensores sin actualizar hace ${ageSec}s · verificar Node-RED o red de planta`,
+    },
+    'sensors-warn': {
+      icon: <IconClockExclamation size={16} />,
+      color: 'var(--warn)',
+      bg: 'var(--warn-soft)',
+      msg: `Última lectura hace ${ageSec}s · datos demorados`,
+    },
+  };
 
   return (
     <AnimatePresence>
-      {show && (
+      {bannerType && (
         <m.div
+          key={bannerType}
           initial={{ y: -40, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: -40, opacity: 0 }}
           transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-3 px-4 py-2 backdrop-blur-md"
+          className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-3 px-4 py-2 backdrop-blur-md border-b-2"
           style={{
-            background:
-              type === 'offline'
-                ? 'rgba(217,101,112,0.18)'
-                : 'rgba(217,160,74,0.18)',
-            borderBottom: `1px solid ${type === 'offline' ? 'rgba(217,101,112,0.5)' : 'rgba(217,160,74,0.5)'}`,
-            color: type === 'offline' ? '#d96570' : '#d9a04a',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+            background: config[bannerType].bg,
+            borderBottomColor: config[bannerType].color,
+            color: config[bannerType].color,
+            boxShadow: '0 4px 24px rgba(0,0,0,0.20)',
           }}
         >
-          {type === 'offline' ? <IconWifiOff size={16} /> : <IconAlertTriangle size={16} />}
+          {config[bannerType].icon}
           <span className="text-xs font-semibold uppercase tracking-wider">
-            {type === 'offline'
-              ? 'Sin conexión a internet · datos pueden estar desactualizados'
-              : `Sin actualizaciones de sensores hace ${Math.round(ageSec)}s · verificar Node-RED`}
+            {config[bannerType].msg}
           </span>
         </m.div>
       )}
