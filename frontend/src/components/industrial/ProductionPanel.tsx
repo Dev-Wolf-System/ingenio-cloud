@@ -42,10 +42,15 @@ function accentForKey(key: string): TileAccent {
   return 'primary';
 }
 
+// Keys que NO mostrar en panel — se exhiben en otros lugares o quedan obsoletos
+const HIDDEN_KEYS = ['color_cinta_corta', 'humedad_cinta_corta'];
+
 export function ProductionPanel() {
   const data = useDashboardData('produccion');
   const { data: thresholds } = useThresholds();
-  const entries = Array.from(data.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  const entries = Array.from(data.entries())
+    .filter(([key]) => !HIDDEN_KEYS.includes(key.toLowerCase()))
+    .sort((a, b) => a[0].localeCompare(b[0]));
   const count = entries.length;
 
   return (

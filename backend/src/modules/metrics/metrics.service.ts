@@ -63,6 +63,29 @@ export class MetricsService {
     }
   }
 
+  async colorCintaLarga() {
+    try {
+      const pub = this.supabase.schema('public');
+      const { data, error } = await pub
+        .from('v_color_cinta_larga')
+        .select('color_icumsa, humedad, hora_lectura')
+        .maybeSingle();
+      if (error) {
+        this.logger.warn(`color-cinta-larga fail: ${error.message}`);
+        return { color_icumsa: null, humedad: null, hora_lectura: null, stale: true };
+      }
+      const row = data as { color_icumsa?: number; humedad?: number; hora_lectura?: string } | null;
+      return {
+        color_icumsa: row?.color_icumsa ?? null,
+        humedad: row?.humedad ?? null,
+        hora_lectura: row?.hora_lectura ?? null,
+      };
+    } catch (err) {
+      this.logger.warn(`color-cinta-larga exception: ${(err as Error).message}`);
+      return { color_icumsa: null, humedad: null, hora_lectura: null, stale: true };
+    }
+  }
+
   async catalog() {
     try {
       const industrial = this.supabase.schema('industrial');

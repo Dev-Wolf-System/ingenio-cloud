@@ -29,4 +29,10 @@ export class MetricsController {
     return this.svc.canchonResumen();
   }
 
+  /** GET /api/metrics/color-cinta-larga — color ICUMSA + humedad última lectura cinta larga */
+  @Get('color-cinta-larga')
+  colorCintaLarga() {
+    return this.svc.colorCintaLarga();
+  }
+
 }

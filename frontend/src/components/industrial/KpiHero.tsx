@@ -7,6 +7,7 @@ import {
   IconFlame,
   IconAlertTriangle,
   IconTruck,
+  IconWaveSine,
 } from '@tabler/icons-react';
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
 import { PremiumTile, type TileAccent } from './PremiumTile';
@@ -23,6 +24,17 @@ async function fetchCanchon() {
   const res = await fetch(`${apiUrl}/metrics/canchon`);
   if (!res.ok) return { total_camiones: null as number | null };
   return res.json() as Promise<{ total_camiones: number | null }>;
+}
+
+async function fetchColorCintaLarga() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+  const res = await fetch(`${apiUrl}/metrics/color-cinta-larga`);
+  if (!res.ok) return { color_icumsa: null, humedad: null, hora_lectura: null };
+  return res.json() as Promise<{
+    color_icumsa: number | null;
+    humedad: number | null;
+    hora_lectura: string | null;
+  }>;
 }
 
 function pickIncludes(map: Map<string, DashboardItem>, patterns: string[]): DashboardItem | null {
@@ -66,6 +78,11 @@ export function KpiHero() {
     queryFn: fetchCanchon,
     refetchInterval: 60_000,
   });
+  const colorCinta = useQuery({
+    queryKey: ['color', 'cinta-larga'],
+    queryFn: fetchColorCintaLarga,
+    refetchInterval: 600_000, // 10 min
+  });
 
   // Molienda Kilos del trapiche
   const moliendaItem = pickIncludes(trapiche, ['molienda_kilos', 'molienda_actual', 'molienda']);
@@ -85,6 +102,18 @@ export function KpiHero() {
   // Camiones canchón
   const totalCamiones = canchon.data?.total_camiones ?? null;
 
+  // Color azúcar (cinta larga) — actualiza c/ 10 min
+  const colorIcumsa = colorCinta.data?.color_icumsa ?? null;
+  const humedadCinta = colorCinta.data?.humedad ?? null;
+  const horaLectura = colorCinta.data?.hora_lectura ?? null;
+  const horaLecturaFmt = horaLectura
+    ? new Date(horaLectura).toLocaleTimeString('es-AR', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'America/Argentina/Buenos_Aires',
+      })
+    : null;
+
   // Alertas activas
   const alertsList = (alerts.data as { alerts?: { severity: string }[] } | undefined)?.alerts ?? [];
   const activeCount = alertsList.length;
@@ -92,7 +121,7 @@ export function KpiHero() {
   const alertAccent: TileAccent = criticalCount > 0 ? 'danger' : activeCount > 0 ? 'warn' : 'accent';
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
       <PremiumTile
         icon={<IconScale size={14} />}
         label="Molienda actual"
@@ -128,6 +157,20 @@ export function KpiHero() {
         accent="warn"
         size="hero"
         hint={gasTotal != null ? 'Suma calderas 2+3+6' : 'Sin caudales'}
+      />
+      <PremiumTile
+        icon={<IconWaveSine size={14} />}
+        label="Color azúcar"
+        value={colorIcumsa ?? undefined}
+        unit="UI"
+        precision={0}
+        accent="accent"
+        size="hero"
+        hint={
+          humedadCinta != null
+            ? `Humedad ${humedadCinta.toFixed(2)}%${horaLecturaFmt ? ` · ${horaLecturaFmt}` : ''}`
+            : 'Sin lectura hoy'
+        }
       />
       <PremiumTile
         icon={<IconTruck size={14} />}
