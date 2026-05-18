@@ -95,22 +95,22 @@ export interface PremiumTileProps {
 
 const ALERT_STYLE: Record<AlertSeverity, { color: string; border: string; bg: string; glow: string }> = {
   info: {
-    color: '#5b9bc9',
-    border: 'rgba(91,155,201,0.55)',
-    bg: 'linear-gradient(135deg, rgba(91,155,201,0.12), rgba(15,24,37,0.6))',
-    glow: '0 0 20px rgba(91,155,201,0.25)',
+    color: 'var(--info)',
+    border: 'var(--info)',
+    bg: 'linear-gradient(135deg, var(--info-soft), var(--surface-tile-to))',
+    glow: '0 0 20px var(--info-soft)',
   },
   warn: {
-    color: '#d9a04a',
-    border: 'rgba(217,160,74,0.55)',
-    bg: 'linear-gradient(135deg, rgba(217,160,74,0.12), rgba(15,24,37,0.6))',
-    glow: '0 0 24px rgba(217,160,74,0.30)',
+    color: 'var(--warn)',
+    border: 'var(--warn)',
+    bg: 'linear-gradient(135deg, var(--warn-soft), var(--surface-tile-to))',
+    glow: '0 0 24px var(--warn-soft)',
   },
   critical: {
-    color: '#d96570',
-    border: 'rgba(217,101,112,0.65)',
-    bg: 'linear-gradient(135deg, rgba(217,101,112,0.16), rgba(15,24,37,0.6))',
-    glow: '0 0 32px rgba(217,101,112,0.40)',
+    color: 'var(--danger)',
+    border: 'var(--danger)',
+    bg: 'linear-gradient(135deg, var(--danger-soft), var(--surface-tile-to))',
+    glow: '0 0 32px var(--danger-soft)',
   },
 };
 
