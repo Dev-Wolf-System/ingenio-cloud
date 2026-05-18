@@ -69,6 +69,10 @@
   /* Header glass — usado por TopBar */
   --header-bg: linear-gradient(180deg, rgba(94,148,196,0.06) 0%, rgba(26,31,40,0.92) 100%), var(--bg-surface);
 
+  /* Logo plate — blanco en dark para mejor contraste del logo */
+  --logo-plate-bg: #ffffff;
+  --logo-plate-ring: rgba(255,255,255,0.18);
+
   /* Mesh atmospheric */
   --panel-mesh-1:   radial-gradient(ellipse 80% 60% at 30% 0%, rgba(127,179,216,0.07), transparent 60%);
   --panel-mesh-2:   radial-gradient(ellipse 70% 50% at 90% 100%, rgba(92,181,184,0.04), transparent 60%);
@@ -157,6 +161,10 @@
 
   /* Header glass */
   --header-bg: linear-gradient(180deg, rgba(58,105,150,0.05) 0%, rgba(247,248,251,0.95) 100%), var(--bg-surface);
+
+  /* Logo plate — mantener bg-card en light (sin cambio visual respecto al original) */
+  --logo-plate-bg: var(--bg-card);
+  --logo-plate-ring: var(--border-strong);
 
   --panel-mesh-1:   radial-gradient(ellipse 80% 60% at 30% 0%, rgba(58,105,150,0.06), transparent 60%);
   --panel-mesh-2:   radial-gradient(ellipse 70% 50% at 90% 100%, rgba(90,150,133,0.04), transparent 60%);

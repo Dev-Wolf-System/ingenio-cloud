@@ -40,12 +40,18 @@ export function TopBar({ plant = 'Planta Sur' }: { plant?: string }) {
 
       {/* Brand */}
       <div className="relative flex items-center gap-3">
-        <div className="relative w-10 h-10 flex items-center justify-center rounded-lg overflow-hidden bg-bg-card ring-1 ring-border-strong">
+        <div
+          className="relative w-10 h-10 flex items-center justify-center rounded-lg overflow-hidden p-1"
+          style={{
+            background: 'var(--logo-plate-bg)',
+            boxShadow: '0 0 0 1px var(--logo-plate-ring), 0 2px 8px rgba(0,0,0,0.18)',
+          }}
+        >
           <Image
             src="/logo-ingenio-cloud.png"
             alt="Ingenio Cloud"
-            width={40}
-            height={40}
+            width={36}
+            height={36}
             priority
             className="object-contain"
           />
