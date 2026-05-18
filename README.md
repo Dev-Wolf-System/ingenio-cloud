@@ -5,7 +5,9 @@
 Monorepo SaaS multi-tenant para ingenios azucareros. Combina monitoreo industrial tiempo real, agente IA conversacional (Zoe), agente proactivo (Vigía), y panel ERP modular.
 
 **Cliente piloto:** Ingenio La Corona (Tucumán, AR).
-**Estado:** Sprint 0 — Dashboard gerencial principal.
+**Estado:** Sprint 0 ✅ Dashboard gerencial + alertas + tema dual.
+
+📘 **[Ver hoja de desarrollo completa →](./docs/HOJA_DESARROLLO.md)**
 
 ---
 
