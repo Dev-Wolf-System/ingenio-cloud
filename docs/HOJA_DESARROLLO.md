@@ -1,7 +1,7 @@
 # Ingenio Cloud — Hoja de Desarrollo
 
 > Documento vivo. Estado real del proyecto + arquitectura + endpoints + roadmap.
-> Última actualización: 2026-05-18
+> Última actualización: 2026-05-18 · Sprint 0 cerrado + Polish UX/UI
 
 ---
 
@@ -9,36 +9,57 @@
 
 ### Hecho ✅
 
-- **Backend NestJS 10** desplegado en VPS Hostinger `srv878399`
-  - Node 22 alpine (WebSocket nativo Supabase Realtime)
-  - Gateway WS para ingesta Node-RED (3 áreas + molino)
-  - REST API resiliente (200 con `stale: true` en lugar de 500)
-  - Cron de alertas + guardia
-  - OpenAI gpt-4o-mini para análisis IA de turno
-- **Frontend Next.js 14** App Router con motion/react
-  - Dashboard premium con 4 paneles (Energía, Producción, Trapiche, Resumen Guardia)
-  - Página `/alertas` para configurar umbrales por sensor
-  - Tema dual claro/oscuro distintivo (Architect's Blueprint / Industrial Cosmos)
-  - ConnectionBanner global (offline / sensores caídos)
-- **Supabase self-hosted** stack
-  - PostgreSQL + PostgREST + Realtime + Kong gateway
-  - Schemas: `industrial`, `alerts`, `production`, `core`, `auth`, `storage`
-  - RLS habilitado en tablas críticas
-  - Realtime publication: `dashboard_data`, `metrics_live`, `shift_kpis_cache`, `alerts.active`, `alert_thresholds`
-- **Sistema alertas con thresholds** end-to-end
-  - Configurador UI con CRUD
-  - Engine cron 30s evalúa valores vs umbrales
-  - Visual instantáneo en tiles (border + valor + glow + pulse)
-- **Traefik routing**
-  - 1 dominio `ingcloud.srv878399.hstgr.cloud`
-  - 2 routers backend (`/api`, `/ws`) priority 200
-  - 1 router frontend catch-all priority 10
-- **OpenAI análisis IA** turno previo automático (cron post-cambio turno)
-- **Reverse proxy + SSL** Let's Encrypt via Traefik
+#### Backend NestJS 10 (Node 22 alpine)
+- Gateway WS ingesta Node-RED: `/ws/dashboard/{energia,produccion,trapiche,molino}`
+- REST API resiliente: try/catch en services, devuelve `200 { stale: true }` en vez de 500
+- Cron threshold evaluator cada 30s (TZ Buenos_Aires)
+- Cron pull guardia 05:15/13:15/21:15 ART
+- OpenAI gpt-4o-mini con diagnóstico detallado (raw content log, parse markdown tolerance)
+- Endpoint manual POST `/api/guardia/analisis-ia/refresh` con error detallado
+- WebSocket gateways con auth por query secret + clamp valores negativos
+- Logger pino con contextos por service
+
+#### Frontend Next.js 14 (App Router + motion/react)
+- **Dashboard premium**: 5 KpiHero (Molienda kg, Bolsas, Gas total, Camiones canchón, Alertas)
+- **4 paneles**: Energía (warn), Producción (accent), Trapiche (primary), Resumen Guardia
+- **TrapichePanel**: whitelist 8 KPIs + EstadoBanner full-width + filtra rows huérfanas
+- **Página `/alertas`** CRUD umbrales con tabla + filtros + severity + toggle
+- **Tema dual** (ver sección 6): "Graphite Forge" dark + "Mist Atelier" light
+  - Toggle Sun/Moon en TopBar + persistencia localStorage + respeta `prefers-color-scheme`
+- **ShiftWelcomeBanner**: modal fullscreen al inicio de cada turno (primeros 30 min)
+  - Saludo Buenos días/tardes/noches + 4 mini KPIs + análisis IA del turno previo
+  - Dismissible 1 vez por turno (localStorage)
+- **ConnectionBanner global**: detección offline navegador + health ping backend cada 10s
+  - 3 estados: offline (rojo) / sensores warn (ámbar 15s) / sensores dead (rojo 30s)
+- **PremiumTile staleness**: tiles muestran ámbar > 15s sin update, rojo > 30s
+- **useDashboardData merge no destructivo**: cache último valor (no flashea empty)
+- **AnimatedNumber** CountUp con motion + locale es-AR
+- **Fuentes distintivas**: Familjen Grotesk display + Onest body + JetBrains mono
+- **Logo plate blanco en dark mode** para mejor contraste
+
+#### Supabase self-hosted stack
+- PostgreSQL 15 + PostgREST v14.6 + Realtime + Kong gateway + Studio + Auth
+- Schemas activos: `industrial`, `alerts`, `production`, `core`
+- RLS habilitado: `dashboard_data`, `metrics_live`, `alerts.active`, `alert_thresholds`
+- Realtime publication: `dashboard_data`, `metrics_live`, `shift_kpis_cache`, `alerts.active`, `alert_thresholds`
+- REPLICA IDENTITY FULL en todas las hot tables
+- Tabla `industrial.alert_thresholds` con CHECK + UNIQUE + defaults tenant/plant
+
+#### Sistema alertas end-to-end
+- Configurador UI con CRUD batch upsert
+- Engine cron 30s: lee thresholds + snapshot, abre/cierra rows en `alerts.active`
+- Visual instantáneo en tiles (border + valor + glow + pulse según severidad)
+- KpiHero contador con refetch 30s
+
+#### Traefik routing
+- 1 dominio `ingcloud.srv878399.hstgr.cloud`
+- 2 routers backend (`/api`, `/ws`) priority 200
+- 1 router frontend catch-all priority 10
+- SSL Let's Encrypt vía cert resolver
 
 ### En progreso 🟡
 
-- Resolver 401 intermitente PostgREST → service role key (mitigado con backend resilient)
+- OpenAI gpt-4o-mini análisis IA: diagnóstico expuesto, esperando ver raw response real
 - Node-RED routing correcto (algunos sensores producción llegan bajo `area=trapiche`)
 - Páginas adicionales (`/sensores`, `/historico`)
 
@@ -177,7 +198,8 @@ ingenio-cloud/
 | GET | `/api/guardia/gas-previo` | Consumo gas turno previo |
 | GET | `/api/guardia/paradas` | Paradas turno previo |
 | GET | `/api/guardia/vel-molino` | Velocidad molino turno previo |
-| GET | `/api/guardia/analisis-ia` | Análisis IA del turno previo |
+| GET | `/api/guardia/analisis-ia` | Análisis IA del turno previo (con flag `ia_available`) |
+| POST | `/api/guardia/analisis-ia/refresh` | Disparar análisis IA manual ahora (sincrónico, retorna error detallado) |
 
 **Patrón resiliente**: todos los GET devuelven `{ data: [...], stale?: true }` con HTTP 200 incluso cuando Supabase rechaza (en lugar de propagar 500).
 
@@ -262,8 +284,14 @@ KpiHero "Alertas activas" (refetchInterval 30s)
 
 | Modo | Concepto | Paleta clave |
 |---|---|---|
-| **Dark** | "Industrial Cosmos" — sala control nocturna | bg `#050810` casi negro, primary `#4a8fc4` azul corporativo, accent `#4eb3c2` teal industrial |
-| **Light** | "Architect's Blueprint" — papel arquitectónico | bg `#f3ecd9` sepia cálido (NO blanco), primary `#1f3d5e` tinta, accent `#b16d2d` ocre cobre |
+| **Dark** | "Graphite Forge" — sala control nocturna, grafito neutro cómodo | bg `#14181f` grafito, primary `#5e94c4` azul acero, accent `#5cb5b8` teal industrial |
+| **Light** | "Mist Atelier" — neblina cálida nórdica (NO blanco genérico) | bg `#eef1f5` neblina, primary `#3a6996` azul profundo, accent `#5a9685` verde cobre suave |
+
+### Tipografía distintiva
+
+- **Display**: `Familjen Grotesk` (geométrica nórdica, alto carácter industrial)
+- **Body**: `Onest` (humanista moderna, excelente legibilidad pantalla)
+- **Mono**: `JetBrains Mono` (tabular nums)
 
 ### Hook + UI
 
@@ -292,8 +320,14 @@ Variables expuestas en `globals.css`:
 - `--ok`, `--warn`, `--danger`, `--info` + `*-soft` variants
 - `--surface-panel-from/to`, `--surface-tile-from/to/primary-from/accent-from/...`
 - `--panel-mesh-1`, `--panel-mesh-2`, `--panel-accent-line`, `--panel-shadow`
-- `--icon-box-bg`
+- `--icon-box-bg`, `--header-bg`, `--logo-plate-bg`, `--logo-plate-ring`
 - `--ambient`, `--grain-opacity`, `--grain-blend`
+
+### Hooks + UI
+
+- `useTheme()`: lee `localStorage['ingcloud:theme']` o `prefers-color-scheme`
+- `ThemeToggle`: ícono Sun ↔ Moon en TopBar con AnimatePresence
+- Aplica `document.documentElement.dataset.theme` reactivo
 
 ---
 
@@ -509,6 +543,10 @@ WHERE area='trapiche'
 | Issue | Síntoma | Mitigación actual | Fix definitivo |
 |---|---|---|---|
 | ✅ RESUELTO: PostgREST 401 intermitente | 500 cascada en backend | Backend tolerante + fix DNS Kong | Ver sección "DNS Kong colisión" abajo |
+| ✅ RESUELTO: PGRST_DB_SCHEMAS sin `production` | `/api/metrics/canchon` daba `stale:true` | Editar `.env` Supabase + recreate REST | Verificar `docker exec ingenio-rest env` |
+| ✅ RESUELTO: SUPABASE_SERVICE_ROLE_KEY duplicada/truncada | 401 intermitente | sed -i para deduplicar línea | Validación de schema .env al boot |
+| ✅ RESUELTO: useDashboardData borraba cache si snapshot vacío | Tiles flasheaban "—" cuando 500 transitorio | Reducer `init` merge no destructivo | Mantener última data en cache |
+| ⚠️ AI análisis IA vacío/JSON inválido | Banner muestra "no disponible" | Diagnóstico expuesto en logs + botón Generar manual con error detallado | Esperando ver raw response real OpenAI |
 | Node-RED ruteo confuso | Datos producción llegan bajo `area=trapiche` | Whitelist frontend + DELETE limpieza SQL | Corregir flow Node-RED |
 | Cert `api.ingcloud.*` no emitió | (resuelto) | Routing por path `/api` y `/ws` bajo mismo host | Dominio propio + wildcard cert (S6+) |
 | Hydration flash dark→light | Pequeño parpadeo en load | Hook lee localStorage post-mount | Inline script en `<head>` que setea data-theme antes hydrate |
@@ -592,15 +630,42 @@ feat(alertas): engine completo umbrales — visual frontend + cron backend
 - Devolver `{ data, stale?: true }` antes que propagar 500
 - Cron jobs con `timeZone: 'America/Argentina/Buenos_Aires'` explícito
 - Logger por contexto (`new Logger('NombreService')`)
+- En multi-stack VPS: usar `container_name` EXPLÍCITO en hostnames (ej. `ingenio-kong`, NO `kong`) — ver issue DNS Kong sección 11
 
 ### Frontend
 - `'use client'` solo cuando necesita hooks/browser API
 - Hooks `useXxx` en `lib/hooks/`
 - Componentes industriales en `components/industrial/`
-- **NUNCA hardcodear colores** — siempre CSS vars
-- Motion con `m.*` + `LazyMotion features={domAnimation}`
-- TanStack Query con `refetchInterval` para polling, evitar setInterval manual
+- **NUNCA hardcodear colores** — siempre CSS vars del `globals.css`
+- Motion con `m.*` + `LazyMotion features={domAnimation}` (bundle minimal)
+- TanStack Query con `refetchInterval` para polling, evitar `setInterval` manual
+- Componentes que dependen del tiempo (clock, shift) deben ser SSR-safe con `mounted` gate
+- Reducers que merge data realtime: NO destructivos (mantener cache si payload vacío)
 
 ---
 
-*Documento mantenido automáticamente. Actualizar al cerrar cada Sprint.*
+## 14. Changelog reciente (commits clave)
+
+| Commit | Feature |
+|---|---|
+| `c865437` | Fix DNS Kong colisión documentado |
+| `1392e57` | AI service: diagnóstico raw content + tolerancia parsing markdown |
+| `8aacd13` | Endpoint POST `/analisis-ia/refresh` + botón manual UX |
+| `606a0b5` | ShiftWelcomeBanner sync con flag `ia_available` |
+| `c04582a` | ShiftWelcomeBanner nuevo + logging runAnalisisIA |
+| `8879e11` | Staleness agresivo 15s/30s + eval cada 5s |
+| `348911a` | ConnectionBanner health ping cada 10s |
+| `46258c1` | Empty trapiche + staleness + offline banner |
+| `15f4d6b` | Dual mode distintivo + backend resilient |
+| `9ea4ebe` | Alert colors theme-aware |
+| `260dcf5` | Theme toggle Sun/Moon persistencia |
+| `9464edf` | Redesign Graphite/Mist + Familjen + Onest + grid energy |
+| `7fe7a46` | Canchón KPI con refresh 60s |
+| `70e0752` | Engine alertas A+B (frontend + backend) |
+| `52f8b2a` | Motion integration (LazyMotion + spring/stagger) |
+| `01a18df` | Diseño premium unificado PremiumPanel + PremiumTile |
+| `da395ef` | Whitelist KPIs Trapiche + EstadoBanner XL |
+
+---
+
+*Documento mantenido manualmente al cerrar cada feature significativo.*
