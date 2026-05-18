@@ -1,8 +1,18 @@
 import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
-import { JetBrains_Mono, Familjen_Grotesk, Onest } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
+
+/**
+ * Fuentes 100% locales — sin descargas Google Fonts en build time
+ * (evita ETIMEDOUT cuando el host del build no tiene acceso a fonts.gstatic.com).
+ *
+ * Geist Variable (Vercel) actúa como Body + Display.
+ * Geist Mono para tabular nums.
+ *
+ * Distintividad: el estilo viene del sistema de diseño dual (Graphite Forge /
+ * Mist Atelier), no de la fuente. Mantenemos legibilidad operativa industrial.
+ */
 
 const geist = localFont({
   src: './fonts/GeistVF.woff',
@@ -15,29 +25,6 @@ const geistMono = localFont({
   src: './fonts/GeistMonoVF.woff',
   variable: '--font-geist-mono',
   weight: '100 900',
-  display: 'swap',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  variable: '--font-jetbrains-mono',
-  weight: ['400', '500', '600'],
-  display: 'swap',
-});
-
-// Display — Familjen Grotesk (geométrica nórdica, alto carácter industrial)
-const familjen = Familjen_Grotesk({
-  subsets: ['latin'],
-  variable: '--font-familjen',
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-});
-
-// Body — Onest (humanista moderna, excelente legibilidad pantalla)
-const onest = Onest({
-  subsets: ['latin'],
-  variable: '--font-onest',
-  weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
 });
 
@@ -79,11 +66,11 @@ export default function RootLayout({
   return (
     <html lang="es-AR" suppressHydrationWarning data-theme="dark">
       <body
-        className={`${geist.variable} ${geistMono.variable} ${jetbrainsMono.variable} ${familjen.variable} ${onest.variable} antialiased font-body`}
+        className={`${geist.variable} ${geistMono.variable} antialiased font-body`}
         style={{
-          ['--font-display' as never]: 'var(--font-familjen)',
-          ['--font-body' as never]: 'var(--font-onest)',
-          ['--font-mono' as never]: 'var(--font-jetbrains-mono)',
+          ['--font-display' as never]: 'var(--font-geist-sans)',
+          ['--font-body' as never]: 'var(--font-geist-sans)',
+          ['--font-mono' as never]: 'var(--font-geist-mono)',
         }}
       >
         <Providers>{children}</Providers>
