@@ -10,6 +10,7 @@ import {
   IconActivity,
 } from '@tabler/icons-react';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
+import { useThresholds, evaluateValue } from '@/lib/hooks/useThresholds';
 import { PremiumPanel } from './PremiumPanel';
 import { PremiumTile, type TileAccent } from './PremiumTile';
 
@@ -32,6 +33,7 @@ function accentForKey(key: string): TileAccent {
 
 export function EnergyPanel() {
   const data = useDashboardData('energia');
+  const { data: thresholds } = useThresholds();
   const entries = Array.from(data.entries()).sort((a, b) => a[0].localeCompare(b[0]));
   const count = entries.length;
 
@@ -52,18 +54,31 @@ export function EnergyPanel() {
         <EmptyState />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-2">
-          {entries.map(([key, item]) => (
-            <PremiumTile
-              key={key}
-              icon={iconFor(key)}
-              label={key.replaceAll('_', ' ')}
-              value={item.value}
-              unit={item.unit ?? ''}
-              precision={2}
-              accent={accentForKey(key)}
-              updatedAt={item.updated_at}
-            />
-          ))}
+          {entries.map(([key, item]) => {
+            const evalResult = evaluateValue(thresholds, 'energia', key, item.value);
+            return (
+              <PremiumTile
+                key={key}
+                icon={iconFor(key)}
+                label={key.replaceAll('_', ' ')}
+                value={item.value}
+                unit={item.unit ?? ''}
+                precision={2}
+                accent={accentForKey(key)}
+                updatedAt={item.updated_at}
+                alert={
+                  evalResult.status === 'out' && evalResult.severity && evalResult.reason
+                    ? {
+                        severity: evalResult.severity,
+                        reason: evalResult.reason,
+                        min: evalResult.threshold?.min_value,
+                        max: evalResult.threshold?.max_value,
+                      }
+                    : null
+                }
+              />
+            );
+          })}
         </div>
       )}
     </PremiumPanel>

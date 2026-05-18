@@ -16,6 +16,7 @@ import {
   IconFlask,
 } from '@tabler/icons-react';
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
+import { useThresholds, evaluateValue } from '@/lib/hooks/useThresholds';
 import { PremiumPanel } from './PremiumPanel';
 import { PremiumTile, type TileAccent } from './PremiumTile';
 import { cn } from '@/lib/utils/cn';
@@ -112,6 +113,7 @@ function pickBySlot(map: Map<string, DashboardItem>, slot: TrapicheSlot): Dashbo
 export function TrapichePanel() {
   const data = useDashboardData('trapiche');
   const energia = useDashboardData('energia');
+  const { data: thresholds } = useThresholds();
 
   const estado = useMemo<EstadoTrapiche>(() => {
     // Prioridad: 1) Trapiche_Estado explícito  2) Presion_Vapor_Vg1 > 1.9  3) Parado
@@ -149,18 +151,37 @@ export function TrapichePanel() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
             {resolvedSlots
               .filter(({ item }) => item != null)
-              .map(({ slot, item }) => (
-                <PremiumTile
-                  key={slot.id}
-                  icon={iconFor(slot.id)}
-                  label={slot.label}
-                  value={item!.value}
-                  unit={item!.unit ?? slot.unit}
-                  precision={slot.precision}
-                  accent={accentForKey(slot.id)}
-                  updatedAt={item!.updated_at}
-                />
-              ))}
+              .map(({ slot, item }) => {
+                // Buscar la key real en data para matchear con threshold (no slot.id)
+                const realKey = Array.from(data.keys()).find((k) =>
+                  slot.match.some((m) => k.toLowerCase().includes(m.toLowerCase())),
+                );
+                const evalResult = realKey
+                  ? evaluateValue(thresholds, 'trapiche', realKey, item!.value)
+                  : { status: 'ok' as const, severity: null, reason: null, threshold: null };
+                return (
+                  <PremiumTile
+                    key={slot.id}
+                    icon={iconFor(slot.id)}
+                    label={slot.label}
+                    value={item!.value}
+                    unit={item!.unit ?? slot.unit}
+                    precision={slot.precision}
+                    accent={accentForKey(slot.id)}
+                    updatedAt={item!.updated_at}
+                    alert={
+                      evalResult.status === 'out' && evalResult.severity && evalResult.reason
+                        ? {
+                            severity: evalResult.severity,
+                            reason: evalResult.reason,
+                            min: evalResult.threshold?.min_value,
+                            max: evalResult.threshold?.max_value,
+                          }
+                        : null
+                    }
+                  />
+                );
+              })}
           </div>
         )}
       </div>

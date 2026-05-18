@@ -78,6 +78,8 @@ const ACCENT_STYLE: Record<TileAccent, {
   },
 };
 
+export type AlertSeverity = 'info' | 'warn' | 'critical';
+
 export interface PremiumTileProps {
   icon?: React.ReactNode;
   label: string;
@@ -88,7 +90,29 @@ export interface PremiumTileProps {
   big?: boolean;
   updatedAt?: string;
   hint?: string;
+  alert?: { severity: AlertSeverity; reason: 'low' | 'high'; min?: number | null; max?: number | null } | null;
 }
+
+const ALERT_STYLE: Record<AlertSeverity, { color: string; border: string; bg: string; glow: string }> = {
+  info: {
+    color: '#5b9bc9',
+    border: 'rgba(91,155,201,0.55)',
+    bg: 'linear-gradient(135deg, rgba(91,155,201,0.12), rgba(15,24,37,0.6))',
+    glow: '0 0 20px rgba(91,155,201,0.25)',
+  },
+  warn: {
+    color: '#d9a04a',
+    border: 'rgba(217,160,74,0.55)',
+    bg: 'linear-gradient(135deg, rgba(217,160,74,0.12), rgba(15,24,37,0.6))',
+    glow: '0 0 24px rgba(217,160,74,0.30)',
+  },
+  critical: {
+    color: '#d96570',
+    border: 'rgba(217,101,112,0.65)',
+    bg: 'linear-gradient(135deg, rgba(217,101,112,0.16), rgba(15,24,37,0.6))',
+    glow: '0 0 32px rgba(217,101,112,0.40)',
+  },
+};
 
 export function PremiumTile({
   icon,
@@ -100,8 +124,10 @@ export function PremiumTile({
   big = false,
   updatedAt,
   hint,
+  alert,
 }: PremiumTileProps) {
   const style = ACCENT_STYLE[accent];
+  const alertStyle = alert ? ALERT_STYLE[alert.severity] : null;
   const hasValue = typeof value === 'number' ? Number.isFinite(value) : value != null && value !== '';
   const display = typeof value === 'number'
     ? formatNumber(value, precision)
@@ -138,14 +164,16 @@ export function PremiumTile({
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
       className={cn(
-        'relative rounded-xl border overflow-hidden group',
-        style.borderIdle,
-        style.borderHover,
+        'relative rounded-xl border-2 overflow-hidden group',
+        !alertStyle && style.borderIdle,
+        !alertStyle && style.borderHover,
+        alertStyle && alert?.severity === 'critical' && 'animate-pulse',
       )}
       style={{
-        background: style.bg,
+        background: alertStyle ? alertStyle.bg : style.bg,
         backdropFilter: 'blur(8px)',
-        boxShadow: style.shadow,
+        boxShadow: alertStyle ? alertStyle.glow : style.shadow,
+        borderColor: alertStyle?.border,
       }}
     >
       {/* Hover glow */}
@@ -187,8 +215,22 @@ export function PremiumTile({
               {label}
             </span>
           </div>
-          {hasValue && !isStale && <IconCircleFilled size={5} className={style.dotColor} />}
-          {isStale && (
+          {hasValue && !isStale && !alert && <IconCircleFilled size={5} className={style.dotColor} />}
+          {alert && (
+            <span
+              title={`Fuera de rango (${alert.reason === 'low' ? 'mín' : 'máx'}: ${
+                alert.reason === 'low' ? alert.min : alert.max
+              })`}
+              className="flex items-center"
+            >
+              <IconAlertCircle
+                size={12}
+                style={{ color: alertStyle?.color }}
+                className={alert.severity === 'critical' ? 'animate-pulse' : ''}
+              />
+            </span>
+          )}
+          {!alert && isStale && (
             <span
               title={isDead ? 'Sensor sin datos hace +3 min' : 'Datos demorados'}
               className="flex items-center gap-0.5"
@@ -210,8 +252,9 @@ export function PremiumTile({
             className={cn(
               'font-semibold tabular-nums leading-none inline-block transition-colors',
               big ? 'text-2xl' : 'text-lg',
-              isDead ? 'text-text-disabled' : isStale ? 'text-text-muted' : style.valueColor,
+              !alertStyle && (isDead ? 'text-text-disabled' : isStale ? 'text-text-muted' : style.valueColor),
             )}
+            style={alertStyle ? { color: alertStyle.color } : undefined}
           >
             {display}
           </m.span>
