@@ -9,7 +9,7 @@ import {
   IconTruck,
 } from '@tabler/icons-react';
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
-import { KpiCard } from './KpiCard';
+import { PremiumTile, type TileAccent } from './PremiumTile';
 
 async function fetchAlerts() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
@@ -64,13 +64,13 @@ export function KpiHero() {
   const canchon = useQuery({
     queryKey: ['canchon', 'resumen'],
     queryFn: fetchCanchon,
-    refetchInterval: 60_000, // 1 min
+    refetchInterval: 60_000,
   });
 
-  // Molienda actual: Molienda_Kilos en kg
+  // Molienda Kilos del trapiche
   const moliendaItem = pickIncludes(trapiche, ['molienda_kilos', 'molienda_actual', 'molienda']);
 
-  // Bolsas de azúcar producidas: busca varios aliases
+  // Bolsas azúcar
   const bolsasItem = pickIncludes(produccion, [
     'produccion_bolsas',
     'bolsas_dia',
@@ -79,60 +79,65 @@ export function KpiHero() {
     'bolsas',
   ]);
 
-  // Consumo gas total: suma de Caudal_Gas_Cald2/3/6
+  // Consumo gas total
   const gasTotal = sumKeysIncluding(energia, ['caudal_gas']);
 
-  // Total camiones en canchón (production.v_canchon_resumen) — refresca cada 60s
+  // Camiones canchón
   const totalCamiones = canchon.data?.total_camiones ?? null;
 
-  const activeCount = (alerts.data as { alerts?: unknown[] } | undefined)?.alerts?.length ?? 0;
-  const criticalCount =
-    ((alerts.data as { alerts?: { severity: string }[] } | undefined)?.alerts ?? []).filter(
-      (a) => a.severity === 'critical',
-    ).length;
+  // Alertas activas
+  const alertsList = (alerts.data as { alerts?: { severity: string }[] } | undefined)?.alerts ?? [];
+  const activeCount = alertsList.length;
+  const criticalCount = alertsList.filter((a) => a.severity === 'critical').length;
+  const alertAccent: TileAccent = criticalCount > 0 ? 'danger' : activeCount > 0 ? 'warn' : 'accent';
 
   return (
-    <div
-      className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3 px-3 sm:px-4 py-3"
-      style={{
-        // Stagger natural via animation-delay (los KpiCard ya animan entrada)
-      }}
-    >
-      <KpiCard
+    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
+      <PremiumTile
+        icon={<IconScale size={14} />}
         label="Molienda actual"
-        value={moliendaItem?.value ?? '—'}
+        value={moliendaItem?.value}
         unit={moliendaItem?.unit ?? 'kg'}
         precision={0}
-        icon={IconScale}
-        status="accent"
-        footer={moliendaItem ? `${(moliendaItem.value / 1000).toFixed(2)} t equivalente` : 'Sin señal'}
+        accent="primary"
+        big
+        updatedAt={moliendaItem?.updated_at}
+        hint={
+          moliendaItem
+            ? `${(moliendaItem.value / 1000).toFixed(2)} t equivalente`
+            : 'Sin señal'
+        }
       />
-      <KpiCard
+      <PremiumTile
+        icon={<IconChartBar size={14} />}
         label="Bolsas azúcar"
-        value={bolsasItem?.value ?? '—'}
+        value={bolsasItem?.value}
         unit={bolsasItem?.unit ?? 'bolsas'}
         precision={0}
-        icon={IconChartBar}
-        status="accent"
-        footer={bolsasItem ? 'Producidas hoy' : 'Esperando Node-RED'}
+        accent="accent"
+        big
+        updatedAt={bolsasItem?.updated_at}
+        hint={bolsasItem ? 'Producidas hoy' : 'Esperando Node-RED'}
       />
-      <KpiCard
+      <PremiumTile
+        icon={<IconFlame size={14} />}
         label="Consumo gas total"
-        value={gasTotal ?? '—'}
+        value={gasTotal ?? undefined}
         unit="m³/h"
         precision={1}
-        icon={IconFlame}
-        status="warn"
-        footer={gasTotal != null ? 'Suma calderas 2+3+6' : 'Sin caudales'}
+        accent="warn"
+        big
+        hint={gasTotal != null ? 'Suma calderas 2+3+6' : 'Sin caudales'}
       />
-      <KpiCard
+      <PremiumTile
+        icon={<IconTruck size={14} />}
         label="Camiones en canchón"
-        value={totalCamiones ?? '—'}
+        value={totalCamiones ?? undefined}
         unit="camiones"
         precision={0}
-        icon={IconTruck}
-        status={totalCamiones != null && totalCamiones > 0 ? 'accent' : 'warn'}
-        footer={
+        accent={totalCamiones != null && totalCamiones > 0 ? 'primary' : 'warn'}
+        big
+        hint={
           canchon.isLoading
             ? 'Consultando…'
             : totalCamiones != null
@@ -140,14 +145,14 @@ export function KpiHero() {
             : 'Sin señal'
         }
       />
-      <KpiCard
+      <PremiumTile
+        icon={<IconAlertTriangle size={14} />}
         label="Alertas activas"
         value={activeCount}
         precision={0}
-        icon={IconAlertTriangle}
-        status={criticalCount > 0 ? 'alarm' : activeCount > 0 ? 'warn' : 'ok'}
-        pulse={criticalCount > 0}
-        footer={
+        accent={alertAccent}
+        big
+        hint={
           criticalCount > 0
             ? `${criticalCount} críticas`
             : activeCount > 0

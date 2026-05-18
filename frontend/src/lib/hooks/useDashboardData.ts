@@ -20,11 +20,23 @@ function reducer(state: Map<string, DashboardItem>, action: Action) {
   switch (action.type) {
     case 'init': {
       // Merge no destructivo: si llega vacío (snapshot fallido) mantiene cache.
-      // Si llega con items, hace upsert (no elimina los previos que no vinieron).
       if (action.payload.length === 0) return state;
+      // Detectar si hay cambios reales antes de crear nuevo Map
+      // (evita re-renders innecesarios si snapshot trae los mismos updated_at)
+      let changed = false;
       const next = new Map(state);
-      action.payload.forEach((item) => next.set(item.key, item));
-      return next;
+      for (const item of action.payload) {
+        const prev = next.get(item.key);
+        if (
+          !prev ||
+          prev.updated_at !== item.updated_at ||
+          prev.value !== item.value
+        ) {
+          next.set(item.key, item);
+          changed = true;
+        }
+      }
+      return changed ? next : state;
     }
     case 'update': {
       const next = new Map(state);
@@ -34,6 +46,8 @@ function reducer(state: Map<string, DashboardItem>, action: Action) {
   }
 }
 
+const POLL_INTERVAL_MS = 1000; // 1s — sensación fluida sin freezing
+
 export function useDashboardData(area: 'energia' | 'produccion' | 'trapiche') {
   const [data, dispatch] = useReducer(reducer, new Map<string, DashboardItem>());
   const instanceId = useId();
@@ -42,28 +56,34 @@ export function useDashboardData(area: 'energia' | 'produccion' | 'trapiche') {
     let mounted = true;
     let channelRef: ReturnType<ReturnType<typeof getSupabaseBrowser>['channel']> | null = null;
     let pollInterval: ReturnType<typeof setInterval> | null = null;
+    let inFlight = false;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
     async function loadSnapshot() {
+      if (inFlight) return; // skip si request anterior aún corre (evita pileup)
+      inFlight = true;
       try {
-        const res = await fetch(`${apiUrl}/metrics/dashboard-snapshot?area=${area}`);
+        const res = await fetch(`${apiUrl}/metrics/dashboard-snapshot?area=${area}`, {
+          cache: 'no-store',
+        });
         if (!res.ok) return;
         const json = (await res.json()) as { data: DashboardItem[] };
         if (!mounted) return;
         dispatch({ type: 'init', payload: json.data ?? [] });
       } catch (err) {
         console.warn('dashboard snapshot failed', err);
+      } finally {
+        inFlight = false;
       }
     }
+
+    // 1. Snapshot inicial inmediato
     loadSnapshot();
 
-    // Polling de respaldo si Realtime no llega o falla
-    const startPolling = () => {
-      if (pollInterval || !mounted) return;
-      pollInterval = setInterval(loadSnapshot, 5000);
-    };
+    // 2. Polling siempre activo cada 1s (no solo fallback)
+    pollInterval = setInterval(loadSnapshot, POLL_INTERVAL_MS);
 
-    // Realtime — channel name único por instance evita "cannot add after subscribe"
+    // 3. Realtime como complemento — eventos UPDATE/INSERT pushean delta inmediato
     const channelName = `dashboard_${area}_${instanceId.replace(/[^a-z0-9]/gi, '')}_${Date.now()}`;
 
     try {
@@ -96,20 +116,10 @@ export function useDashboardData(area: 'energia' | 'produccion' | 'trapiche') {
         },
       );
 
-      ch.subscribe((status: string) => {
-        if (
-          status === 'CHANNEL_ERROR' ||
-          status === 'TIMED_OUT' ||
-          status === 'CLOSED'
-        ) {
-          startPolling();
-        }
-      });
-
+      ch.subscribe();
       channelRef = ch;
     } catch (err) {
-      console.warn('Realtime setup failed, fallback polling 5s', err);
-      startPolling();
+      console.warn('Realtime setup failed (polling 1s seguirá activo)', err);
     }
 
     return () => {
