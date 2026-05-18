@@ -8,12 +8,12 @@
    ========================================================================== */
 :root,
 [data-theme='dark'] {
-  /* Backgrounds — paleta profunda con personalidad */
-  --bg-base: #060b14;
-  --bg-surface: #0c1422;
-  --bg-card: #131e33;
-  --bg-card-2: #18253e;
-  --bg-hover: #1e2d4a;
+  /* Backgrounds — paleta media-oscura legible para ambiente operativo */
+  --bg-base: #0f1827;
+  --bg-surface: #16213a;
+  --bg-card: #1d2a47;
+  --bg-card-2: #243454;
+  --bg-hover: #2a3a5c;
 
   /* Borders refinados */
   --border-subtle: rgba(120, 160, 220, 0.08);

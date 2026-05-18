@@ -1,4 +1,5 @@
 import { TopBar } from '@/components/layout/TopBar';
+import { ConnectionBanner } from '@/components/layout/ConnectionBanner';
 import { ShiftTimeline } from '@/components/industrial/ShiftTimeline';
 import { KpiHero } from '@/components/industrial/KpiHero';
 import { TrapichePanel } from '@/components/industrial/TrapichePanel';
@@ -19,6 +20,8 @@ export default function DashboardPage() {
             'radial-gradient(ellipse 80% 50% at 50% 0%, rgba(91,155,201,0.05), transparent 70%)',
         }}
       />
+
+      <ConnectionBanner />
 
       <div className="relative z-10 flex flex-col flex-1">
         <TopBar plant="Planta Sur" />

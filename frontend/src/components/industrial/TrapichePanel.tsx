@@ -129,33 +129,40 @@ export function TrapichePanel() {
 
   const present = resolvedSlots.filter((r) => r.item != null).length;
   const expected = TRAPICHE_SLOTS.length;
+  const hasAny = data.size > 0;
 
   return (
     <PremiumPanel
       title="TRAPICHE"
-      subtitle={`Línea de molienda · ${present}/${expected} KPIs activos`}
+      subtitle={hasAny
+        ? `Línea de molienda · ${present}/${expected} KPIs activos`
+        : 'Línea de molienda · esperando datos'}
       icon={<IconBolt size={18} className="text-primary-light" />}
       accent="primary"
     >
       <div className="space-y-3">
         <EstadoBanner estado={estado} />
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-          {resolvedSlots.map(({ slot, item }) => (
-            <PremiumTile
-              key={slot.id}
-              icon={iconFor(slot.id)}
-              label={slot.label}
-              value={item?.value}
-              unit={item?.unit ?? slot.unit}
-              precision={slot.precision}
-              accent={accentForKey(slot.id)}
-              updatedAt={item?.updated_at}
-            />
-          ))}
-        </div>
-
-        {present === 0 && <EmptyState />}
+        {data.size === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {resolvedSlots
+              .filter(({ item }) => item != null)
+              .map(({ slot, item }) => (
+                <PremiumTile
+                  key={slot.id}
+                  icon={iconFor(slot.id)}
+                  label={slot.label}
+                  value={item!.value}
+                  unit={item!.unit ?? slot.unit}
+                  precision={slot.precision}
+                  accent={accentForKey(slot.id)}
+                  updatedAt={item!.updated_at}
+                />
+              ))}
+          </div>
+        )}
       </div>
     </PremiumPanel>
   );

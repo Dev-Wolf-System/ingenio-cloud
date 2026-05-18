@@ -65,12 +65,14 @@ export function KpiCard({
       className={cn(
         'relative overflow-hidden rounded-xl p-4 group',
         'bg-gradient-to-br from-bg-card to-bg-surface',
-        'border border-border hover:border-border-strong',
+        'border hover:border-white/20',
         pulse && 'animate-pulse-alarm',
         className,
       )}
       style={{
-        boxShadow: '0 1px 0 rgba(255,255,255,0.03) inset, 0 8px 24px -16px rgba(0,0,0,0.6)',
+        borderColor: 'rgba(255,255,255,0.10)',
+        boxShadow:
+          '0 0 0 1px rgba(255,255,255,0.04), 0 1px 0 rgba(255,255,255,0.05) inset, 0 8px 28px -16px rgba(0,0,0,0.7)',
       }}
     >
       {/* Top accent gradient bar */}

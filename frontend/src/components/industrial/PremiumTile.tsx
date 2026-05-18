@@ -1,10 +1,21 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { IconCircleFilled } from '@tabler/icons-react';
+import { IconCircleFilled, IconAlertCircle } from '@tabler/icons-react';
 import { cn } from '@/lib/utils/cn';
 import { formatNumber, formatRelative } from '@/lib/utils/format';
 import { m } from 'motion/react';
+
+const STALE_WARN_SEC = 60;   // > 60s = amarillo
+const STALE_DEAD_SEC = 180;  // > 3min = rojo (sensor caído)
+
+function getStaleness(updatedAt?: string): 'fresh' | 'warn' | 'dead' {
+  if (!updatedAt) return 'fresh';
+  const age = (Date.now() - new Date(updatedAt).getTime()) / 1000;
+  if (age > STALE_DEAD_SEC) return 'dead';
+  if (age > STALE_WARN_SEC) return 'warn';
+  return 'fresh';
+}
 
 export type TileAccent = 'primary' | 'neutral' | 'accent' | 'warn' | 'danger';
 
@@ -96,6 +107,17 @@ export function PremiumTile({
     ? formatNumber(value, precision)
     : hasValue ? String(value) : '—';
 
+  // Re-eval staleness cada 30s
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  void now;
+  const staleness = getStaleness(updatedAt);
+  const isStale = staleness !== 'fresh';
+  const isDead = staleness === 'dead';
+
   // Flash on value change
   const [flash, setFlash] = useState(false);
   const prev = useRef(value);
@@ -165,7 +187,18 @@ export function PremiumTile({
               {label}
             </span>
           </div>
-          {hasValue && <IconCircleFilled size={5} className={style.dotColor} />}
+          {hasValue && !isStale && <IconCircleFilled size={5} className={style.dotColor} />}
+          {isStale && (
+            <span
+              title={isDead ? 'Sensor sin datos hace +3 min' : 'Datos demorados'}
+              className="flex items-center gap-0.5"
+            >
+              <IconAlertCircle
+                size={11}
+                className={isDead ? 'text-danger animate-pulse' : 'text-warn'}
+              />
+            </span>
+          )}
         </div>
 
         <div className="flex items-baseline gap-1 mono">
@@ -175,9 +208,9 @@ export function PremiumTile({
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 380, damping: 22 }}
             className={cn(
-              'font-semibold tabular-nums leading-none inline-block',
+              'font-semibold tabular-nums leading-none inline-block transition-colors',
               big ? 'text-2xl' : 'text-lg',
-              style.valueColor,
+              isDead ? 'text-text-disabled' : isStale ? 'text-text-muted' : style.valueColor,
             )}
           >
             {display}
