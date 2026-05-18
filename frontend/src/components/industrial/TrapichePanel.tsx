@@ -42,13 +42,15 @@ interface TrapicheSlot {
 const TRAPICHE_SLOTS: TrapicheSlot[] = [
   { id: 'bagazo_pol',              label: 'Pol bagazo',            match: ['bagazo_pol', 'pol_bagazo', 'pol'],                       unit: '%',        precision: 2 },
   { id: 'bagazo_humedad',          label: 'Humedad bagazo',        match: ['bagazo_humedad', 'humedad_bagazo'],                      unit: '%',        precision: 2 },
-  { id: 'presion_6to_este',        label: 'Presión 6° molino Este', match: ['6to_molino_presion_este', 'presion_6to_este'],          unit: 'kg/cm²',  precision: 2 },
-  { id: 'presion_6to_oeste',       label: 'Presión 6° molino Oeste', match: ['6to_molino_presion_oeste', 'presion_6to_oeste'],       unit: 'kg/cm²',  precision: 2 },
   { id: 'rpm_primer_molino',       label: 'RPM primer molino',     match: ['rpm_primer_molino', 'rpm_1er_molino', 'vel_primer_molino'], unit: 'rpm',  precision: 1 },
   { id: 'caudal_imbibicion',       label: 'Caudal imbibición',     match: ['bb_imbibicion_caudal', 'caudal_imbibicion', 'caudal_imb'], unit: 'm³/h', precision: 2 },
   { id: 'nivel_imbibicion',        label: 'Nivel imbibición',      match: ['bb_imbibicion_nivel', 'nivel_imbibicion'],                unit: '%',     precision: 1 },
   { id: 'temperatura_imbibicion',  label: 'Temp. imbibición',      match: ['bb_imbibicion_temp', 'temperatura_imbibicion', 'temp_imbibicion'], unit: '°C', precision: 1 },
 ];
+
+// Slot especial combinado — Presión 6° molino Este + Oeste en un solo tile
+const PRESION_ESTE_KEYS = ['6to_molino_presion_este', 'presion_6to_este'];
+const PRESION_OESTE_KEYS = ['6to_molino_presion_oeste', 'presion_6to_oeste'];
 
 function pickItem(map: Map<string, DashboardItem>, candidates: string[]): DashboardItem | null {
   const entries = Array.from(map.entries());
@@ -129,8 +131,25 @@ export function TrapichePanel() {
     [data],
   );
 
-  const present = resolvedSlots.filter((r) => r.item != null).length;
-  const expected = TRAPICHE_SLOTS.length;
+  // Slot combinado Presión 6° molino — promedio Este+Oeste + delta en hint
+  const presionEste = pickItem(data, PRESION_ESTE_KEYS);
+  const presionOeste = pickItem(data, PRESION_OESTE_KEYS);
+  const presionCombinada =
+    presionEste || presionOeste
+      ? {
+          este: presionEste?.value ?? null,
+          oeste: presionOeste?.value ?? null,
+          unit: presionEste?.unit ?? presionOeste?.unit ?? 'kg/cm²',
+          updatedAt: presionEste?.updated_at ?? presionOeste?.updated_at,
+        }
+      : null;
+  const presionPromedio =
+    presionCombinada && presionCombinada.este != null && presionCombinada.oeste != null
+      ? (presionCombinada.este + presionCombinada.oeste) / 2
+      : presionCombinada?.este ?? presionCombinada?.oeste ?? null;
+
+  const present = resolvedSlots.filter((r) => r.item != null).length + (presionCombinada ? 1 : 0);
+  const expected = TRAPICHE_SLOTS.length + 1; // +1 por el slot combinado
   const hasAny = data.size > 0;
 
   return (
@@ -149,6 +168,25 @@ export function TrapichePanel() {
           <EmptyState />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {presionCombinada && (
+              <PremiumTile
+                key="presion_6to_combinada"
+                icon={<IconGauge size={14} />}
+                label="Presión 6° molino"
+                value={presionPromedio ?? undefined}
+                unit={presionCombinada.unit}
+                precision={2}
+                accent="accent"
+                updatedAt={presionCombinada.updatedAt}
+                hint={
+                  presionCombinada.este != null && presionCombinada.oeste != null
+                    ? `E ${presionCombinada.este.toFixed(2)} · O ${presionCombinada.oeste.toFixed(2)}`
+                    : presionCombinada.este != null
+                    ? `E ${presionCombinada.este.toFixed(2)} · O —`
+                    : `E — · O ${presionCombinada.oeste?.toFixed(2) ?? '—'}`
+                }
+              />
+            )}
             {resolvedSlots
               .filter(({ item }) => item != null)
               .map(({ slot, item }) => {
