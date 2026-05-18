@@ -43,7 +43,13 @@ function accentForKey(key: string): TileAccent {
 }
 
 // Keys que NO mostrar en panel — se exhiben en otros lugares o quedan obsoletos
-const HIDDEN_KEYS = ['color_cinta_corta', 'humedad_cinta_corta'];
+// (cinta larga se muestra en KpiHero "Color azúcar", cinta corta deprecated)
+const HIDDEN_KEYS = [
+  'color_cinta_corta',
+  'humedad_cinta_corta',
+  'color_cinta_larga',
+  'humedad_cinta_larga',
+];
 
 export function ProductionPanel() {
   const data = useDashboardData('produccion');
