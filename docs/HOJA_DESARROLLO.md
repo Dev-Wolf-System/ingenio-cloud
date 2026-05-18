@@ -508,11 +508,27 @@ WHERE area='trapiche'
 
 | Issue | Síntoma | Mitigación actual | Fix definitivo |
 |---|---|---|---|
-| PostgREST 401 intermitente | 500 cascada en backend | Backend tolerante: 200 con `stale: true` | Rotar service_role_key + restart REST |
+| ✅ RESUELTO: PostgREST 401 intermitente | 500 cascada en backend | Backend tolerante + fix DNS Kong | Ver sección "DNS Kong colisión" abajo |
 | Node-RED ruteo confuso | Datos producción llegan bajo `area=trapiche` | Whitelist frontend + DELETE limpieza SQL | Corregir flow Node-RED |
 | Cert `api.ingcloud.*` no emitió | (resuelto) | Routing por path `/api` y `/ws` bajo mismo host | Dominio propio + wildcard cert (S6+) |
 | Hydration flash dark→light | Pequeño parpadeo en load | Hook lee localStorage post-mount | Inline script en `<head>` que setea data-theme antes hydrate |
 | Sin notificación push | Alertas solo en panel UI | KpiHero pulse | Integrar Evolution API WhatsApp (S1+) |
+
+### DNS Kong colisión (caso resuelto, documentar para futuro)
+
+**Síntoma:** PostgREST devolvía `401 Unauthorized` aleatorio (~66% queries) aunque la SERVICE_ROLE_KEY y JWT_SECRET estaban correctos.
+
+**Causa raíz:** El VPS tiene 3 stacks Supabase (`ingenio`, `svi`, `supabase`) que comparten la red Docker `n8n_evoapi`. Los 3 containers Kong tenían el mismo alias DNS genérico (`kong`) en esa red. Docker DNS hacía **round-robin** entre los 3 → backend `ingenio-backend` llegaba al Kong equivocado mayoría del tiempo, cuyo PostgREST usaba un JWT_SECRET diferente al que firmó nuestra SERVICE_ROLE_KEY.
+
+**Fix:** Usar el `container_name` explícito en lugar del alias genérico.
+
+```diff
+# .env del backend
+- SUPABASE_URL=http://kong:8000
++ SUPABASE_URL=http://ingenio-kong:8000
+```
+
+**Lección:** En VPS multi-stack, NUNCA confiar en aliases genéricos cross-network. Usar siempre el container_name único.
 
 ---
 
