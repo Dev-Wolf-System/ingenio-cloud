@@ -99,9 +99,17 @@ export function ShiftWelcomeBanner() {
     | undefined;
 
   const iaData = ia.data as
-    | { resumen?: string; estado?: 'normal' | 'atencion' | 'critico'; puntos_clave?: string[] }
+    | {
+        resumen?: string;
+        estado?: 'normal' | 'atencion' | 'critico';
+        puntos_clave?: string[];
+        mensaje?: string;
+        ia_available?: boolean;
+      }
     | null
     | undefined;
+  const hasIA = !!iaData?.resumen;
+  const iaUnavailable = iaData?.ia_available === false;
 
   const estadoColor = {
     normal: 'var(--ok)',
@@ -221,8 +229,8 @@ export function ShiftWelcomeBanner() {
                 />
               </div>
 
-              {/* Análisis IA */}
-              {iaData?.resumen && (
+              {/* Análisis IA — consume mismo endpoint que panel ShiftSummary */}
+              {hasIA && (
                 <div
                   className="rounded-xl p-4 border"
                   style={{
@@ -236,13 +244,13 @@ export function ShiftWelcomeBanner() {
                       className="text-2xs uppercase tracking-wider font-semibold"
                       style={{ color: estadoColor }}
                     >
-                      Análisis IA · Estado {iaData.estado ?? '—'}
+                      Análisis IA · Estado {iaData!.estado ?? '—'}
                     </span>
                   </div>
-                  <p className="text-sm text-text-primary leading-relaxed">{iaData.resumen}</p>
-                  {iaData.puntos_clave && iaData.puntos_clave.length > 0 && (
+                  <p className="text-sm text-text-primary leading-relaxed">{iaData!.resumen}</p>
+                  {iaData!.puntos_clave && iaData!.puntos_clave.length > 0 && (
                     <ul className="mt-3 space-y-1">
-                      {iaData.puntos_clave.slice(0, 4).map((p, i) => (
+                      {iaData!.puntos_clave.slice(0, 4).map((p, i) => (
                         <li
                           key={i}
                           className="text-xs text-text-secondary flex gap-2 items-start"
@@ -256,9 +264,19 @@ export function ShiftWelcomeBanner() {
                 </div>
               )}
 
-              {!iaData?.resumen && !ia.isLoading && (
-                <div className="text-xs text-text-muted text-center py-3">
-                  Sin análisis IA disponible para el turno anterior
+              {!hasIA && !ia.isLoading && (
+                <div
+                  className="rounded-xl p-3 border"
+                  style={{
+                    background: iaUnavailable ? 'var(--warn-soft)' : 'var(--bg-card)',
+                    borderColor: iaUnavailable ? 'var(--warn)' : 'var(--border-subtle)',
+                  }}
+                >
+                  <div className="text-xs text-text-secondary text-center">
+                    {iaUnavailable
+                      ? '⚠️ IA deshabilitada — OPENAI_API_KEY no configurada en backend'
+                      : iaData?.mensaje ?? 'Sin análisis IA disponible para el turno anterior'}
+                  </div>
                 </div>
               )}
 
