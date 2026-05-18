@@ -7,6 +7,7 @@ import { IconMaximize, IconCircleFilled, IconActivity, IconBell } from '@tabler/
 import { useClock } from '@/lib/hooks/useClock';
 import { useShift } from '@/lib/hooks/useShift';
 import { formatTime } from '@/lib/utils/format';
+import { ThemeToggle } from './ThemeToggle';
 
 export function TopBar({ plant = 'Planta Sur' }: { plant?: string }) {
   const [mounted, setMounted] = useState(false);
@@ -98,6 +99,9 @@ export function TopBar({ plant = 'Planta Sur' }: { plant?: string }) {
               : '—'}
           </span>
         </div>
+
+        {/* Cambiar tema claro/oscuro */}
+        <ThemeToggle />
 
         {/* Configurar alertas */}
         <Link
