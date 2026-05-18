@@ -1,6 +1,7 @@
 import { TopBar } from '@/components/layout/TopBar';
 import { ConnectionBanner } from '@/components/layout/ConnectionBanner';
 import { ShiftTimeline } from '@/components/industrial/ShiftTimeline';
+import { ShiftWelcomeBanner } from '@/components/industrial/ShiftWelcomeBanner';
 import { KpiHero } from '@/components/industrial/KpiHero';
 import { TrapichePanel } from '@/components/industrial/TrapichePanel';
 import { EnergyPanel } from '@/components/industrial/EnergyPanel';
@@ -22,6 +23,7 @@ export default function DashboardPage() {
       />
 
       <ConnectionBanner />
+      <ShiftWelcomeBanner />
 
       <div className="relative z-10 flex flex-col flex-1">
         <TopBar plant="Planta Sur" />
