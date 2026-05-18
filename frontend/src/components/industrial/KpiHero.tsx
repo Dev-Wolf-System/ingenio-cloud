@@ -100,7 +100,7 @@ export function KpiHero() {
         unit={moliendaItem?.unit ?? 'kg'}
         precision={0}
         accent="primary"
-        big
+        size="hero"
         updatedAt={moliendaItem?.updated_at}
         hint={
           moliendaItem
@@ -115,7 +115,7 @@ export function KpiHero() {
         unit={bolsasItem?.unit ?? 'bolsas'}
         precision={0}
         accent="accent"
-        big
+        size="hero"
         updatedAt={bolsasItem?.updated_at}
         hint={bolsasItem ? 'Producidas hoy' : 'Esperando Node-RED'}
       />
@@ -126,7 +126,7 @@ export function KpiHero() {
         unit="m³/h"
         precision={1}
         accent="warn"
-        big
+        size="hero"
         hint={gasTotal != null ? 'Suma calderas 2+3+6' : 'Sin caudales'}
       />
       <PremiumTile
@@ -136,7 +136,7 @@ export function KpiHero() {
         unit="camiones"
         precision={0}
         accent={totalCamiones != null && totalCamiones > 0 ? 'primary' : 'warn'}
-        big
+        size="hero"
         hint={
           canchon.isLoading
             ? 'Consultando…'
@@ -151,7 +151,7 @@ export function KpiHero() {
         value={activeCount}
         precision={0}
         accent={alertAccent}
-        big
+        size="hero"
         hint={
           criticalCount > 0
             ? `${criticalCount} críticas`

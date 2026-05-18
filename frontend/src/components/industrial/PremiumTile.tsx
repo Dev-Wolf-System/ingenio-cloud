@@ -80,6 +80,8 @@ const ACCENT_STYLE: Record<TileAccent, {
 
 export type AlertSeverity = 'info' | 'warn' | 'critical';
 
+export type TileSize = 'sm' | 'md' | 'lg' | 'hero';
+
 export interface PremiumTileProps {
   icon?: React.ReactNode;
   label: string;
@@ -87,7 +89,9 @@ export interface PremiumTileProps {
   unit?: string;
   precision?: number;
   accent?: TileAccent;
+  /** @deprecated usar size='lg' o size='hero' */
   big?: boolean;
+  size?: TileSize;
   updatedAt?: string;
   hint?: string;
   alert?: { severity: AlertSeverity; reason: 'low' | 'high'; min?: number | null; max?: number | null } | null;
@@ -114,6 +118,13 @@ const ALERT_STYLE: Record<AlertSeverity, { color: string; border: string; bg: st
   },
 };
 
+const SIZE_CONFIG = {
+  sm:   { pad: 'p-2.5',  valueText: 'text-base',    iconSize: 5, gap: 'gap-1' },
+  md:   { pad: 'p-3',    valueText: 'text-lg',      iconSize: 5, gap: 'gap-1.5' },
+  lg:   { pad: 'p-3.5',  valueText: 'text-2xl',     iconSize: 6, gap: 'gap-2' },
+  hero: { pad: 'p-4 sm:p-5', valueText: 'text-3xl sm:text-4xl', iconSize: 7, gap: 'gap-2' },
+} as const;
+
 export function PremiumTile({
   icon,
   label,
@@ -122,12 +133,15 @@ export function PremiumTile({
   precision = 2,
   accent = 'neutral',
   big = false,
+  size,
   updatedAt,
   hint,
   alert,
 }: PremiumTileProps) {
   const style = ACCENT_STYLE[accent];
   const alertStyle = alert ? ALERT_STYLE[alert.severity] : null;
+  const tileSize: TileSize = size ?? (big ? 'lg' : 'md');
+  const sizeConfig = SIZE_CONFIG[tileSize];
   const hasValue = typeof value === 'number' ? Number.isFinite(value) : value != null && value !== '';
   const display = typeof value === 'number'
     ? formatNumber(value, precision)
@@ -197,7 +211,7 @@ export function PremiumTile({
         />
       )}
 
-      <div className={cn('relative', big ? 'p-3.5' : 'p-3')}>
+      <div className={cn('relative', sizeConfig.pad)}>
         <div className="flex items-center justify-between gap-2 mb-1.5">
           <div className="flex items-center gap-1.5 min-w-0">
             {icon && (
@@ -251,7 +265,7 @@ export function PremiumTile({
             transition={{ type: 'spring', stiffness: 380, damping: 22 }}
             className={cn(
               'font-semibold tabular-nums leading-none inline-block transition-colors',
-              big ? 'text-2xl' : 'text-lg',
+              sizeConfig.valueText,
               !alertStyle && (isDead ? 'text-text-disabled' : isStale ? 'text-text-muted' : style.valueColor),
             )}
             style={alertStyle ? { color: alertStyle.color } : undefined}

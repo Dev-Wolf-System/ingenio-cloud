@@ -91,7 +91,7 @@ export function ShiftSummaryPanel() {
           unit="t/h"
           precision={1}
           accent="primary"
-          big
+          size="lg"
         />
         <PremiumTile
           icon={<IconScale size={14} />}
