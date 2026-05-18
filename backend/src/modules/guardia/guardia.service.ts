@@ -168,7 +168,7 @@ export class GuardiaService {
       this.logger.warn('IA no disponible (OPENAI_API_KEY missing o cliente no iniciado)');
       return;
     }
-    this.logger.log(`Iniciando análisis IA para turno ${shift.name} ${shift.date}`);
+    this.logger.log(`Iniciando análisis IA para turno ${shift.name} ${shift.start.toISOString().slice(0,10)}`);
     try {
       const result = await this.ai.analizarResumenGuardia(payload);
       if (!result) {
@@ -176,7 +176,7 @@ export class GuardiaService {
         return;
       }
       await this.setCached('analisis_ia', shift, result, 60 * 12);
-      this.logger.log(`Análisis IA cacheado OK turno ${shift.name} ${shift.date}`);
+      this.logger.log(`Análisis IA cacheado OK turno ${shift.name} ${shift.start.toISOString().slice(0,10)}`);
     } catch (err) {
       this.logger.error('Análisis IA exception: ' + (err as Error).message);
     }
