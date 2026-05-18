@@ -62,33 +62,67 @@ ${JSON.stringify(payload.consumoGas, null, 2)}
 
 Analizá el desempeño del turno.`;
 
+    const messages = [
+      { role: 'system' as const, content: systemPrompt },
+      { role: 'user' as const, content: userPrompt },
+    ];
+
     try {
       const res = await this.client.chat.completions.create({
         model: this.model,
         response_format: { type: 'json_object' },
         temperature: 0.4,
-        max_tokens: 400,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
+        max_tokens: 500,
+        messages,
       });
-      const content = res.choices[0]?.message?.content ?? '{}';
-      const parsed = JSON.parse(content) as {
+
+      const choice = res.choices[0];
+      const content = choice?.message?.content ?? '';
+      const finishReason = choice?.finish_reason;
+
+      this.logger.log(
+        `LLM raw: finish=${finishReason} tokens=${res.usage?.total_tokens ?? '?'} content_len=${content.length}`,
+      );
+
+      if (!content || content.trim().length === 0) {
+        this.logger.warn(`LLM devolvió contenido vacío (finish_reason=${finishReason})`);
+        return null;
+      }
+
+      // Limpiar posibles fences markdown ```json ... ```
+      let cleaned = content.trim();
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+      }
+
+      let parsed: {
         resumen?: string;
         estado?: 'normal' | 'atencion' | 'critico';
         puntos_clave?: string[];
       };
-      this.logger.log(
-        `LLM análisis OK (tokens=${res.usage?.total_tokens ?? '?'} estado=${parsed.estado})`,
-      );
+      try {
+        parsed = JSON.parse(cleaned);
+      } catch (parseErr) {
+        this.logger.warn(
+          `JSON parse falló. Raw content: "${cleaned.slice(0, 200)}". Error: ${(parseErr as Error).message}`,
+        );
+        return null;
+      }
+
+      this.logger.log(`LLM análisis OK · estado=${parsed.estado ?? 'normal'}`);
+
       return {
         resumen: parsed.resumen ?? 'Sin análisis disponible.',
         estado: parsed.estado ?? 'normal',
         puntos_clave: parsed.puntos_clave ?? [],
       };
     } catch (err) {
-      this.logger.error('OpenAI analyze failed', err as Error);
+      const errAny = err as { status?: number; code?: string; message?: string };
+      const detail =
+        errAny.status
+          ? `HTTP ${errAny.status} ${errAny.code ?? ''} ${errAny.message ?? ''}`
+          : errAny.message ?? String(err);
+      this.logger.error(`OpenAI analyze failed: ${detail}`);
       return null;
     }
   }
