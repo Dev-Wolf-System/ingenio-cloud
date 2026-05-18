@@ -193,7 +193,11 @@ function accentForKey(key: string): TileAccent {
   const k = key.toLowerCase();
   if (k.includes('temp')) return 'warn';
   if (k.includes('press') || k.includes('pres')) return 'accent';
-  return 'neutral';
+  if (k.includes('caudal') || k.includes('imbibicion')) return 'accent';
+  if (k.includes('humed') || k.includes('nivel')) return 'primary';
+  if (k.includes('rpm') || k.includes('velocidad')) return 'warn';
+  if (k.includes('pol') || k.includes('bagazo')) return 'primary';
+  return 'primary';
 }
 
 const ESTADO_CONFIG = {

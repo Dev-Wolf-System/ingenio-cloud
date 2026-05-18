@@ -128,7 +128,7 @@ export function ShiftSummaryPanel() {
           value={velPromedio}
           unit="rpm"
           precision={1}
-          accent="neutral"
+          accent="accent"
         />
       </div>
 

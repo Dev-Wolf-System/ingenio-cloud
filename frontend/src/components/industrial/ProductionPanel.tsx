@@ -35,7 +35,11 @@ function accentForKey(key: string): TileAccent {
   if (k.includes('temp')) return 'warn';
   if (k.includes('press') || k.includes('pres')) return 'accent';
   if (k.includes('nivel')) return 'primary';
-  return 'neutral';
+  if (k.includes('caudal') || k.includes('flujo') || k.includes('vino') || k.includes('alcohol') || k.includes('melaza')) return 'accent';
+  if (k.includes('humed')) return 'primary';
+  if (k.includes('color')) return 'warn';
+  if (k.includes('ph') || k.includes('encal')) return 'accent';
+  return 'primary';
 }
 
 export function ProductionPanel() {

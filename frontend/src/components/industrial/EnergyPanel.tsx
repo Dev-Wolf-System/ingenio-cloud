@@ -28,7 +28,9 @@ function accentForKey(key: string): TileAccent {
   const k = key.toLowerCase();
   if (k.includes('temp')) return 'warn';
   if (k.includes('press') || k.includes('pres') || k.includes('vapor')) return 'accent';
-  return 'neutral';
+  if (k.includes('caudal') || k.includes('gas')) return 'warn';
+  if (k.includes('potencia') || k.includes('weg') || k.includes('siemens')) return 'accent';
+  return 'primary';
 }
 
 export function EnergyPanel() {
