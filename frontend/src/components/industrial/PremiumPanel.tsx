@@ -5,34 +5,32 @@ import { m } from 'motion/react';
 
 export type PanelAccent = 'primary' | 'accent' | 'warn' | 'neutral';
 
-const ACCENT_GLOW: Record<PanelAccent, { ring: string; topLine: string; iconBg: string; title: string }> = {
+const ACCENT_GLOW: Record<PanelAccent, { topLine: string; iconBg: string; titleGradient: string }> = {
   primary: {
-    ring: 'rgba(91,155,201,0.05)',
-    topLine:
-      'linear-gradient(90deg, transparent, rgba(91,155,201,0.45) 30%, rgba(95,168,184,0.40) 70%, transparent)',
-    iconBg: 'linear-gradient(135deg, rgba(91,155,201,0.10), rgba(95,168,184,0.06))',
-    title: 'linear-gradient(135deg, #5b9bc9 0%, #f1f5fb 60%, #5fa8b8 100%)',
+    topLine: 'var(--panel-accent-line)',
+    iconBg: 'var(--icon-box-bg)',
+    titleGradient:
+      'linear-gradient(135deg, var(--primary-light) 0%, var(--text-primary) 60%, var(--accent) 100%)',
   },
   accent: {
-    ring: 'rgba(74,184,150,0.05)',
     topLine:
-      'linear-gradient(90deg, transparent, rgba(74,184,150,0.45) 30%, rgba(91,155,201,0.35) 70%, transparent)',
-    iconBg: 'linear-gradient(135deg, rgba(74,184,150,0.12), rgba(91,155,201,0.06))',
-    title: 'linear-gradient(135deg, #4ab896 0%, #f1f5fb 60%, #5b9bc9 100%)',
+      'linear-gradient(90deg, transparent, var(--ok) 30%, var(--primary-light) 70%, transparent)',
+    iconBg: 'linear-gradient(135deg, var(--ok-soft), var(--primary-soft))',
+    titleGradient:
+      'linear-gradient(135deg, var(--ok) 0%, var(--text-primary) 60%, var(--primary-light) 100%)',
   },
   warn: {
-    ring: 'rgba(217,160,74,0.05)',
     topLine:
-      'linear-gradient(90deg, transparent, rgba(217,160,74,0.40) 30%, rgba(217,101,112,0.35) 70%, transparent)',
-    iconBg: 'linear-gradient(135deg, rgba(217,160,74,0.10), rgba(217,101,112,0.05))',
-    title: 'linear-gradient(135deg, #d9a04a 0%, #f1f5fb 60%, #d96570 100%)',
+      'linear-gradient(90deg, transparent, var(--warn) 30%, var(--accent) 70%, transparent)',
+    iconBg: 'linear-gradient(135deg, var(--warn-soft), var(--accent-soft))',
+    titleGradient:
+      'linear-gradient(135deg, var(--warn) 0%, var(--text-primary) 60%, var(--accent) 100%)',
   },
   neutral: {
-    ring: 'rgba(255,255,255,0.03)',
     topLine:
-      'linear-gradient(90deg, transparent, rgba(255,255,255,0.15) 50%, transparent)',
-    iconBg: 'rgba(255,255,255,0.03)',
-    title: 'linear-gradient(135deg, #f1f5fb 0%, #a6b3cc 100%)',
+      'linear-gradient(90deg, transparent, var(--border-strong) 50%, transparent)',
+    iconBg: 'var(--bg-card-2)',
+    titleGradient: 'linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%)',
   },
 };
 
@@ -68,9 +66,9 @@ export function PremiumPanel({
       }
       style={{
         background:
-          'radial-gradient(ellipse 80% 60% at 30% 0%, rgba(74,156,216,0.08), transparent 60%), radial-gradient(ellipse 70% 50% at 90% 100%, rgba(0,229,160,0.04), transparent 60%), linear-gradient(135deg, rgba(15,24,37,0.95), rgba(10,16,26,0.98))',
+          'var(--panel-mesh-1), var(--panel-mesh-2), linear-gradient(135deg, var(--surface-panel-from), var(--surface-panel-to))',
         backdropFilter: 'blur(20px)',
-        boxShadow: `0 0 0 1px ${a.ring}, 0 12px 48px rgba(0,0,0,0.4)`,
+        boxShadow: 'var(--panel-shadow)',
       }}
     >
       <div
@@ -86,7 +84,7 @@ export function PremiumPanel({
               className="relative w-9 h-9 rounded-lg flex items-center justify-center border border-primary-light/20 shrink-0"
               style={{
                 background: a.iconBg,
-                boxShadow: `0 0 16px ${a.ring}`,
+                boxShadow: '0 0 16px var(--primary-glow)',
               }}
             >
               {icon}
@@ -96,7 +94,7 @@ export function PremiumPanel({
             <h2
               className="text-lg font-bold tracking-tight truncate"
               style={{
-                background: a.title,
+                background: a.titleGradient,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text',

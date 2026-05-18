@@ -32,47 +32,47 @@ const ACCENT_STYLE: Record<TileAccent, {
   primary: {
     borderIdle: 'border-primary-light/20',
     borderHover: '',
-    bg: 'linear-gradient(135deg, rgba(91,155,201,0.08), rgba(15,24,37,0.7))',
-    shadow: '0 2px 12px rgba(91,155,201,0.06)',
+    bg: 'linear-gradient(135deg, var(--surface-tile-primary-from), var(--surface-tile-to))',
+    shadow: '0 2px 12px var(--primary-glow)',
     iconColor: 'text-primary-light',
-    iconBg: 'rgba(91,155,201,0.10)',
+    iconBg: 'var(--primary-soft)',
     valueColor: 'text-primary-light',
     dotColor: 'text-primary-light',
   },
   accent: {
     borderIdle: 'border-ok/20',
     borderHover: '',
-    bg: 'linear-gradient(135deg, rgba(74,184,150,0.07), rgba(15,24,37,0.7))',
-    shadow: '0 2px 12px rgba(74,184,150,0.06)',
+    bg: 'linear-gradient(135deg, var(--surface-tile-accent-from), var(--surface-tile-to))',
+    shadow: '0 2px 12px var(--accent-glow)',
     iconColor: 'text-ok',
-    iconBg: 'rgba(74,184,150,0.10)',
+    iconBg: 'var(--ok-soft)',
     valueColor: 'text-ok',
     dotColor: 'text-ok',
   },
   warn: {
     borderIdle: 'border-warn/25',
     borderHover: '',
-    bg: 'linear-gradient(135deg, rgba(217,160,74,0.07), rgba(15,24,37,0.7))',
+    bg: 'linear-gradient(135deg, var(--surface-tile-warn-from), var(--surface-tile-to))',
     iconColor: 'text-warn',
-    iconBg: 'rgba(217,160,74,0.10)',
+    iconBg: 'var(--warn-soft)',
     valueColor: 'text-warn',
     dotColor: 'text-warn',
   },
   danger: {
     borderIdle: 'border-danger/30',
     borderHover: '',
-    bg: 'linear-gradient(135deg, rgba(217,101,112,0.07), rgba(15,24,37,0.7))',
+    bg: 'linear-gradient(135deg, var(--surface-tile-danger-from), var(--surface-tile-to))',
     iconColor: 'text-danger',
-    iconBg: 'rgba(217,101,112,0.10)',
+    iconBg: 'var(--danger-soft)',
     valueColor: 'text-danger',
     dotColor: 'text-danger',
   },
   neutral: {
     borderIdle: 'border-border',
     borderHover: 'hover:border-primary-light/30',
-    bg: 'linear-gradient(135deg, rgba(26,34,54,0.6), rgba(15,24,37,0.85))',
+    bg: 'linear-gradient(135deg, var(--surface-tile-from), var(--surface-tile-to))',
     iconColor: 'text-text-muted',
-    iconBg: 'rgba(255,255,255,0.03)',
+    iconBg: 'var(--bg-card-2)',
     valueColor: 'text-text-primary',
     dotColor: 'text-ok',
   },
@@ -181,7 +181,7 @@ export function PremiumTile({
         aria-hidden
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
         style={{
-          background: 'radial-gradient(circle at 50% 100%, rgba(74,156,216,0.10), transparent 60%)',
+          background: 'radial-gradient(circle at 50% 100%, var(--primary-glow), transparent 60%)',
         }}
       />
 
@@ -191,7 +191,7 @@ export function PremiumTile({
           aria-hidden
           className="absolute inset-0 pointer-events-none"
           style={{
-            background: 'linear-gradient(90deg, rgba(74,156,216,0.18), transparent)',
+            background: 'linear-gradient(90deg, var(--primary-soft), transparent)',
             animation: 'flash 500ms ease-out forwards',
           }}
         />

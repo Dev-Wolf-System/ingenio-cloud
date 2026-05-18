@@ -199,18 +199,18 @@ function accentForKey(key: string): TileAccent {
 const ESTADO_CONFIG = {
   funcionando: {
     label: 'Funcionando',
-    color: '#4ab896',
-    bg: 'rgba(74,184,150,0.10)',
-    border: 'rgba(74,184,150,0.45)',
-    glow: '0 0 28px rgba(74,184,150,0.28), inset 0 0 16px rgba(74,184,150,0.08)',
+    color: 'var(--ok)',
+    bg: 'var(--ok-soft)',
+    border: 'var(--ok)',
+    glow: '0 0 28px var(--ok-soft), inset 0 0 16px var(--ok-soft)',
     pulse: true,
   },
   parado: {
     label: 'Parado',
-    color: '#d96570',
-    bg: 'rgba(217,101,112,0.10)',
-    border: 'rgba(217,101,112,0.45)',
-    glow: '0 0 24px rgba(217,101,112,0.25), inset 0 0 14px rgba(217,101,112,0.08)',
+    color: 'var(--danger)',
+    bg: 'var(--danger-soft)',
+    border: 'var(--danger)',
+    glow: '0 0 24px var(--danger-soft), inset 0 0 14px var(--danger-soft)',
     pulse: false,
   },
 } as const;
@@ -227,7 +227,7 @@ function EstadoBanner({ estado }: { estado: EstadoTrapiche }) {
         transition={{ type: 'spring', stiffness: 320, damping: 26 }}
         className="relative flex items-center justify-center gap-4 px-6 py-3 rounded-xl border-2 overflow-hidden"
         style={{
-          background: `linear-gradient(90deg, ${config.bg} 0%, rgba(15,24,37,0.4) 50%, ${config.bg} 100%)`,
+          background: `linear-gradient(90deg, ${config.bg} 0%, var(--bg-inset) 50%, ${config.bg} 100%)`,
           borderColor: config.border,
           boxShadow: config.glow,
         }}
@@ -236,7 +236,7 @@ function EstadoBanner({ estado }: { estado: EstadoTrapiche }) {
         aria-hidden
         className="absolute inset-0 opacity-30"
         style={{
-          background: `radial-gradient(ellipse at center, ${config.color}22, transparent 70%)`,
+          background: `radial-gradient(ellipse at center, ${config.bg}, transparent 70%)`,
           animation: config.pulse ? 'pulse 2.5s ease-in-out infinite' : undefined,
         }}
       />
@@ -265,7 +265,7 @@ function EstadoBanner({ estado }: { estado: EstadoTrapiche }) {
         className="text-2xl font-extrabold uppercase tracking-[0.18em] relative"
         style={{
           color: config.color,
-          textShadow: `0 0 10px ${config.color}66`,
+          textShadow: `0 0 10px ${config.bg}`,
           fontFamily: 'var(--font-body)',
         }}
       >
