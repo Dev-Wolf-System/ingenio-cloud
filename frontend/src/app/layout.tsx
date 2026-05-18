@@ -4,14 +4,8 @@ import './globals.css';
 import { Providers } from './providers';
 
 /**
- * Fuentes 100% locales — sin descargas Google Fonts en build time
- * (evita ETIMEDOUT cuando el host del build no tiene acceso a fonts.gstatic.com).
- *
- * Geist Variable (Vercel) actúa como Body + Display.
- * Geist Mono para tabular nums.
- *
- * Distintividad: el estilo viene del sistema de diseño dual (Graphite Forge /
- * Mist Atelier), no de la fuente. Mantenemos legibilidad operativa industrial.
+ * Fuentes 100% locales — sin descargas Google Fonts en build time.
+ * Distintividad mantenida: Familjen Grotesk display + Onest body.
  */
 
 const geist = localFont({
@@ -25,6 +19,26 @@ const geistMono = localFont({
   src: './fonts/GeistMonoVF.woff',
   variable: '--font-geist-mono',
   weight: '100 900',
+  display: 'swap',
+});
+
+// Display — Familjen Grotesk (geométrica nórdica, alto carácter industrial)
+const familjen = localFont({
+  src: [
+    { path: './fonts/FamiljenGrotesk-Regular.woff2',  weight: '400', style: 'normal' },
+    { path: './fonts/FamiljenGrotesk-Semibold.woff2', weight: '600', style: 'normal' },
+  ],
+  variable: '--font-familjen',
+  display: 'swap',
+});
+
+// Body — Onest (humanista moderna, excelente legibilidad pantalla)
+const onest = localFont({
+  src: [
+    { path: './fonts/Onest-Regular.woff2',  weight: '400', style: 'normal' },
+    { path: './fonts/Onest-Semibold.woff2', weight: '600', style: 'normal' },
+  ],
+  variable: '--font-onest',
   display: 'swap',
 });
 
@@ -66,10 +80,10 @@ export default function RootLayout({
   return (
     <html lang="es-AR" suppressHydrationWarning data-theme="dark">
       <body
-        className={`${geist.variable} ${geistMono.variable} antialiased font-body`}
+        className={`${geist.variable} ${geistMono.variable} ${familjen.variable} ${onest.variable} antialiased font-body`}
         style={{
-          ['--font-display' as never]: 'var(--font-geist-sans)',
-          ['--font-body' as never]: 'var(--font-geist-sans)',
+          ['--font-display' as never]: 'var(--font-familjen)',
+          ['--font-body' as never]: 'var(--font-onest)',
           ['--font-mono' as never]: 'var(--font-geist-mono)',
         }}
       >
