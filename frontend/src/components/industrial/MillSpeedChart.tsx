@@ -87,7 +87,6 @@ export function MillSpeedChart({ data, className, height = 140 }: MillSpeedChart
           {data?.desde && data?.hasta && (
             <div className="text-2xs text-text-disabled mono">
               {data.desde} → {data.hasta}
-              {data?.cantidad_puntos != null && ` · ${data.cantidad_puntos} pts`}
             </div>
           )}
         </div>
