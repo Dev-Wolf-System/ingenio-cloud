@@ -116,13 +116,44 @@ export class GuardiaService {
     }
   }
 
-  /** Molienda promedio TURNO ACTUAL — HTTP externo + cache 5min */
+  /**
+   * Molienda promedio TURNO ACTUAL — desde Postgres (vista pública).
+   * Cae a HTTP externo legacy solo si la vista no responde.
+   */
   async getMolienda() {
+    // 1. Intento via vista Postgres (rápido + sin dependencia HTTP externa)
+    try {
+      const pub = this.supabase.schema('public');
+      const { data, error } = await pub
+        .from('v_molienda_turno_actual')
+        .select('turno, turno_inicio, turno_fin, promedio_t_h, total_kg')
+        .maybeSingle();
+      if (!error && data) {
+        const row = data as { turno?: string; turno_inicio?: string; turno_fin?: string; promedio_t_h?: string | number | null; total_kg?: string | number | null };
+        const toNum = (v: string | number | null | undefined): number | null => {
+          if (v == null) return null;
+          const n = typeof v === 'string' ? parseFloat(v) : v;
+          return Number.isFinite(n) ? n : null;
+        };
+        return {
+          turno: row.turno ?? null,
+          turno_inicio: row.turno_inicio ?? null,
+          turno_fin: row.turno_fin ?? null,
+          promedio_t_h: toNum(row.promedio_t_h),
+          total_kg: toNum(row.total_kg),
+        };
+      }
+      this.logger.warn(`v_molienda_turno_actual fail: ${error?.message ?? 'no data'}`);
+    } catch (err) {
+      this.logger.warn(`v_molienda_turno_actual exception: ${(err as Error).message}`);
+    }
+
+    // 2. Fallback HTTP legacy (si está configurado)
     const current = getCurrentShift();
     const cached = await this.getCached('molienda_promedio', current);
     if (cached) return cached;
     const url = this.config.get<string>('MOLIENDA_HTTP_URL');
-    if (!url) return { mensaje: 'Endpoint molienda actual no configurado' };
+    if (!url) return { stale: true, mensaje: 'Sin vista ni endpoint molienda actual' };
     try {
       const auth = this.config.get<string>('MOLIENDA_HTTP_AUTH');
       const res = await axios.get(url, {
@@ -132,7 +163,7 @@ export class GuardiaService {
       return res.data;
     } catch (err) {
       this.logger.error('HTTP molienda failed', err as Error);
-      return { error: 'HTTP molienda upstream failed' };
+      return { stale: true, error: 'HTTP molienda upstream failed' };
     }
   }
 
