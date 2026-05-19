@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { IconMaximize, IconCircleFilled, IconActivity, IconBell, IconLock, IconLockOpen } from '@tabler/icons-react';
+import { IconMaximize, IconCircleFilled, IconActivity, IconBell, IconLock, IconLockOpen, IconClipboardText } from '@tabler/icons-react';
 import { useKanbanLock } from '@/lib/hooks/useKanbanLock';
+import { useShiftWelcome } from '@/lib/hooks/useShiftWelcome';
 import { useClock } from '@/lib/hooks/useClock';
 import { useShift } from '@/lib/hooks/useShift';
 import { formatTime } from '@/lib/utils/format';
@@ -16,6 +17,7 @@ export function TopBar({ plant = 'Planta Sur' }: { plant?: string }) {
   const now = useClock();
   const shift = useShift();
   const { locked, toggle } = useKanbanLock();
+  const { openBanner } = useShiftWelcome();
 
   const toggleFullscreen = () => {
     if (typeof document === 'undefined') return;
@@ -105,6 +107,16 @@ export function TopBar({ plant = 'Planta Sur' }: { plant?: string }) {
               : '—'}
           </span>
         </div>
+
+        {/* Ver resumen de recibimiento del turno */}
+        <button
+          onClick={openBanner}
+          className="p-2 rounded-md hover:bg-bg-hover transition-colors text-text-muted hover:text-primary-light"
+          aria-label="Ver resumen de recibimiento del turno"
+          title="Ver resumen de recibimiento del turno"
+        >
+          <IconClipboardText size={17} />
+        </button>
 
         {/* Toggle bloqueo kanban (drag-drop tiles) */}
         <button

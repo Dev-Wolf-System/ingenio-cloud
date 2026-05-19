@@ -12,10 +12,11 @@ import {
 } from '@tabler/icons-react';
 import { AnimatePresence, m } from 'motion/react';
 import { useShift } from '@/lib/hooks/useShift';
+import { useShiftWelcome, SHIFT_GREETED_PREFIX } from '@/lib/hooks/useShiftWelcome';
 import { formatNumber } from '@/lib/utils/format';
 
-const STORAGE_KEY = 'ingcloud:shift-greeted';
-const WINDOW_MIN = 30; // mostrar solo dentro de primeros 30 min del turno
+const STORAGE_KEY = SHIFT_GREETED_PREFIX;
+const TRIGGER_AFTER_MIN = 30; // dispara automático a los 30 min DESPUÉS de iniciado el turno
 
 async function fetchGuardia(path: string) {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
@@ -37,32 +38,36 @@ function greetingFor(name: 'morning' | 'afternoon' | 'night'): { saludo: string;
 
 export function ShiftWelcomeBanner() {
   const shift = useShift();
+  const { open: manualOpen, closeBanner } = useShiftWelcome();
   const [mounted, setMounted] = useState(false);
-  const [visible, setVisible] = useState(false);
+  const [autoVisible, setAutoVisible] = useState(false);
   const [shiftKey, setShiftKey] = useState<string>('');
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Determinar si mostrar (dentro ventana 30 min + no greeted antes)
+  // Auto-trigger: a los 30 min DESPUÉS de iniciado el turno (solo 1x por turno)
   useEffect(() => {
     if (!mounted) return;
-    const minutesElapsed = shift.elapsedMinutes;
-    if (minutesElapsed > WINDOW_MIN) {
-      setVisible(false);
-      return;
-    }
+    const elapsed = shift.elapsedMinutes;
     const todayISO = new Date().toISOString().slice(0, 10);
     const key = `${todayISO}:${shift.name}`;
     setShiftKey(key);
+    if (elapsed < TRIGGER_AFTER_MIN) {
+      setAutoVisible(false);
+      return;
+    }
     try {
       const greeted = window.localStorage.getItem(`${STORAGE_KEY}:${key}`);
-      if (!greeted) setVisible(true);
+      if (!greeted) setAutoVisible(true);
     } catch {
-      setVisible(true);
+      setAutoVisible(true);
     }
   }, [mounted, shift.elapsedMinutes, shift.name]);
+
+  // visible = auto OR forzado por botón TopBar
+  const visible = autoVisible || manualOpen;
 
   const resumen = useQuery({
     queryKey: ['guardia', 'turno-previo'],
@@ -82,7 +87,8 @@ export function ShiftWelcomeBanner() {
     try {
       window.localStorage.setItem(`${STORAGE_KEY}:${shiftKey}`, String(Date.now()));
     } catch {}
-    setVisible(false);
+    setAutoVisible(false);
+    closeBanner();
   };
 
   if (!mounted) return null;
