@@ -162,17 +162,18 @@ export function TrapichePanel() {
   );
 
   // Slot combinado Presión 6° molino — promedio Este+Oeste + delta en hint
-  const presionEste = pickItem(data, PRESION_ESTE_KEYS);
-  const presionOeste = pickItem(data, PRESION_OESTE_KEYS);
-  const presionCombinada =
-    presionEste || presionOeste
-      ? {
-          este: presionEste?.value ?? null,
-          oeste: presionOeste?.value ?? null,
-          unit: presionEste?.unit ?? presionOeste?.unit ?? 'kg/cm²',
-          updatedAt: presionEste?.updated_at ?? presionOeste?.updated_at,
-        }
-      : null;
+  const presionCombinada = useMemo(() => {
+    const este = pickItem(data, PRESION_ESTE_KEYS);
+    const oeste = pickItem(data, PRESION_OESTE_KEYS);
+    if (!este && !oeste) return null;
+    return {
+      este: este?.value ?? null,
+      oeste: oeste?.value ?? null,
+      unit: este?.unit ?? oeste?.unit ?? 'kg/cm²',
+      updatedAt: este?.updated_at ?? oeste?.updated_at,
+    };
+  }, [data]);
+
   const presionPromedio =
     presionCombinada && presionCombinada.este != null && presionCombinada.oeste != null
       ? (presionCombinada.este + presionCombinada.oeste) / 2

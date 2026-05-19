@@ -142,13 +142,15 @@ export function MillSpeedChart({ data, className, height = 140 }: MillSpeedChart
                   fontSize: 12,
                 }}
                 labelStyle={{ color: 'var(--text-muted)' }}
-                formatter={(value: number, name: string) => {
+                formatter={(value, name) => {
                   const labels: Record<string, string> = {
                     promedio: 'Promedio',
                     maximo: 'Máximo',
                     minimo: 'Mínimo',
                   };
-                  return [`${formatNumber(value, 2)} rpm`, labels[name] ?? name];
+                  const num = Number(value);
+                  const key = String(name);
+                  return [`${formatNumber(num, 2)} rpm`, labels[key] ?? key];
                 }}
               />
 
