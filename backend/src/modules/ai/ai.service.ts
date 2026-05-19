@@ -34,10 +34,14 @@ export class AiService implements OnModuleInit {
     paradas_count?: number | null;
     paradas_minutos?: number | null;
     paradas_detalle?: Array<{
+      desde: string;
+      hasta: string;
+      rango?: string;
+      estado?: string;
       motivo: string;
-      desde_hora: string;
-      hasta_hora: string;
-      duracion_min: number;
+      origen?: string;
+      maquina?: string;
+      minutos_neto?: number | null;
     }>;
   }): Promise<{
     resumen: string;
@@ -62,10 +66,12 @@ Salida JSON estricto con campos:
 
     const paradasFmt = (payload.paradas_detalle ?? []).length > 0
       ? (payload.paradas_detalle ?? [])
-          .map(
-            (p) =>
-              `- ${p.desde_hora}–${p.hasta_hora} (${p.duracion_min} min) · ${p.motivo}`,
-          )
+          .map((p) => {
+            const dur = p.minutos_neto != null ? `${p.minutos_neto} min` : 'abierta';
+            const rango = p.rango ?? `${p.desde} → ${p.hasta}`;
+            const maquinaOrigen = [p.maquina, p.origen].filter(Boolean).join(' · ');
+            return `- ${rango} (${dur}) · ${p.motivo}${maquinaOrigen ? ` [${maquinaOrigen}]` : ''}`;
+          })
           .join('\n')
       : '(sin paradas registradas)';
 

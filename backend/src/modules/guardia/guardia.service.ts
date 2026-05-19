@@ -15,6 +15,18 @@ export interface ResumenGuardia {
   consumoGas: Record<string, unknown>;
 }
 
+/** Shape de cada parada dentro de v_resumen_turno_previo.paradas_detalle */
+export interface ParadaDetalle {
+  desde: string;          // 'HH:MM'
+  hasta: string;          // 'HH:MM' o 'abierta'
+  rango?: string;         // 'HH:MM → HH:MM'
+  estado?: string;        // 'abierta' | 'cerrada'
+  motivo: string;
+  origen?: string;        // 'Auxiliar de Molienda', etc.
+  maquina?: string;       // 'Conductor Principal', etc.
+  minutos_neto?: number | null;
+}
+
 @Injectable()
 export class GuardiaService {
   private readonly logger = new Logger(GuardiaService.name);
@@ -238,6 +250,7 @@ export class GuardiaService {
         gas_avg_m3_h?: string | number | null;
         paradas_count?: string | number | null;
         paradas_minutos?: number | null;
+        paradas_detalle?: ParadaDetalle[] | null;
       } | null;
       if (!row) return { stale: true };
       // Normalizar a number (PostgREST devuelve numeric/bigint como string)
@@ -255,6 +268,7 @@ export class GuardiaService {
         gas_avg_m3_h: toNum(row.gas_avg_m3_h),
         paradas_count: toNum(row.paradas_count),
         paradas_minutos: row.paradas_minutos ?? 0,
+        paradas_detalle: row.paradas_detalle ?? [],
       };
     } catch (err) {
       this.logger.warn(`resumen-turno-previo exception: ${(err as Error).message}`);
@@ -262,27 +276,11 @@ export class GuardiaService {
     }
   }
 
-  /** Detalle de paradas del turno previo (motivo + duración por evento) */
-  async getParadasDetalle() {
-    try {
-      const pub = this.supabase.schema('public');
-      const { data, error } = await pub
-        .from('v_paradas_detalle_turno_previo')
-        .select('motivo, desde_hora, hasta_hora, duracion_min');
-      if (error) {
-        this.logger.warn(`paradas-detalle fail: ${error.message}`);
-        return [];
-      }
-      return (data ?? []) as Array<{
-        motivo: string;
-        desde_hora: string;
-        hasta_hora: string;
-        duracion_min: number;
-      }>;
-    } catch (err) {
-      this.logger.warn(`paradas-detalle exception: ${(err as Error).message}`);
-      return [];
-    }
+  /** Detalle paradas — extraído de v_resumen_turno_previo.paradas_detalle */
+  async getParadasDetalle(): Promise<ParadaDetalle[]> {
+    const resumen = await this.getResumenTurnoPrevio();
+    if ('stale' in resumen && resumen.stale) return [];
+    return ('paradas_detalle' in resumen && resumen.paradas_detalle) || [];
   }
 
   /** Análisis IA cacheado del turno previo */
@@ -304,16 +302,13 @@ export class GuardiaService {
       return { ok: false, error: 'OPENAI_API_KEY no configurada o cliente IA no iniciado' };
     }
 
-    // 1. Datos del turno previo desde Postgres (no Node-RED)
+    // 1. Datos del turno previo desde Postgres (vista única con paradas_detalle jsonb)
     const resumen = await this.getResumenTurnoPrevio();
     if ('stale' in resumen && resumen.stale) {
       return { ok: false, error: 'Sin datos turno previo en v_resumen_turno_previo' };
     }
-    const detallesParadas = await this.getParadasDetalle();
-    const payloadIA = {
-      ...resumen,
-      paradas_detalle: detallesParadas,
-    };
+    const detallesParadas = ('paradas_detalle' in resumen && resumen.paradas_detalle) || [];
+    const payloadIA = resumen;
 
     const prev = getPreviousShift();
     this.logger.log(
