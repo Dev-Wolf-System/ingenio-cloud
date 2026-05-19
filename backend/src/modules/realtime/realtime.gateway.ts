@@ -116,18 +116,6 @@ export class TrapicheGateway extends BaseGw {
   }
 }
 
-interface MillSpeedPayload {
-  turno: string;
-  desde?: string;
-  hasta?: string;
-  cantidad_puntos: number;
-  promedio: number;
-  maximo: number;
-  minimo: number;
-  labels: string[];
-  valores: number[];
-}
-
 @WebSocketGateway({ path: '/ws/dashboard/molino', cors: { origin: '*' } })
 export class MolinoGateway extends BaseGw {
   constructor(svc: RealtimeService, config: ConfigService) {
@@ -140,7 +128,9 @@ export class MolinoGateway extends BaseGw {
     client.on('message', async (raw) => {
       const parsed = parseRawMessage(raw) as Record<string, unknown> | null;
       if (!parsed) return;
-      const payload = (parsed.payload && typeof parsed.payload === 'object' ? parsed.payload : parsed) as MillSpeedPayload;
+      const payload = (parsed.payload && typeof parsed.payload === 'object'
+        ? parsed.payload
+        : parsed) as Record<string, unknown>;
       if (typeof payload.cantidad_puntos !== 'number') {
         this.logger.warn('missing cantidad_puntos');
         return;

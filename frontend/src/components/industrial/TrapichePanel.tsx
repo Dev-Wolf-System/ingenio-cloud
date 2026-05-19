@@ -117,6 +117,9 @@ async function fetchVelMolino() {
   const res = await fetch(`${apiUrl}/guardia/vel-molino`);
   if (!res.ok) return null;
   return res.json() as Promise<{
+    // Nuevo
+    stats?: { promedio_rpm?: number; maximo_rpm?: number; minimo_rpm?: number };
+    // Legacy
     promedio?: number;
     maximo?: number;
     minimo?: number;
@@ -136,7 +139,9 @@ export function TrapichePanel() {
     staleTime: 60_000,
   });
   const velRealtime = pickItem(data, ['rpm_primer_molino', 'rpm_1er_molino', 'vel_primer_molino']);
-  const velPromedio = velRealtime?.value ?? velMolinoQ.data?.promedio ?? null;
+  const velCachedPromedio =
+    velMolinoQ.data?.stats?.promedio_rpm ?? velMolinoQ.data?.promedio ?? null;
+  const velPromedio = velRealtime?.value ?? velCachedPromedio;
   const velIsRealtime = !!velRealtime;
 
   const estado = useMemo<EstadoTrapiche>(() => {

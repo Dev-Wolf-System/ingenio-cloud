@@ -133,23 +133,89 @@ export class RealtimeService {
     return now.toISOString().slice(0, 10);
   }
 
-  /** Mill speed turno previo (websocket — llega 1x cada cambio de turno +15min) */
-  async ingestMillSpeed(payload: {
-    turno: string;
-    desde?: string;
-    hasta?: string;
-    cantidad_puntos: number;
-    promedio: number;
-    maximo: number;
-    minimo: number;
-    labels: string[];
-    valores: number[];
-  }) {
-    const shiftName = this.mapTurno(payload.turno);
+  /**
+   * Mill speed turno previo (websocket — llega 1x cada cambio de turno +15min)
+   *
+   * Acepta tanto el formato NUEVO (stats + grafico) como el legacy (promedio
+   * + labels + valores). Normaliza al formato nuevo antes de cachear.
+   */
+  async ingestMillSpeed(payload: Record<string, unknown>) {
+    const turnoRaw = String(payload.turno ?? '');
+    const shiftName = this.mapTurno(turnoRaw);
     if (shiftName === 'unknown') {
-      this.logger.warn(`Mill speed turno desconocido: ${payload.turno}`);
+      this.logger.warn(`Mill speed turno desconocido: ${turnoRaw}`);
       return { ok: false, error: 'turno desconocido' };
     }
+
+    // Detectar formato NUEVO (stats + grafico) o LEGACY (promedio + labels + valores)
+    const isNew =
+      payload.stats != null &&
+      typeof payload.stats === 'object' &&
+      payload.grafico != null &&
+      typeof payload.grafico === 'object';
+
+    let normalized: {
+      turno: string;
+      desde?: string;
+      hasta?: string;
+      cantidad_puntos: number;
+      stats: { promedio_rpm: number; maximo_rpm: number; minimo_rpm: number };
+      grafico: {
+        labels: string[];
+        velocidad_promedio: number[];
+        velocidad_maxima: number[];
+        velocidad_minima: number[];
+      };
+    };
+
+    if (isNew) {
+      const stats = payload.stats as { promedio_rpm?: number; maximo_rpm?: number; minimo_rpm?: number };
+      const grafico = payload.grafico as {
+        labels?: string[];
+        velocidad_promedio?: number[];
+        velocidad_maxima?: number[];
+        velocidad_minima?: number[];
+      };
+      normalized = {
+        turno: turnoRaw,
+        desde: payload.desde as string | undefined,
+        hasta: payload.hasta as string | undefined,
+        cantidad_puntos: Number(payload.cantidad_puntos ?? 0),
+        stats: {
+          promedio_rpm: Number(stats.promedio_rpm ?? 0),
+          maximo_rpm: Number(stats.maximo_rpm ?? 0),
+          minimo_rpm: Number(stats.minimo_rpm ?? 0),
+        },
+        grafico: {
+          labels: grafico.labels ?? [],
+          velocidad_promedio: grafico.velocidad_promedio ?? [],
+          velocidad_maxima: grafico.velocidad_maxima ?? [],
+          velocidad_minima: grafico.velocidad_minima ?? [],
+        },
+      };
+    } else {
+      // LEGACY: promedio + labels + valores → expandir a estructura nueva
+      const valores = (payload.valores as number[]) ?? [];
+      const labels = (payload.labels as string[]) ?? [];
+      normalized = {
+        turno: turnoRaw,
+        desde: payload.desde as string | undefined,
+        hasta: payload.hasta as string | undefined,
+        cantidad_puntos: Number(payload.cantidad_puntos ?? valores.length),
+        stats: {
+          promedio_rpm: Number(payload.promedio ?? 0),
+          maximo_rpm: Number(payload.maximo ?? 0),
+          minimo_rpm: Number(payload.minimo ?? 0),
+        },
+        grafico: {
+          labels,
+          velocidad_promedio: valores,
+          velocidad_maxima: valores, // sin desglose en legacy, replicamos
+          velocidad_minima: valores,
+        },
+      };
+    }
+
     const shiftDate = this.resolveShiftDate(shiftName);
     const industrial = this.supabase.schema('industrial');
     const { error } = await industrial.from('shift_kpis_cache').upsert(
@@ -159,7 +225,7 @@ export class RealtimeService {
           shift_date: shiftDate,
           shift_name: shiftName,
           shift_ref: 'previous',
-          payload: payload as never,
+          payload: normalized as never,
           fetched_at: new Date().toISOString(),
         },
       ],
@@ -169,7 +235,9 @@ export class RealtimeService {
       this.logger.error('Mill speed upsert failed', error);
       throw new Error(error.message);
     }
-    this.logger.log(`Mill speed cached ${shiftDate} ${shiftName} (${payload.cantidad_puntos} pts)`);
+    this.logger.log(
+      `Mill speed cached ${shiftDate} ${shiftName} (${normalized.cantidad_puntos} pts, fmt=${isNew ? 'new' : 'legacy'})`,
+    );
     return { ok: true };
   }
 
