@@ -35,7 +35,11 @@ async function fetchTurnoPrevio(): Promise<TurnoPrevio> {
   return res.json();
 }
 
-async function fetchMollienda(): Promise<{ promedio_t_h?: number } | null> {
+async function fetchMollienda(): Promise<{
+  promedio_t_h?: number | null;
+  total_kg?: number | null;
+  turno?: string;
+} | null> {
   const res = await fetch(apiUrl('molienda'));
   if (!res.ok) return null;
   return res.json();
@@ -87,7 +91,9 @@ export function ShiftSummaryPanel() {
   });
 
   const tp = turnoQ.data;
-  const moliendaActual = (moliendaActualQ.data as { promedio_t_h?: number } | null)?.promedio_t_h;
+  const mol = moliendaActualQ.data as { promedio_t_h?: number | null; total_kg?: number | null } | null;
+  const moliendaActual = mol?.promedio_t_h ?? null;
+  const moliendaTotal = mol?.total_kg ?? null;
 
   const horaInicio = fmtHora(tp?.turno_inicio);
   const horaFin = fmtHora(tp?.turno_fin);
@@ -116,11 +122,16 @@ export function ShiftSummaryPanel() {
         <PremiumTile
           icon={<IconScale size={14} />}
           label="Promedio Molienda Actual"
-          value={moliendaActual}
+          value={moliendaActual ?? undefined}
           unit="t/h"
           precision={1}
           accent="primary"
           size="lg"
+          hint={
+            moliendaActual != null && moliendaTotal != null
+              ? `${formatNumber(moliendaTotal / 1000, 1)} t total`
+              : 'Esperando primera lectura del turno'
+          }
         />
         <PremiumTile
           icon={<IconScale size={14} />}
