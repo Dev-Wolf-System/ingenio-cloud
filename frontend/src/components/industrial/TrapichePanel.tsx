@@ -18,8 +18,11 @@ import {
 } from '@tabler/icons-react';
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
 import { useThresholds, evaluateValue } from '@/lib/hooks/useThresholds';
+import { useTileOrder } from '@/lib/hooks/useTileOrder';
 import { PremiumPanel } from './PremiumPanel';
 import { PremiumTile, type TileAccent } from './PremiumTile';
+import { SortableGroup } from './SortableGroup';
+import { SortableTile } from './SortableTile';
 import { cn } from '@/lib/utils/cn';
 
 type EstadoTrapiche = 'funcionando' | 'parado';
@@ -179,6 +182,82 @@ export function TrapichePanel() {
   const expected = TRAPICHE_SLOTS.length + 1; // +1 por el slot combinado
   const hasAny = data.size > 0;
 
+  // IDs orden tiles para drag-drop (RPM + presión combinada + slots resueltos)
+  const tileIds = useMemo(() => {
+    const ids: string[] = [];
+    if (velPromedio != null) ids.push('rpm_primer_molino');
+    if (presionCombinada) ids.push('presion_6to_combinada');
+    resolvedSlots.filter((r) => r.item != null).forEach((r) => ids.push(r.slot.id));
+    return ids;
+  }, [velPromedio, presionCombinada, resolvedSlots]);
+  const { ordered: orderedIds, saveOrder } = useTileOrder('trapiche', tileIds);
+
+  const renderTileById = (id: string) => {
+    if (id === 'rpm_primer_molino' && velPromedio != null) {
+      return (
+        <PremiumTile
+          icon={<IconRotateClockwise size={14} />}
+          label="RPM primer molino"
+          value={velPromedio}
+          unit="rpm"
+          precision={1}
+          accent="warn"
+          hint={velIsRealtime ? 'Tiempo real' : 'Promedio turno previo'}
+        />
+      );
+    }
+    if (id === 'presion_6to_combinada' && presionCombinada) {
+      return (
+        <PremiumTile
+          icon={<IconGauge size={14} />}
+          label="Presión 6° molino"
+          value={presionPromedio ?? undefined}
+          unit={presionCombinada.unit}
+          precision={2}
+          accent="accent"
+          updatedAt={presionCombinada.updatedAt}
+          hint={
+            presionCombinada.este != null && presionCombinada.oeste != null
+              ? `E ${presionCombinada.este.toFixed(2)} · O ${presionCombinada.oeste.toFixed(2)}`
+              : presionCombinada.este != null
+              ? `E ${presionCombinada.este.toFixed(2)} · O —`
+              : `E — · O ${presionCombinada.oeste?.toFixed(2) ?? '—'}`
+          }
+        />
+      );
+    }
+    const resolved = resolvedSlots.find((r) => r.slot.id === id);
+    if (!resolved || !resolved.item) return null;
+    const { slot, item } = resolved;
+    const realKey = Array.from(data.keys()).find((k) =>
+      slot.match.some((m) => k.toLowerCase().includes(m.toLowerCase())),
+    );
+    const evalResult = realKey
+      ? evaluateValue(thresholds, 'trapiche', realKey, item.value)
+      : { status: 'ok' as const, severity: null, reason: null, threshold: null };
+    return (
+      <PremiumTile
+        icon={iconFor(slot.id)}
+        label={slot.label}
+        value={item.value}
+        unit={item.unit ?? slot.unit}
+        precision={slot.precision}
+        accent={accentForKey(slot.id)}
+        updatedAt={item.updated_at}
+        alert={
+          evalResult.status === 'out' && evalResult.severity && evalResult.reason
+            ? {
+                severity: evalResult.severity,
+                reason: evalResult.reason,
+                min: evalResult.threshold?.min_value,
+                max: evalResult.threshold?.max_value,
+              }
+            : null
+        }
+      />
+    );
+  };
+
   return (
     <PremiumPanel
       title="TRAPICHE"
@@ -194,72 +273,15 @@ export function TrapichePanel() {
         {data.size === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-            {velPromedio != null && (
-              <PremiumTile
-                key="rpm_primer_molino"
-                icon={<IconRotateClockwise size={14} />}
-                label="RPM primer molino"
-                value={velPromedio}
-                unit="rpm"
-                precision={1}
-                accent="warn"
-                hint={velIsRealtime ? 'Tiempo real' : 'Promedio turno previo'}
-              />
-            )}
-            {presionCombinada && (
-              <PremiumTile
-                key="presion_6to_combinada"
-                icon={<IconGauge size={14} />}
-                label="Presión 6° molino"
-                value={presionPromedio ?? undefined}
-                unit={presionCombinada.unit}
-                precision={2}
-                accent="accent"
-                updatedAt={presionCombinada.updatedAt}
-                hint={
-                  presionCombinada.este != null && presionCombinada.oeste != null
-                    ? `E ${presionCombinada.este.toFixed(2)} · O ${presionCombinada.oeste.toFixed(2)}`
-                    : presionCombinada.este != null
-                    ? `E ${presionCombinada.este.toFixed(2)} · O —`
-                    : `E — · O ${presionCombinada.oeste?.toFixed(2) ?? '—'}`
-                }
-              />
-            )}
-            {resolvedSlots
-              .filter(({ item }) => item != null)
-              .map(({ slot, item }) => {
-                // Buscar la key real en data para matchear con threshold (no slot.id)
-                const realKey = Array.from(data.keys()).find((k) =>
-                  slot.match.some((m) => k.toLowerCase().includes(m.toLowerCase())),
-                );
-                const evalResult = realKey
-                  ? evaluateValue(thresholds, 'trapiche', realKey, item!.value)
-                  : { status: 'ok' as const, severity: null, reason: null, threshold: null };
-                return (
-                  <PremiumTile
-                    key={slot.id}
-                    icon={iconFor(slot.id)}
-                    label={slot.label}
-                    value={item!.value}
-                    unit={item!.unit ?? slot.unit}
-                    precision={slot.precision}
-                    accent={accentForKey(slot.id)}
-                    updatedAt={item!.updated_at}
-                    alert={
-                      evalResult.status === 'out' && evalResult.severity && evalResult.reason
-                        ? {
-                            severity: evalResult.severity,
-                            reason: evalResult.reason,
-                            min: evalResult.threshold?.min_value,
-                            max: evalResult.threshold?.max_value,
-                          }
-                        : null
-                    }
-                  />
-                );
-              })}
-          </div>
+          <SortableGroup items={orderedIds} onReorder={saveOrder}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+              {orderedIds.map((id) => (
+                <SortableTile key={id} id={id}>
+                  {renderTileById(id)}
+                </SortableTile>
+              ))}
+            </div>
+          </SortableGroup>
         )}
       </div>
     </PremiumPanel>
