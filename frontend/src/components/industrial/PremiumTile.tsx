@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { IconCircleFilled, IconAlertCircle } from '@tabler/icons-react';
 import { cn } from '@/lib/utils/cn';
-import { formatNumber, formatRelative } from '@/lib/utils/format';
+import { formatNumber } from '@/lib/utils/format';
 import { m } from 'motion/react';
 
 const STALE_WARN_SEC = 15;   // > 15s = amarillo (sensor demorado)
@@ -119,10 +119,10 @@ const ALERT_STYLE: Record<AlertSeverity, { color: string; border: string; bg: st
 };
 
 const SIZE_CONFIG = {
-  sm:   { pad: 'p-2.5',  valueText: 'text-base',    iconSize: 5, gap: 'gap-1' },
-  md:   { pad: 'p-3',    valueText: 'text-lg',      iconSize: 5, gap: 'gap-1.5' },
-  lg:   { pad: 'p-3.5',  valueText: 'text-2xl',     iconSize: 6, gap: 'gap-2' },
-  hero: { pad: 'p-4 sm:p-5', valueText: 'text-3xl sm:text-4xl', iconSize: 7, gap: 'gap-2' },
+  sm:   { pad: 'p-3',         valueText: 'text-lg',                  labelText: 'text-[11px]', iconSize: 5, gap: 'gap-1' },
+  md:   { pad: 'p-3.5',       valueText: 'text-xl',                  labelText: 'text-[11px]', iconSize: 5, gap: 'gap-1.5' },
+  lg:   { pad: 'p-4',         valueText: 'text-3xl',                 labelText: 'text-[12px]', iconSize: 6, gap: 'gap-2' },
+  hero: { pad: 'p-5 sm:p-6',  valueText: 'text-4xl sm:text-5xl',     labelText: 'text-[12px]', iconSize: 7, gap: 'gap-2' },
 } as const;
 
 export function PremiumTile({
@@ -225,7 +225,7 @@ export function PremiumTile({
                 {icon}
               </span>
             )}
-            <span className="text-[10px] uppercase tracking-[0.10em] text-text-muted font-medium truncate">
+            <span className={cn('uppercase tracking-[0.10em] text-text-muted font-medium truncate', sizeConfig.labelText)}>
               {label}
             </span>
           </div>
@@ -276,10 +276,7 @@ export function PremiumTile({
         </div>
 
         {hint && (
-          <div className="text-[9px] text-text-disabled mono mt-1">{hint}</div>
-        )}
-        {!hint && updatedAt && (
-          <div className="text-[9px] text-text-disabled mono mt-1">{formatRelative(updatedAt)}</div>
+          <div className="text-[10px] text-text-disabled mono mt-1.5 truncate">{hint}</div>
         )}
       </div>
     </m.div>
