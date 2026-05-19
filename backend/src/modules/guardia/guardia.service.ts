@@ -262,6 +262,29 @@ export class GuardiaService {
     }
   }
 
+  /** Detalle de paradas del turno previo (motivo + duración por evento) */
+  async getParadasDetalle() {
+    try {
+      const pub = this.supabase.schema('public');
+      const { data, error } = await pub
+        .from('v_paradas_detalle_turno_previo')
+        .select('motivo, desde_hora, hasta_hora, duracion_min');
+      if (error) {
+        this.logger.warn(`paradas-detalle fail: ${error.message}`);
+        return [];
+      }
+      return (data ?? []) as Array<{
+        motivo: string;
+        desde_hora: string;
+        hasta_hora: string;
+        duracion_min: number;
+      }>;
+    } catch (err) {
+      this.logger.warn(`paradas-detalle exception: ${(err as Error).message}`);
+      return [];
+    }
+  }
+
   /** Análisis IA cacheado del turno previo */
   async getAnalisisIA() {
     const prev = getPreviousShift();
@@ -275,17 +298,29 @@ export class GuardiaService {
     return cached;
   }
 
-  /** Disparar análisis IA manual ahora (await sincrónico) */
+  /** Disparar análisis IA manual ahora (consume v_resumen_turno_previo + paradas detalle) */
   async forceAnalisisIA() {
     if (!this.ai.isAvailable()) {
       return { ok: false, error: 'OPENAI_API_KEY no configurada o cliente IA no iniciado' };
     }
-    const resumen = await this.fetchResumenFromNodeRed(true);
-    if (!resumen) return { ok: false, error: 'Sin datos turno previo desde Node-RED' };
+
+    // 1. Datos del turno previo desde Postgres (no Node-RED)
+    const resumen = await this.getResumenTurnoPrevio();
+    if ('stale' in resumen && resumen.stale) {
+      return { ok: false, error: 'Sin datos turno previo en v_resumen_turno_previo' };
+    }
+    const detallesParadas = await this.getParadasDetalle();
+    const payloadIA = {
+      ...resumen,
+      paradas_detalle: detallesParadas,
+    };
+
     const prev = getPreviousShift();
-    this.logger.log(`forceAnalisisIA: iniciando para turno ${prev.name}`);
+    this.logger.log(
+      `forceAnalisisIA: iniciando turno ${prev.name} · ${detallesParadas.length} paradas detalle`,
+    );
     try {
-      const result = await this.ai.analizarResumenGuardia(resumen);
+      const result = await this.ai.analizarResumenGuardia(payloadIA);
       if (!result) {
         return { ok: false, error: 'OpenAI devolvió respuesta vacía o JSON inválido' };
       }

@@ -25,12 +25,20 @@ export class AiService implements OnModuleInit {
   }
 
   async analizarResumenGuardia(payload: {
-    turno_anterior: string;
-    desde: string;
-    hasta: string;
-    paradasFabrica: Record<string, unknown>;
-    moliendaPromedio: Record<string, unknown>;
-    consumoGas: Record<string, unknown>;
+    turno?: string | null;
+    turno_inicio?: string | null;
+    turno_fin?: string | null;
+    molienda_avg_t_h?: number | null;
+    gas_total_m3?: number | null;
+    gas_avg_m3_h?: number | null;
+    paradas_count?: number | null;
+    paradas_minutos?: number | null;
+    paradas_detalle?: Array<{
+      motivo: string;
+      desde_hora: string;
+      hasta_hora: string;
+      duracion_min: number;
+    }>;
   }): Promise<{
     resumen: string;
     estado: 'normal' | 'atencion' | 'critico';
@@ -39,28 +47,39 @@ export class AiService implements OnModuleInit {
     if (!this.client) return null;
 
     const systemPrompt = `Sos un ingeniero senior experto en ingenios azucareros (Ingenio La Corona, Tucumán Argentina).
-Análisis turno operativo en base a 3 KPIs:
-- Paradas de fábrica (cantidad, tiempo neto)
-- Molienda promedio (kg/h, totales)
-- Consumo de gas (m³/h, total)
+Análisis turno operativo en base a:
+- Paradas de fábrica con DETALLE por evento (motivo, hora, duración)
+- Molienda promedio (t/h)
+- Consumo de gas total y promedio (m³, m³/h)
 
 Tu trabajo: dar un comentario operativo profesional, claro y conciso para gerentes/jefes turno.
+Si hay paradas, mencioná los motivos más relevantes y su impacto en tiempo.
 Tono: directo, técnico, en español rioplatense.
-Salida JSON estricto con campos: resumen (string 2-3 oraciones), estado (normal|atencion|critico), puntos_clave (array 2-4 bullets cortos).`;
+Salida JSON estricto con campos:
+- resumen (string 2-3 oraciones)
+- estado (normal|atencion|critico)
+- puntos_clave (array 3-5 bullets cortos, mencionando paradas si las hubo)`;
 
-    const userPrompt = `Turno: ${payload.turno_anterior}
-Periodo: ${payload.desde} → ${payload.hasta}
+    const paradasFmt = (payload.paradas_detalle ?? []).length > 0
+      ? (payload.paradas_detalle ?? [])
+          .map(
+            (p) =>
+              `- ${p.desde_hora}–${p.hasta_hora} (${p.duracion_min} min) · ${p.motivo}`,
+          )
+          .join('\n')
+      : '(sin paradas registradas)';
 
-Paradas:
-${JSON.stringify(payload.paradasFabrica, null, 2)}
+    const userPrompt = `Turno: ${payload.turno ?? '—'}
+Periodo: ${payload.turno_inicio ?? '?'} → ${payload.turno_fin ?? '?'}
 
-Molienda:
-${JSON.stringify(payload.moliendaPromedio, null, 2)}
+Molienda promedio: ${payload.molienda_avg_t_h ?? '—'} t/h
+Gas total: ${payload.gas_total_m3 ?? '—'} m³ (promedio ${payload.gas_avg_m3_h ?? '—'} m³/h)
+Paradas: ${payload.paradas_count ?? 0} evento(s), ${payload.paradas_minutos ?? 0} min total
 
-Consumo gas:
-${JSON.stringify(payload.consumoGas, null, 2)}
+Detalle de paradas:
+${paradasFmt}
 
-Analizá el desempeño del turno.`;
+Analizá el desempeño del turno considerando los motivos de paradas.`;
 
     const messages = [
       { role: 'system' as const, content: systemPrompt },

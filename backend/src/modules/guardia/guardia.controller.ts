@@ -47,6 +47,12 @@ export class GuardiaController {
     return this.svc.getResumenTurnoPrevio();
   }
 
+  /** GET /api/guardia/paradas-detalle — paradas individuales del turno previo */
+  @Get('paradas-detalle')
+  paradasDetalle() {
+    return this.svc.getParadasDetalle();
+  }
+
   /** GET /api/guardia/analisis-ia — análisis IA del turno previo */
   @Get('analisis-ia')
   analisisIA() {
