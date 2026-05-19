@@ -84,7 +84,7 @@ export function ShiftSummaryPanel() {
       <div className="grid grid-cols-2 md:grid-cols-2 gap-2">
         <PremiumTile
           icon={<IconScale size={14} />}
-          label="Molienda actual"
+          label="Promedio Molienda Actual"
           value={moliendaActual}
           unit="t/h"
           precision={1}
@@ -93,7 +93,7 @@ export function ShiftSummaryPanel() {
         />
         <PremiumTile
           icon={<IconScale size={14} />}
-          label="Molienda turno previo"
+          label="Promedio Molienda Turno Previo"
           value={moliendaPrevTh}
           unit="t/h"
           precision={1}
