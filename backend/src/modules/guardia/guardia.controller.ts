@@ -41,6 +41,12 @@ export class GuardiaController {
     return this.svc.getResumenGuardia();
   }
 
+  /** GET /api/guardia/turno-previo — resumen turno previo desde Postgres (v_resumen_turno_previo) */
+  @Get('turno-previo')
+  turnoPrevio() {
+    return this.svc.getResumenTurnoPrevio();
+  }
+
   /** GET /api/guardia/analisis-ia — análisis IA del turno previo */
   @Get('analisis-ia')
   analisisIA() {

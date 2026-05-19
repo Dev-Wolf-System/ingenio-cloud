@@ -65,8 +65,8 @@ export function ShiftWelcomeBanner() {
   }, [mounted, shift.elapsedMinutes, shift.name]);
 
   const resumen = useQuery({
-    queryKey: ['guardia', 'resumen'],
-    queryFn: () => fetchGuardia('resumen'),
+    queryKey: ['guardia', 'turno-previo'],
+    queryFn: () => fetchGuardia('turno-previo'),
     enabled: visible,
     staleTime: 5 * 60_000,
   });
@@ -90,10 +90,12 @@ export function ShiftWelcomeBanner() {
   const greeting = greetingFor(shift.name);
   const resumenData = resumen.data as
     | {
-        turno_anterior?: string;
-        paradasFabrica?: { cantidad_paradas?: number; tiempo_neto_total_min?: number };
-        moliendaPromedio?: { molienda_promedio_kg_h?: number; molienda_total_kg?: number };
-        consumoGas?: { consumo_total_m3?: number; 'consumo_promedio_m3/h'?: number };
+        turno?: string | null;
+        molienda_avg_t_h?: number | null;
+        gas_total_m3?: number | null;
+        gas_avg_m3_h?: number | null;
+        paradas_count?: number | null;
+        paradas_minutos?: number | null;
       }
     | null
     | undefined;
@@ -196,34 +198,34 @@ export function ShiftWelcomeBanner() {
               {/* Mini grid KPIs turno previo */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
                 <MiniKpi
-                  label="Molienda"
+                  label="Molienda prom"
                   value={
-                    resumenData?.moliendaPromedio?.molienda_total_kg
-                      ? `${formatNumber(resumenData.moliendaPromedio.molienda_total_kg / 1000, 1)} t`
+                    resumenData?.molienda_avg_t_h != null
+                      ? `${formatNumber(resumenData.molienda_avg_t_h, 1)} t/h`
                       : '—'
                   }
                 />
                 <MiniKpi
-                  label="Gas"
+                  label="Gas total"
                   value={
-                    resumenData?.consumoGas?.consumo_total_m3 != null
-                      ? `${formatNumber(resumenData.consumoGas.consumo_total_m3, 0)} m³`
+                    resumenData?.gas_total_m3 != null
+                      ? `${formatNumber(resumenData.gas_total_m3, 0)} m³`
                       : '—'
                   }
                 />
                 <MiniKpi
                   label="Paradas"
                   value={
-                    resumenData?.paradasFabrica?.cantidad_paradas != null
-                      ? `${resumenData.paradasFabrica.cantidad_paradas} evt`
+                    resumenData?.paradas_count != null
+                      ? `${resumenData.paradas_count} evt`
                       : '—'
                   }
                 />
                 <MiniKpi
                   label="Tiempo paro"
                   value={
-                    resumenData?.paradasFabrica?.tiempo_neto_total_min != null
-                      ? `${formatNumber(resumenData.paradasFabrica.tiempo_neto_total_min, 0)} min`
+                    resumenData?.paradas_minutos != null
+                      ? `${formatNumber(resumenData.paradas_minutos, 0)} min`
                       : '—'
                   }
                 />

@@ -14,60 +14,91 @@ import { MillSpeedChart, type MillSpeedPayload } from './MillSpeedChart';
 import { AnalisisIA } from './AnalisisIA';
 import { formatNumber } from '@/lib/utils/format';
 
-async function fetchGuardia(path: string) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
-  const res = await fetch(`${apiUrl}/guardia/${path}`);
-  if (!res.ok) throw new Error(`${path} ${res.status}`);
+const apiUrl = (path: string) => `${process.env.NEXT_PUBLIC_API_URL!}/guardia/${path}`;
+
+interface TurnoPrevio {
+  turno?: string | null;
+  turno_inicio?: string | null;
+  turno_fin?: string | null;
+  molienda_avg_t_h?: number | null;
+  gas_total_m3?: number | null;
+  gas_avg_m3_h?: number | null;
+  paradas_count?: number | null;
+  paradas_minutos?: number | null;
+  stale?: boolean;
+  error?: string;
+}
+
+async function fetchTurnoPrevio(): Promise<TurnoPrevio> {
+  const res = await fetch(apiUrl('turno-previo'));
+  if (!res.ok) return { stale: true };
   return res.json();
 }
 
+async function fetchMollienda(): Promise<{ promedio_t_h?: number } | null> {
+  const res = await fetch(apiUrl('molienda'));
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function fetchVelMolino() {
+  const res = await fetch(apiUrl('vel-molino'));
+  if (!res.ok) return null;
+  return res.json();
+}
+
+function fmtHora(iso?: string | null): string {
+  if (!iso) return '';
+  try {
+    return new Date(iso).toLocaleTimeString('es-AR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'America/Argentina/Buenos_Aires',
+    });
+  } catch {
+    return '';
+  }
+}
+
 export function ShiftSummaryPanel() {
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
   const refreshAll = () => {
-    queryClient.invalidateQueries({ queryKey: ['guardia'] });
+    qc.invalidateQueries({ queryKey: ['guardia'] });
   };
 
-  const molienda = useQuery({
-    queryKey: ['guardia', 'molienda'],
-    queryFn: () => fetchGuardia('molienda'),
-    staleTime: 5 * 60_000,
-  });
-  const moliendaPrev = useQuery({
-    queryKey: ['guardia', 'molienda-previo'],
-    queryFn: () => fetchGuardia('molienda-previo'),
-    staleTime: 60 * 60_000,
-  });
-  const gas = useQuery({
-    queryKey: ['guardia', 'gas-previo'],
-    queryFn: () => fetchGuardia('gas-previo'),
-    staleTime: 60 * 60_000,
-  });
-  const paradas = useQuery({
-    queryKey: ['guardia', 'paradas'],
-    queryFn: () => fetchGuardia('paradas'),
-    staleTime: 60 * 60_000,
-  });
-  const vel = useQuery({
-    queryKey: ['guardia', 'vel-molino'],
-    queryFn: () => fetchGuardia('vel-molino'),
-    staleTime: 60 * 60_000,
+  const turnoQ = useQuery({
+    queryKey: ['guardia', 'turno-previo'],
+    queryFn: fetchTurnoPrevio,
+    refetchInterval: 5 * 60_000, // 5 min
+    staleTime: 60_000,
   });
 
-  const moliendaActual = (molienda.data as { promedio_t_h?: number } | undefined)?.promedio_t_h;
-  const moliendaKgH = (moliendaPrev.data as { molienda_promedio_kg_h?: number } | undefined)
-    ?.molienda_promedio_kg_h;
-  const moliendaPrevTh = typeof moliendaKgH === 'number' ? moliendaKgH / 1000 : undefined;
-  const moliendaTotalKg = (moliendaPrev.data as { molienda_total_kg?: number } | undefined)
-    ?.molienda_total_kg;
-  const gasM3h = (gas.data as { 'consumo_promedio_m3/h'?: number } | undefined)?.['consumo_promedio_m3/h'];
-  const gasTotal = (gas.data as { consumo_total_m3?: number } | undefined)?.consumo_total_m3;
-  const paradasCant = (paradas.data as { cantidad_paradas?: number } | undefined)?.cantidad_paradas;
-  const paradasMin = (paradas.data as { tiempo_neto_total_min?: number } | undefined)?.tiempo_neto_total_min;
+  const moliendaActualQ = useQuery({
+    queryKey: ['guardia', 'molienda'],
+    queryFn: fetchMollienda,
+    refetchInterval: 5 * 60_000,
+    staleTime: 60_000,
+  });
+
+  const velQ = useQuery({
+    queryKey: ['guardia', 'vel-molino'],
+    queryFn: fetchVelMolino,
+    refetchInterval: 60_000,
+  });
+
+  const tp = turnoQ.data;
+  const moliendaActual = (moliendaActualQ.data as { promedio_t_h?: number } | null)?.promedio_t_h;
+
+  const horaInicio = fmtHora(tp?.turno_inicio);
+  const horaFin = fmtHora(tp?.turno_fin);
+  const subtitle = tp?.turno
+    ? `${tp.turno} · ${horaInicio} → ${horaFin}`
+    : 'Turno anterior · datos consolidados';
 
   return (
     <PremiumPanel
       title="RESUMEN GUARDIA"
-      subtitle="Turno anterior · datos consolidados"
+      subtitle={subtitle}
       icon={<IconClock size={18} className="text-primary-light" />}
       accent="primary"
       headerRight={
@@ -94,36 +125,41 @@ export function ShiftSummaryPanel() {
         <PremiumTile
           icon={<IconScale size={14} />}
           label="Promedio Molienda Turno Previo"
-          value={moliendaPrevTh}
+          value={tp?.molienda_avg_t_h ?? undefined}
           unit="t/h"
-          precision={1}
+          precision={2}
           accent="accent"
-          hint={
-            moliendaTotalKg ? `${formatNumber(moliendaTotalKg / 1000, 0)} t total` : undefined
-          }
         />
         <PremiumTile
           icon={<IconFlame size={14} />}
           label="Gas promedio turno previo"
-          value={gasM3h}
+          value={tp?.gas_avg_m3_h ?? undefined}
           unit="m³/h"
           precision={1}
           accent="warn"
-          hint={gasTotal ? `${formatNumber(gasTotal, 0)} m³ total` : undefined}
+          hint={
+            tp?.gas_total_m3 != null
+              ? `${formatNumber(tp.gas_total_m3, 0)} m³ total`
+              : undefined
+          }
         />
         <PremiumTile
           icon={<IconPlayerPause size={14} />}
           label="Paradas previas"
-          value={paradasCant}
+          value={tp?.paradas_count ?? undefined}
           unit="evt"
           precision={0}
           accent="danger"
-          hint={paradasMin ? `${formatNumber(paradasMin, 0)} min` : undefined}
+          hint={
+            tp?.paradas_minutos != null && tp.paradas_minutos > 0
+              ? `${formatNumber(tp.paradas_minutos, 0)} min`
+              : undefined
+          }
         />
       </div>
 
       <div className="mt-3">
-        <MillSpeedChart data={vel.data as MillSpeedPayload | null | undefined} />
+        <MillSpeedChart data={velQ.data as MillSpeedPayload | null | undefined} />
       </div>
 
       <div className="mt-3">

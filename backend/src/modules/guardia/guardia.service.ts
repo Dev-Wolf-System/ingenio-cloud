@@ -182,6 +182,55 @@ export class GuardiaService {
     }
   }
 
+  /**
+   * Resumen turno previo desde Postgres (vista v_resumen_turno_previo).
+   * Reemplaza el viejo flujo Node-RED HTTP. Datos vienen de legacy.lab_general
+   * filtrados según hora actual ART → determina automáticamente turno previo.
+   */
+  async getResumenTurnoPrevio() {
+    try {
+      const pub = this.supabase.schema('public');
+      const { data, error } = await pub
+        .from('v_resumen_turno_previo')
+        .select('*')
+        .maybeSingle();
+      if (error) {
+        this.logger.warn(`resumen-turno-previo fail: ${error.message}`);
+        return { stale: true, error: error.message };
+      }
+      const row = data as {
+        turno?: string;
+        turno_inicio?: string;
+        turno_fin?: string;
+        molienda_avg_t_h?: string | number | null;
+        gas_total_m3?: string | number | null;
+        gas_avg_m3_h?: string | number | null;
+        paradas_count?: string | number | null;
+        paradas_minutos?: number | null;
+      } | null;
+      if (!row) return { stale: true };
+      // Normalizar a number (PostgREST devuelve numeric/bigint como string)
+      const toNum = (v: string | number | null | undefined): number | null => {
+        if (v == null) return null;
+        const n = typeof v === 'string' ? parseFloat(v) : v;
+        return Number.isFinite(n) ? n : null;
+      };
+      return {
+        turno: row.turno ?? null,
+        turno_inicio: row.turno_inicio ?? null,
+        turno_fin: row.turno_fin ?? null,
+        molienda_avg_t_h: toNum(row.molienda_avg_t_h),
+        gas_total_m3: toNum(row.gas_total_m3),
+        gas_avg_m3_h: toNum(row.gas_avg_m3_h),
+        paradas_count: toNum(row.paradas_count),
+        paradas_minutos: row.paradas_minutos ?? 0,
+      };
+    } catch (err) {
+      this.logger.warn(`resumen-turno-previo exception: ${(err as Error).message}`);
+      return { stale: true, error: (err as Error).message };
+    }
+  }
+
   /** Análisis IA cacheado del turno previo */
   async getAnalisisIA() {
     const prev = getPreviousShift();
