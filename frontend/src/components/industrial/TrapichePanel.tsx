@@ -19,6 +19,7 @@ import {
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
 import { useThresholds, evaluateValue } from '@/lib/hooks/useThresholds';
 import { useTileOrder } from '@/lib/hooks/useTileOrder';
+import { useKanbanLock } from '@/lib/hooks/useKanbanLock';
 import { PremiumPanel } from './PremiumPanel';
 import { PremiumTile, type TileAccent } from './PremiumTile';
 import { SortableGroup } from './SortableGroup';
@@ -192,6 +193,7 @@ export function TrapichePanel() {
     return ids;
   }, [velPromedio, presionCombinada, resolvedSlots]);
   const { ordered: orderedIds, saveOrder } = useTileOrder('trapiche', tileIds);
+  const { locked } = useKanbanLock();
 
   const renderTileById = (id: string) => {
     if (id === 'rpm_primer_molino' && velPromedio != null) {
@@ -274,7 +276,7 @@ export function TrapichePanel() {
         {data.size === 0 ? (
           <EmptyState />
         ) : (
-          <SortableGroup items={orderedIds} onReorder={saveOrder}>
+          <SortableGroup items={orderedIds} onReorder={saveOrder} disabled={locked}>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
               {orderedIds.map((id) => (
                 <SortableTile key={id} id={id}>

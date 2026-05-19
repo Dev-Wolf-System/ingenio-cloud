@@ -69,7 +69,7 @@ export function ShiftSummaryPanel() {
   const turnoQ = useQuery({
     queryKey: ['guardia', 'turno-previo'],
     queryFn: fetchTurnoPrevio,
-    refetchInterval: 5 * 60_000, // 5 min
+    refetchInterval: 15 * 60_000, // 15 min
     staleTime: 60_000,
   });
 

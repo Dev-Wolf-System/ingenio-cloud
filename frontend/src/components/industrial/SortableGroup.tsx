@@ -8,6 +8,7 @@ interface SortableGroupProps {
   items: string[];
   onReorder: (next: string[]) => void;
   children: ReactNode;
+  disabled?: boolean;
 }
 
 /**
@@ -16,7 +17,11 @@ interface SortableGroupProps {
  * SortableGroup — NO se permite mezclar tiles entre grupos distintos
  * porque cada uno tiene su propio DndContext con su propio ID space.
  */
-export function SortableGroup({ items, onReorder, children }: SortableGroupProps) {
+export function SortableGroup({ items, onReorder, children, disabled = false }: SortableGroupProps) {
+  if (disabled) {
+    // Modo bloqueado: renderiza children sin DndContext (no drag)
+    return <>{children}</>;
+  }
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 }, // evita drag accidental en clicks

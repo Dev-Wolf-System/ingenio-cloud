@@ -15,6 +15,7 @@ import {
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import { useThresholds, evaluateValue } from '@/lib/hooks/useThresholds';
 import { useTileOrder } from '@/lib/hooks/useTileOrder';
+import { useKanbanLock } from '@/lib/hooks/useKanbanLock';
 import { PremiumPanel } from './PremiumPanel';
 import { PremiumTile, type TileAccent } from './PremiumTile';
 import { SortableGroup } from './SortableGroup';
@@ -61,6 +62,7 @@ export function ProductionPanel() {
     .filter((k) => !HIDDEN_KEYS.includes(k.toLowerCase()))
     .sort();
   const { ordered, saveOrder } = useTileOrder('produccion', baseKeys);
+  const { locked } = useKanbanLock();
   const entries = ordered
     .map((k) => [k, data.get(k)!] as const)
     .filter(([, item]) => item != null);
@@ -82,7 +84,7 @@ export function ProductionPanel() {
       {count === 0 ? (
         <EmptyState />
       ) : (
-        <SortableGroup items={ordered} onReorder={saveOrder}>
+        <SortableGroup items={ordered} onReorder={saveOrder} disabled={locked}>
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-2">
             {entries.map(([key, item]) => {
               const evalResult = evaluateValue(thresholds, 'produccion', key, item.value);

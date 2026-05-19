@@ -11,6 +11,7 @@ import {
 } from '@tabler/icons-react';
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
 import { useTileOrder } from '@/lib/hooks/useTileOrder';
+import { useKanbanLock } from '@/lib/hooks/useKanbanLock';
 import { PremiumTile, type TileAccent } from './PremiumTile';
 import { SortableGroup } from './SortableGroup';
 import { SortableTile } from './SortableTile';
@@ -89,6 +90,7 @@ export function KpiHero() {
     refetchInterval: 600_000,
   });
   const { ordered, saveOrder } = useTileOrder('kpi-hero', [...HERO_KEYS]);
+  const { locked } = useKanbanLock();
 
   const moliendaItem = pickIncludes(trapiche, ['molienda_kilos', 'molienda_actual', 'molienda']);
   const bolsasItem = pickIncludes(produccion, [
@@ -222,7 +224,7 @@ export function KpiHero() {
   };
 
   return (
-    <SortableGroup items={ordered} onReorder={saveOrder}>
+    <SortableGroup items={ordered} onReorder={saveOrder} disabled={locked}>
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
         {ordered.map((id) => (
           <SortableTile key={id} id={id}>
