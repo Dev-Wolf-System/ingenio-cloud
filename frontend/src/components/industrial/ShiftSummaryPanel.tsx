@@ -7,7 +7,6 @@ import {
   IconScale,
   IconFlame,
   IconPlayerPause,
-  IconRotateClockwise,
 } from '@tabler/icons-react';
 import { PremiumPanel } from './PremiumPanel';
 import { PremiumTile } from './PremiumTile';
@@ -64,7 +63,6 @@ export function ShiftSummaryPanel() {
   const gasTotal = (gas.data as { consumo_total_m3?: number } | undefined)?.consumo_total_m3;
   const paradasCant = (paradas.data as { cantidad_paradas?: number } | undefined)?.cantidad_paradas;
   const paradasMin = (paradas.data as { tiempo_neto_total_min?: number } | undefined)?.tiempo_neto_total_min;
-  const velPromedio = (vel.data as { promedio?: number } | undefined)?.promedio;
 
   return (
     <PremiumPanel
@@ -121,14 +119,6 @@ export function ShiftSummaryPanel() {
           precision={0}
           accent="danger"
           hint={paradasMin ? `${formatNumber(paradasMin, 0)} min` : undefined}
-        />
-        <PremiumTile
-          icon={<IconRotateClockwise size={14} />}
-          label="Vel. molino"
-          value={velPromedio}
-          unit="rpm"
-          precision={1}
-          accent="accent"
         />
       </div>
 
