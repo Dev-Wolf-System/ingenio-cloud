@@ -89,10 +89,39 @@ Analizá el desempeño del turno.`;
         return null;
       }
 
-      // Limpiar posibles fences markdown ```json ... ```
+      // 1. Limpiar fences markdown ```json ... ```
       let cleaned = content.trim();
       if (cleaned.startsWith('```')) {
         cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+      }
+
+      // 2. Extraer el primer objeto JSON balanceado { ... } del contenido
+      //    (gpt a veces antepone texto narrativo antes del JSON)
+      const tryExtractJson = (str: string): string | null => {
+        const start = str.indexOf('{');
+        if (start === -1) return null;
+        let depth = 0;
+        let inString = false;
+        let escape = false;
+        for (let i = start; i < str.length; i++) {
+          const ch = str[i];
+          if (escape) { escape = false; continue; }
+          if (ch === '\\') { escape = true; continue; }
+          if (ch === '"') inString = !inString;
+          if (inString) continue;
+          if (ch === '{') depth++;
+          else if (ch === '}') {
+            depth--;
+            if (depth === 0) return str.slice(start, i + 1);
+          }
+        }
+        return null;
+      };
+
+      const extracted = tryExtractJson(cleaned);
+      if (!extracted) {
+        this.logger.warn(`No se encontró objeto JSON. Raw: "${cleaned.slice(0, 300)}"`);
+        return null;
       }
 
       let parsed: {
@@ -101,10 +130,10 @@ Analizá el desempeño del turno.`;
         puntos_clave?: string[];
       };
       try {
-        parsed = JSON.parse(cleaned);
+        parsed = JSON.parse(extracted);
       } catch (parseErr) {
         this.logger.warn(
-          `JSON parse falló. Raw content: "${cleaned.slice(0, 200)}". Error: ${(parseErr as Error).message}`,
+          `JSON parse falló. Extracted: "${extracted.slice(0, 300)}". Error: ${(parseErr as Error).message}`,
         );
         return null;
       }
@@ -114,7 +143,7 @@ Analizá el desempeño del turno.`;
       return {
         resumen: parsed.resumen ?? 'Sin análisis disponible.',
         estado: parsed.estado ?? 'normal',
-        puntos_clave: parsed.puntos_clave ?? [],
+        puntos_clave: Array.isArray(parsed.puntos_clave) ? parsed.puntos_clave : [],
       };
     } catch (err) {
       const errAny = err as { status?: number; code?: string; message?: string };

@@ -10,7 +10,10 @@ import {
   IconWaveSine,
 } from '@tabler/icons-react';
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
+import { useTileOrder } from '@/lib/hooks/useTileOrder';
 import { PremiumTile, type TileAccent } from './PremiumTile';
+import { SortableGroup } from './SortableGroup';
+import { SortableTile } from './SortableTile';
 
 async function fetchAlerts() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
@@ -64,6 +67,8 @@ function sumKeysIncluding(map: Map<string, DashboardItem>, patterns: string[]): 
   return found ? total : null;
 }
 
+const HERO_KEYS = ['molienda', 'bolsas', 'gas', 'color', 'camiones', 'alertas'] as const;
+
 export function KpiHero() {
   const energia = useDashboardData('energia');
   const produccion = useDashboardData('produccion');
@@ -81,13 +86,11 @@ export function KpiHero() {
   const colorCinta = useQuery({
     queryKey: ['color', 'cinta-larga'],
     queryFn: fetchColorCintaLarga,
-    refetchInterval: 600_000, // 10 min
+    refetchInterval: 600_000,
   });
+  const { ordered, saveOrder } = useTileOrder('kpi-hero', [...HERO_KEYS]);
 
-  // Molienda Kilos del trapiche
   const moliendaItem = pickIncludes(trapiche, ['molienda_kilos', 'molienda_actual', 'molienda']);
-
-  // Bolsas azúcar
   const bolsasItem = pickIncludes(produccion, [
     'produccion_bolsas',
     'bolsas_dia',
@@ -95,14 +98,8 @@ export function KpiHero() {
     'azucar_diaria',
     'bolsas',
   ]);
-
-  // Consumo gas total
   const gasTotal = sumKeysIncluding(energia, ['caudal_gas']);
-
-  // Camiones canchón
   const totalCamiones = canchon.data?.total_camiones ?? null;
-
-  // Color azúcar (cinta larga) — actualiza c/ 10 min
   const colorIcumsa = colorCinta.data?.color_icumsa ?? null;
   const humedadCinta = colorCinta.data?.humedad ?? null;
   const horaLectura = colorCinta.data?.hora_lectura ?? null;
@@ -113,96 +110,126 @@ export function KpiHero() {
         timeZone: 'America/Argentina/Buenos_Aires',
       })
     : null;
-
-  // Alertas activas
   const alertsList = (alerts.data as { alerts?: { severity: string }[] } | undefined)?.alerts ?? [];
   const activeCount = alertsList.length;
   const criticalCount = alertsList.filter((a) => a.severity === 'critical').length;
   const alertAccent: TileAccent = criticalCount > 0 ? 'danger' : activeCount > 0 ? 'warn' : 'accent';
 
+  const renderTile = (id: string) => {
+    switch (id) {
+      case 'molienda':
+        return (
+          <PremiumTile
+            icon={<IconScale size={14} />}
+            label="Molienda actual"
+            value={moliendaItem?.value}
+            unit={moliendaItem?.unit ?? 'kg'}
+            precision={0}
+            accent="primary"
+            size="hero"
+            updatedAt={moliendaItem?.updated_at}
+            hint={
+              moliendaItem
+                ? `${(moliendaItem.value / 1000).toFixed(2)} t equivalente`
+                : 'Sin señal'
+            }
+          />
+        );
+      case 'bolsas':
+        return (
+          <PremiumTile
+            icon={<IconChartBar size={14} />}
+            label="Bolsas azúcar"
+            value={bolsasItem?.value}
+            unit={bolsasItem?.unit ?? 'bolsas'}
+            precision={0}
+            accent="accent"
+            size="hero"
+            updatedAt={bolsasItem?.updated_at}
+            hint={bolsasItem ? 'Producidas hoy' : 'Esperando Datos'}
+          />
+        );
+      case 'gas':
+        return (
+          <PremiumTile
+            icon={<IconFlame size={14} />}
+            label="Consumo gas total"
+            value={gasTotal ?? undefined}
+            unit="m³/h"
+            precision={1}
+            accent="warn"
+            size="hero"
+            hint={gasTotal != null ? 'Calderas 2+3+6' : 'Sin caudales'}
+          />
+        );
+      case 'color':
+        return (
+          <PremiumTile
+            icon={<IconWaveSine size={14} />}
+            label="Color azúcar"
+            value={colorIcumsa ?? undefined}
+            unit="UI"
+            precision={0}
+            accent="accent"
+            size="hero"
+            hint={
+              humedadCinta != null
+                ? `Humedad ${humedadCinta.toFixed(2)}%${horaLecturaFmt ? ` · ${horaLecturaFmt}` : ''}`
+                : 'Sin lectura hoy'
+            }
+          />
+        );
+      case 'camiones':
+        return (
+          <PremiumTile
+            icon={<IconTruck size={14} />}
+            label="Camiones en canchón"
+            value={totalCamiones ?? undefined}
+            unit="camiones"
+            precision={0}
+            accent={totalCamiones != null && totalCamiones > 0 ? 'primary' : 'warn'}
+            size="hero"
+            hint={
+              canchon.isLoading
+                ? 'Consultando…'
+                : totalCamiones != null
+                ? 'Actualiza c/ 1 min'
+                : 'Sin señal'
+            }
+          />
+        );
+      case 'alertas':
+        return (
+          <PremiumTile
+            icon={<IconAlertTriangle size={14} />}
+            label="Alertas activas"
+            value={activeCount}
+            precision={0}
+            accent={alertAccent}
+            size="hero"
+            hint={
+              criticalCount > 0
+                ? `${criticalCount} críticas`
+                : activeCount > 0
+                ? `${activeCount} pendientes`
+                : 'Operación normal'
+            }
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
-      <PremiumTile
-        icon={<IconScale size={14} />}
-        label="Molienda actual"
-        value={moliendaItem?.value}
-        unit={moliendaItem?.unit ?? 'kg'}
-        precision={0}
-        accent="primary"
-        size="hero"
-        updatedAt={moliendaItem?.updated_at}
-        hint={
-          moliendaItem
-            ? `${(moliendaItem.value / 1000).toFixed(2)} t equivalente`
-            : 'Sin señal'
-        }
-      />
-      <PremiumTile
-        icon={<IconChartBar size={14} />}
-        label="Bolsas azúcar"
-        value={bolsasItem?.value}
-        unit={bolsasItem?.unit ?? 'bolsas'}
-        precision={0}
-        accent="accent"
-        size="hero"
-        updatedAt={bolsasItem?.updated_at}
-        hint={bolsasItem ? 'Producidas hoy' : 'Esperando Node-RED'}
-      />
-      <PremiumTile
-        icon={<IconFlame size={14} />}
-        label="Consumo gas total"
-        value={gasTotal ?? undefined}
-        unit="m³/h"
-        precision={1}
-        accent="warn"
-        size="hero"
-        hint={gasTotal != null ? 'Suma calderas 2+3+6' : 'Sin caudales'}
-      />
-      <PremiumTile
-        icon={<IconWaveSine size={14} />}
-        label="Color azúcar"
-        value={colorIcumsa ?? undefined}
-        unit="UI"
-        precision={0}
-        accent="accent"
-        size="hero"
-        hint={
-          humedadCinta != null
-            ? `Humedad ${humedadCinta.toFixed(2)}%${horaLecturaFmt ? ` · ${horaLecturaFmt}` : ''}`
-            : 'Sin lectura hoy'
-        }
-      />
-      <PremiumTile
-        icon={<IconTruck size={14} />}
-        label="Camiones en canchón"
-        value={totalCamiones ?? undefined}
-        unit="camiones"
-        precision={0}
-        accent={totalCamiones != null && totalCamiones > 0 ? 'primary' : 'warn'}
-        size="hero"
-        hint={
-          canchon.isLoading
-            ? 'Consultando…'
-            : totalCamiones != null
-            ? 'Actualiza c/ 1 min'
-            : 'Sin señal'
-        }
-      />
-      <PremiumTile
-        icon={<IconAlertTriangle size={14} />}
-        label="Alertas activas"
-        value={activeCount}
-        precision={0}
-        accent={alertAccent}
-        size="hero"
-        hint={
-          criticalCount > 0
-            ? `${criticalCount} críticas`
-            : activeCount > 0
-            ? `${activeCount} pendientes`
-            : 'Operación normal'
-        }
-      />
-    </div>
+    <SortableGroup items={ordered} onReorder={saveOrder}>
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
+        {ordered.map((id) => (
+          <SortableTile key={id} id={id}>
+            {renderTile(id)}
+          </SortableTile>
+        ))}
+      </div>
+    </SortableGroup>
   );
 }

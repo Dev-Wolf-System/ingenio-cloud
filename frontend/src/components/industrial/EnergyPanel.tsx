@@ -11,8 +11,11 @@ import {
 } from '@tabler/icons-react';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import { useThresholds, evaluateValue } from '@/lib/hooks/useThresholds';
+import { useTileOrder } from '@/lib/hooks/useTileOrder';
 import { PremiumPanel } from './PremiumPanel';
 import { PremiumTile, type TileAccent } from './PremiumTile';
+import { SortableGroup } from './SortableGroup';
+import { SortableTile } from './SortableTile';
 
 function iconFor(key: string): React.ReactNode {
   const k = key.toLowerCase();
@@ -36,7 +39,11 @@ function accentForKey(key: string): TileAccent {
 export function EnergyPanel() {
   const data = useDashboardData('energia');
   const { data: thresholds } = useThresholds();
-  const entries = Array.from(data.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+  const baseKeys = Array.from(data.keys()).sort();
+  const { ordered, saveOrder } = useTileOrder('energia', baseKeys);
+  const entries = ordered
+    .map((k) => [k, data.get(k)!] as const)
+    .filter(([, item]) => item != null);
   const count = entries.length;
 
   return (
@@ -55,33 +62,36 @@ export function EnergyPanel() {
       {count === 0 ? (
         <EmptyState />
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-2">
-          {entries.map(([key, item]) => {
-            const evalResult = evaluateValue(thresholds, 'energia', key, item.value);
-            return (
-              <PremiumTile
-                key={key}
-                icon={iconFor(key)}
-                label={key.replaceAll('_', ' ')}
-                value={item.value}
-                unit={item.unit ?? ''}
-                precision={2}
-                accent={accentForKey(key)}
-                updatedAt={item.updated_at}
-                alert={
-                  evalResult.status === 'out' && evalResult.severity && evalResult.reason
-                    ? {
-                        severity: evalResult.severity,
-                        reason: evalResult.reason,
-                        min: evalResult.threshold?.min_value,
-                        max: evalResult.threshold?.max_value,
-                      }
-                    : null
-                }
-              />
-            );
-          })}
-        </div>
+        <SortableGroup items={ordered} onReorder={saveOrder}>
+          <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-2">
+            {entries.map(([key, item]) => {
+              const evalResult = evaluateValue(thresholds, 'energia', key, item.value);
+              return (
+                <SortableTile key={key} id={key}>
+                  <PremiumTile
+                    icon={iconFor(key)}
+                    label={key.replaceAll('_', ' ')}
+                    value={item.value}
+                    unit={item.unit ?? ''}
+                    precision={2}
+                    accent={accentForKey(key)}
+                    updatedAt={item.updated_at}
+                    alert={
+                      evalResult.status === 'out' && evalResult.severity && evalResult.reason
+                        ? {
+                            severity: evalResult.severity,
+                            reason: evalResult.reason,
+                            min: evalResult.threshold?.min_value,
+                            max: evalResult.threshold?.max_value,
+                          }
+                        : null
+                    }
+                  />
+                </SortableTile>
+              );
+            })}
+          </div>
+        </SortableGroup>
       )}
     </PremiumPanel>
   );
