@@ -1,7 +1,7 @@
 # Ingenio Cloud — Hoja de Desarrollo
 
 > Documento vivo. Estado real del proyecto + arquitectura + endpoints + roadmap.
-> Última actualización: 2026-05-18 · Sprint 0 cerrado + Polish UX/UI
+> Última actualización: 2026-05-19 · Sprint 0 cerrado + Polish UX/UI + Drag-drop + Resumen Postgres directo
 
 ---
 
@@ -200,6 +200,9 @@ ingenio-cloud/
 | GET | `/api/guardia/vel-molino` | Velocidad molino turno previo |
 | GET | `/api/guardia/analisis-ia` | Análisis IA del turno previo (con flag `ia_available`) |
 | POST | `/api/guardia/analisis-ia/refresh` | Disparar análisis IA manual ahora (sincrónico, retorna error detallado) |
+| GET | `/api/guardia/turno-previo` | **NUEVO** — Resumen turno previo desde `public.v_resumen_turno_previo` (legacy.lab_general direct) |
+| GET | `/api/metrics/color-cinta-larga` | Color ICUMSA + humedad última lectura cinta larga (legacy.especiales, refresh 10 min) |
+| GET | `/api/metrics/canchon` | Total camiones canchón (production.v_canchon_resumen) |
 
 **Patrón resiliente**: todos los GET devuelven `{ data: [...], stale?: true }` con HTTP 200 incluso cuando Supabase rechaza (en lugar de propagar 500).
 
@@ -572,8 +575,11 @@ WHERE area='trapiche'
 
 ## 12. Roadmap
 
-### Sprint 1 — Vigía + Notificaciones (próximo)
-- Engine "Vigía Mesh" agente IA que vigila tendencias y anticipa fallas (no solo umbrales fijos)
+### Sprint 1 — Vigía Mesh + Notificaciones (próximo)
+**Plan detallado**: ver [`docs/SPRINT_1_VIGIA_MESH.md`](./SPRINT_1_VIGIA_MESH.md) (7 pasos, 11-16 días, con quick win 5-7 días)
+- Red de 4 agentes IA: Anomaly Detector + Predictor + Diagnóstico + Prescriptor
+- Bus de eventos vía PostgreSQL NOTIFY/LISTEN + Realtime Supabase
+- Tabla nueva `industrial.vigia_insights` para historial agentes
 - Notificación WhatsApp via Evolution API cuando dispara critical
 - Email diario resumen via Resend
 - Histórico Realtime con InfluxDB 3 o particiones PG agresivas
@@ -665,6 +671,28 @@ feat(alertas): engine completo umbrales — visual frontend + cron backend
 | `52f8b2a` | Motion integration (LazyMotion + spring/stagger) |
 | `01a18df` | Diseño premium unificado PremiumPanel + PremiumTile |
 | `da395ef` | Whitelist KPIs Trapiche + EstadoBanner XL |
+
+### Sesión 2026-05-19
+
+| Commit | Feature |
+|---|---|
+| `32ce02b` | **Resumen turno desde Postgres directo** (vista `v_resumen_turno_previo`) — reemplaza Node-RED HTTP |
+| `eb0d098` | Drag-drop TrapichePanel (EstadoBanner fijo + grid sortable) |
+| `12b1d85` | Mill-speed chart: quitar 'X pts' del subtítulo |
+| `d99efab` | Mill-speed: nueva estructura `{stats, grafico}` con banda min-max + compat legacy |
+| `7b49218` | Drag-drop kanban @dnd-kit (EnergyPanel + ProductionPanel + KpiHero) + AI JSON parsing robusto |
+| `c00cb13` | KPI Color azúcar (legacy.especiales, refresh 10min) + cleanup cinta corta |
+| `c865437` | Documentar fix DNS Kong colisión multi-stack |
+| `eb50f86` | Unificar accent — eliminar neutral plano, todos los tiles con color semántico |
+| `daad6ff` | PremiumTile variante size `hero` + KpiHero size aumentado |
+| `5a13dfd` | Tiles fuentes más grandes + quitar timestamps 'hace -Xs' |
+| `a124608` | RPM primer molino con fallback al cache turno previo |
+| `852188d` | Unificar Presión 6° Este+Oeste en 1 tile combinado |
+| `705fdcd` | Self-host Familjen Grotesk + Onest (woff2 latin) — fix build VPS sin Google Fonts |
+| `0807a2d` | Renombrar labels: 'Promedio Molienda Actual' / 'Promedio Molienda Turno Previo' |
+| `9851f42` | Quitar tile 'Vel. molino' redundante (queda en MillSpeedChart) |
+| `1392e57` | AI service: log raw content + tolerancia parsing markdown |
+| `8aacd13` | Botón 'Generar' análisis IA manual + diagnóstico expuesto |
 
 ---
 
