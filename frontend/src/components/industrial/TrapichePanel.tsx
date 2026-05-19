@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { m, AnimatePresence } from 'motion/react';
+import { useQuery } from '@tanstack/react-query';
 import {
   IconBolt,
   IconDroplet,
@@ -42,7 +43,6 @@ interface TrapicheSlot {
 const TRAPICHE_SLOTS: TrapicheSlot[] = [
   { id: 'bagazo_pol',              label: 'Pol bagazo',            match: ['bagazo_pol', 'pol_bagazo', 'pol'],                       unit: '%',        precision: 2 },
   { id: 'bagazo_humedad',          label: 'Humedad bagazo',        match: ['bagazo_humedad', 'humedad_bagazo'],                      unit: '%',        precision: 2 },
-  { id: 'rpm_primer_molino',       label: 'RPM primer molino',     match: ['rpm_primer_molino', 'rpm_1er_molino', 'vel_primer_molino'], unit: 'rpm',  precision: 1 },
   { id: 'caudal_imbibicion',       label: 'Caudal imbibición',     match: ['bb_imbibicion_caudal', 'caudal_imbibicion', 'caudal_imb'], unit: 'm³/h', precision: 2 },
   { id: 'nivel_imbibicion',        label: 'Nivel imbibición',      match: ['bb_imbibicion_nivel', 'nivel_imbibicion'],                unit: '%',     precision: 1 },
   { id: 'temperatura_imbibicion',  label: 'Temp. imbibición',      match: ['bb_imbibicion_temp', 'temperatura_imbibicion', 'temp_imbibicion'], unit: '°C', precision: 1 },
@@ -112,10 +112,32 @@ function pickBySlot(map: Map<string, DashboardItem>, slot: TrapicheSlot): Dashbo
   return null;
 }
 
+async function fetchVelMolino() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+  const res = await fetch(`${apiUrl}/guardia/vel-molino`);
+  if (!res.ok) return null;
+  return res.json() as Promise<{
+    promedio?: number;
+    maximo?: number;
+    minimo?: number;
+    turno?: string;
+    mensaje?: string;
+  } | null>;
+}
+
 export function TrapichePanel() {
   const data = useDashboardData('trapiche');
   const energia = useDashboardData('energia');
   const { data: thresholds } = useThresholds();
+  const velMolinoQ = useQuery({
+    queryKey: ['guardia', 'vel-molino'],
+    queryFn: fetchVelMolino,
+    refetchInterval: 60_000,
+    staleTime: 60_000,
+  });
+  const velRealtime = pickItem(data, ['rpm_primer_molino', 'rpm_1er_molino', 'vel_primer_molino']);
+  const velPromedio = velRealtime?.value ?? velMolinoQ.data?.promedio ?? null;
+  const velIsRealtime = !!velRealtime;
 
   const estado = useMemo<EstadoTrapiche>(() => {
     // Prioridad: 1) Trapiche_Estado explícito  2) Presion_Vapor_Vg1 > 1.9  3) Parado
@@ -168,6 +190,18 @@ export function TrapichePanel() {
           <EmptyState />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+            {velPromedio != null && (
+              <PremiumTile
+                key="rpm_primer_molino"
+                icon={<IconRotateClockwise size={14} />}
+                label="RPM primer molino"
+                value={velPromedio}
+                unit="rpm"
+                precision={1}
+                accent="warn"
+                hint={velIsRealtime ? 'Tiempo real' : 'Promedio turno previo'}
+              />
+            )}
             {presionCombinada && (
               <PremiumTile
                 key="presion_6to_combinada"
