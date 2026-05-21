@@ -18,15 +18,16 @@ interface SortableGroupProps {
  * porque cada uno tiene su propio DndContext con su propio ID space.
  */
 export function SortableGroup({ items, onReorder, children, disabled = false }: SortableGroupProps) {
-  if (disabled) {
-    // Modo bloqueado: renderiza children sin DndContext (no drag)
-    return <>{children}</>;
-  }
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 }, // evita drag accidental en clicks
     }),
   );
+
+  if (disabled) {
+    // Modo bloqueado: renderiza children sin DndContext (no drag)
+    return <>{children}</>;
+  }
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
