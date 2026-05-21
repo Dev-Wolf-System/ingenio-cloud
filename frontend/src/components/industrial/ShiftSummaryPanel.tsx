@@ -54,7 +54,18 @@ async function fetchVelMolino() {
 function fmtHora(iso?: string | null): string {
   if (!iso) return '';
   try {
-    return new Date(iso).toLocaleTimeString('es-AR', {
+    // Si el timestamp NO trae offset ni Z, lo tratamos como UTC
+    // (PostgREST/Postgres timestamptz se almacena UTC; un timestamp
+    //  sin TZ sería interpretado como local del browser → desfase).
+    let normalized = iso.trim();
+    const hasZone = /[zZ]$|[+-]\d{2}:?\d{2}$/.test(normalized);
+    if (!hasZone) {
+      // 'YYYY-MM-DD HH:MM:SS' → 'YYYY-MM-DDTHH:MM:SSZ'
+      normalized = normalized.replace(' ', 'T') + 'Z';
+    }
+    const d = new Date(normalized);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('es-AR', {
       hour: '2-digit',
       minute: '2-digit',
       timeZone: 'America/Argentina/Buenos_Aires',
