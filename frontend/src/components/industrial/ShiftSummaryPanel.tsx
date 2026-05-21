@@ -10,7 +10,7 @@ import {
 } from '@tabler/icons-react';
 import { PremiumPanel } from './PremiumPanel';
 import { PremiumTile } from './PremiumTile';
-import { MillSpeedChart, type MillSpeedPayload } from './MillSpeedChart';
+import { MoliendaHoraChart, type MoliendaHoraPayload } from './MoliendaHoraChart';
 import { AnalisisIA } from './AnalisisIA';
 import { formatNumber, formatHoraAR } from '@/lib/utils/format';
 
@@ -45,9 +45,9 @@ async function fetchMollienda(): Promise<{
   return res.json();
 }
 
-async function fetchVelMolino() {
-  const res = await fetch(apiUrl('vel-molino'));
-  if (!res.ok) return null;
+async function fetchMoliendaHora(): Promise<MoliendaHoraPayload> {
+  const res = await fetch(apiUrl('molienda-hora'));
+  if (!res.ok) return { stale: true };
   return res.json();
 }
 
@@ -71,10 +71,11 @@ export function ShiftSummaryPanel() {
     staleTime: 60_000,
   });
 
-  const velQ = useQuery({
-    queryKey: ['guardia', 'vel-molino'],
-    queryFn: fetchVelMolino,
-    refetchInterval: 60_000,
+  const moliendaHoraQ = useQuery({
+    queryKey: ['guardia', 'molienda-hora'],
+    queryFn: fetchMoliendaHora,
+    refetchInterval: 15 * 60_000, // 15 min
+    staleTime: 60_000,
   });
 
   const tp = turnoQ.data;
@@ -157,7 +158,7 @@ export function ShiftSummaryPanel() {
       </div>
 
       <div className="mt-3">
-        <MillSpeedChart data={velQ.data as MillSpeedPayload | null | undefined} />
+        <MoliendaHoraChart data={moliendaHoraQ.data} />
       </div>
 
       <div className="mt-3">

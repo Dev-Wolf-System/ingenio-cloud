@@ -276,6 +276,91 @@ export class GuardiaService {
     }
   }
 
+  /** Molienda hora x hora del turno previo (production.v_turno_hora_x_hora) */
+  async getMoliendaHoraPrevio() {
+    try {
+      const production = this.supabase.schema('production');
+      const { data, error } = await production
+        .from('v_turno_hora_x_hora')
+        .select('turno, periodo, molienda_kg, ts_cierre')
+        .eq('turno_rel', 'previo')
+        .order('ts_cierre', { ascending: true });
+      if (error) {
+        this.logger.warn(`molienda-hora fail: ${error.message}`);
+        return { stale: true, turno: null, puntos: [], stats: null };
+      }
+      const rows = (data ?? []) as Array<{
+        turno: string;
+        periodo: string;
+        molienda_kg: number | null;
+        ts_cierre: string;
+      }>;
+
+      const base = rows.map((r) => ({
+        periodo: r.periodo,
+        molienda_t: r.molienda_kg != null ? Number((r.molienda_kg / 1000).toFixed(2)) : null,
+      }));
+
+      // Media móvil 3 periodos (centrada) — solo sobre valores existentes
+      const puntos = base.map((p, i) => {
+        const window = [base[i - 1]?.molienda_t, base[i]?.molienda_t, base[i + 1]?.molienda_t]
+          .filter((v): v is number => v != null);
+        const media_movil =
+          window.length > 0
+            ? Number((window.reduce((a, b) => a + b, 0) / window.length).toFixed(2))
+            : null;
+        return { ...p, media_movil: p.molienda_t != null ? media_movil : null };
+      });
+
+      // Stats + identificar periodo pico/valle
+      const conValor = puntos
+        .map((p, i) => ({ i, periodo: p.periodo, v: p.molienda_t }))
+        .filter((x): x is { i: number; periodo: string; v: number } => x.v != null);
+
+      if (conValor.length === 0) {
+        return {
+          turno: rows[0]?.turno ?? null,
+          stats: { promedio: 0, maximo: 0, minimo: 0, periodo_max: null, periodo_min: null },
+          tendencia_pct: 0,
+          puntos,
+        };
+      }
+
+      const valores = conValor.map((x) => x.v);
+      const promedio = Number((valores.reduce((a, b) => a + b, 0) / valores.length).toFixed(2));
+      const maximo = Math.max(...valores);
+      const minimo = Math.min(...valores);
+      const periodo_max = conValor.find((x) => x.v === maximo)?.periodo ?? null;
+      const periodo_min = conValor.find((x) => x.v === minimo)?.periodo ?? null;
+
+      // Tendencia: regresión lineal simple (least squares) sobre conValor
+      const n = conValor.length;
+      let tendencia_pct = 0;
+      if (n >= 2) {
+        const xs = conValor.map((_, idx) => idx);
+        const ys = valores;
+        const sx = xs.reduce((a, b) => a + b, 0);
+        const sy = ys.reduce((a, b) => a + b, 0);
+        const sxy = xs.reduce((acc, x, idx) => acc + x * ys[idx], 0);
+        const sxx = xs.reduce((acc, x) => acc + x * x, 0);
+        const slope = (n * sxy - sx * sy) / (n * sxx - sx * sx || 1);
+        // % variación total estimada (slope × tramos) sobre el promedio
+        tendencia_pct =
+          promedio > 0 ? Number((((slope * (n - 1)) / promedio) * 100).toFixed(1)) : 0;
+      }
+
+      return {
+        turno: rows[0]?.turno ?? null,
+        stats: { promedio, maximo, minimo, periodo_max, periodo_min },
+        tendencia_pct,
+        puntos,
+      };
+    } catch (err) {
+      this.logger.warn(`molienda-hora exception: ${(err as Error).message}`);
+      return { stale: true, turno: null, puntos: [], stats: null };
+    }
+  }
+
   /** Detalle paradas — extraído de v_resumen_turno_previo.paradas_detalle */
   async getParadasDetalle(): Promise<ParadaDetalle[]> {
     const resumen = await this.getResumenTurnoPrevio();

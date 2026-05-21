@@ -53,6 +53,12 @@ export class GuardiaController {
     return this.svc.getParadasDetalle();
   }
 
+  /** GET /api/guardia/molienda-hora — molienda hora x hora turno previo + stats */
+  @Get('molienda-hora')
+  moliendaHora() {
+    return this.svc.getMoliendaHoraPrevio();
+  }
+
   /** GET /api/guardia/analisis-ia — análisis IA del turno previo */
   @Get('analisis-ia')
   analisisIA() {
