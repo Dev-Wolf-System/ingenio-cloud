@@ -251,6 +251,40 @@ export class GuardiaService {
     }
   }
 
+  /** Último valor de molienda cargado del turno corriente (v_turno_hora_x_hora) */
+  async getMoliendaActualUltima() {
+    try {
+      const production = this.supabase.schema('production');
+      const { data, error } = await production
+        .from('v_turno_hora_x_hora')
+        .select('turno, periodo, molienda_kg, ts_cierre')
+        .eq('turno_rel', 'actual')
+        .not('molienda_kg', 'is', null)
+        .order('ts_cierre', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) {
+        this.logger.warn(`molienda-actual fail: ${error.message}`);
+        return { stale: true, molienda_kg: null, periodo: null, turno: null, ts_cierre: null };
+      }
+      const row = data as {
+        turno?: string;
+        periodo?: string;
+        molienda_kg?: number | null;
+        ts_cierre?: string;
+      } | null;
+      return {
+        turno: row?.turno ?? null,
+        periodo: row?.periodo ?? null,
+        molienda_kg: row?.molienda_kg ?? null,
+        ts_cierre: row?.ts_cierre ?? null,
+      };
+    } catch (err) {
+      this.logger.warn(`molienda-actual exception: ${(err as Error).message}`);
+      return { stale: true, molienda_kg: null, periodo: null, turno: null, ts_cierre: null };
+    }
+  }
+
   /** Molienda hora x hora del turno previo (production.v_turno_hora_x_hora) */
   async getMoliendaHoraPrevio() {
     try {

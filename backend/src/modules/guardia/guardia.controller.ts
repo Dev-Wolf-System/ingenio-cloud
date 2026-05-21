@@ -53,6 +53,12 @@ export class GuardiaController {
     return this.svc.getParadasDetalle();
   }
 
+  /** GET /api/guardia/molienda-actual — último valor de molienda cargado del turno corriente */
+  @Get('molienda-actual')
+  moliendaActual() {
+    return this.svc.getMoliendaActualUltima();
+  }
+
   /** GET /api/guardia/molienda-hora — molienda hora x hora turno previo + stats */
   @Get('molienda-hora')
   moliendaHora() {

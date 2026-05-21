@@ -31,14 +31,15 @@ async function fetchCanchon() {
   return res.json() as Promise<{ total_camiones: number | null }>;
 }
 
-async function fetchMolienda() {
+async function fetchMoliendaActual() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
-  const res = await fetch(`${apiUrl}/guardia/molienda`);
-  if (!res.ok) return { promedio_t_h: null, total_kg: null, turno: null };
+  const res = await fetch(`${apiUrl}/guardia/molienda-actual`);
+  if (!res.ok) return { molienda_kg: null, periodo: null, turno: null, ts_cierre: null };
   return res.json() as Promise<{
-    promedio_t_h: number | null;
-    total_kg: number | null;
+    molienda_kg: number | null;
+    periodo: string | null;
     turno: string | null;
+    ts_cierre: string | null;
   }>;
 }
 
@@ -101,15 +102,15 @@ export function KpiHero() {
     refetchInterval: 600_000,
   });
   const molienda = useQuery({
-    queryKey: ['guardia', 'molienda'],
-    queryFn: fetchMolienda,
+    queryKey: ['guardia', 'molienda-actual'],
+    queryFn: fetchMoliendaActual,
     refetchInterval: 60_000,
   });
   const { ordered, saveOrder } = useTileOrder('kpi-hero', [...HERO_KEYS]);
   const { locked } = useKanbanLock();
 
-  const moliendaTotalKg = molienda.data?.total_kg ?? null;
-  const moliendaPromTh = molienda.data?.promedio_t_h ?? null;
+  const moliendaKg = molienda.data?.molienda_kg ?? null;
+  const moliendaPeriodo = molienda.data?.periodo ?? null;
   const moliendaTurno = molienda.data?.turno ?? null;
   const bolsasItem = pickIncludes(produccion, [
     'produccion_bolsas',
@@ -136,15 +137,15 @@ export function KpiHero() {
           <PremiumTile
             icon={<IconScale size={14} />}
             label="Molienda actual"
-            value={moliendaTotalKg ?? undefined}
+            value={moliendaKg ?? undefined}
             unit="kg"
             precision={0}
             accent="primary"
             size="hero"
             hint={
-              moliendaTotalKg != null
-                ? `${(moliendaTotalKg / 1000).toFixed(2)} t${
-                    moliendaPromTh != null ? ` · ${moliendaPromTh.toFixed(1)} t/h` : ''
+              moliendaKg != null
+                ? `${(moliendaKg / 1000).toFixed(2)} t${
+                    moliendaPeriodo ? ` · ${moliendaPeriodo}` : ''
                   }${moliendaTurno ? ` · ${moliendaTurno}` : ''}`
                 : 'Esperando primera lectura del turno'
             }
