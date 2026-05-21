@@ -31,6 +31,17 @@ async function fetchCanchon() {
   return res.json() as Promise<{ total_camiones: number | null }>;
 }
 
+async function fetchMolienda() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+  const res = await fetch(`${apiUrl}/guardia/molienda`);
+  if (!res.ok) return { promedio_t_h: null, total_kg: null, turno: null };
+  return res.json() as Promise<{
+    promedio_t_h: number | null;
+    total_kg: number | null;
+    turno: string | null;
+  }>;
+}
+
 async function fetchColorCintaLarga() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
   const res = await fetch(`${apiUrl}/metrics/color-cinta-larga`);
@@ -74,7 +85,6 @@ const HERO_KEYS = ['molienda', 'bolsas', 'gas', 'color', 'camiones', 'alertas'] 
 export function KpiHero() {
   const energia = useDashboardData('energia');
   const produccion = useDashboardData('produccion');
-  const trapiche = useDashboardData('trapiche');
   const alerts = useQuery({
     queryKey: ['alerts', 'active'],
     queryFn: fetchAlerts,
@@ -90,10 +100,17 @@ export function KpiHero() {
     queryFn: fetchColorCintaLarga,
     refetchInterval: 600_000,
   });
+  const molienda = useQuery({
+    queryKey: ['guardia', 'molienda'],
+    queryFn: fetchMolienda,
+    refetchInterval: 60_000,
+  });
   const { ordered, saveOrder } = useTileOrder('kpi-hero', [...HERO_KEYS]);
   const { locked } = useKanbanLock();
 
-  const moliendaItem = pickIncludes(trapiche, ['molienda_kilos', 'molienda_actual', 'molienda']);
+  const moliendaTotalKg = molienda.data?.total_kg ?? null;
+  const moliendaPromTh = molienda.data?.promedio_t_h ?? null;
+  const moliendaTurno = molienda.data?.turno ?? null;
   const bolsasItem = pickIncludes(produccion, [
     'produccion_bolsas',
     'bolsas_dia',
@@ -119,16 +136,17 @@ export function KpiHero() {
           <PremiumTile
             icon={<IconScale size={14} />}
             label="Molienda actual"
-            value={moliendaItem?.value}
-            unit={moliendaItem?.unit ?? 'kg'}
+            value={moliendaTotalKg ?? undefined}
+            unit="kg"
             precision={0}
             accent="primary"
             size="hero"
-            updatedAt={moliendaItem?.updated_at}
             hint={
-              moliendaItem
-                ? `${(moliendaItem.value / 1000).toFixed(2)} t equivalente`
-                : 'Sin señal'
+              moliendaTotalKg != null
+                ? `${(moliendaTotalKg / 1000).toFixed(2)} t${
+                    moliendaPromTh != null ? ` · ${moliendaPromTh.toFixed(1)} t/h` : ''
+                  }${moliendaTurno ? ` · ${moliendaTurno}` : ''}`
+                : 'Esperando primera lectura del turno'
             }
           />
         );
