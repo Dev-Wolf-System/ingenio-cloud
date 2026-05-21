@@ -12,6 +12,7 @@ import {
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
 import { useTileOrder } from '@/lib/hooks/useTileOrder';
 import { useKanbanLock } from '@/lib/hooks/useKanbanLock';
+import { formatHoraAR } from '@/lib/utils/format';
 import { PremiumTile, type TileAccent } from './PremiumTile';
 import { SortableGroup } from './SortableGroup';
 import { SortableTile } from './SortableTile';
@@ -105,13 +106,7 @@ export function KpiHero() {
   const colorIcumsa = colorCinta.data?.color_icumsa ?? null;
   const humedadCinta = colorCinta.data?.humedad ?? null;
   const horaLectura = colorCinta.data?.hora_lectura ?? null;
-  const horaLecturaFmt = horaLectura
-    ? new Date(horaLectura).toLocaleTimeString('es-AR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'America/Argentina/Buenos_Aires',
-      })
-    : null;
+  const horaLecturaFmt = horaLectura ? formatHoraAR(horaLectura) || null : null;
   const alertsList = (alerts.data as { alerts?: { severity: string }[] } | undefined)?.alerts ?? [];
   const activeCount = alertsList.length;
   const criticalCount = alertsList.filter((a) => a.severity === 'critical').length;

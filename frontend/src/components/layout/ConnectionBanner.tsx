@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { IconWifiOff, IconAlertTriangle, IconClockExclamation } from '@tabler/icons-react';
 import { AnimatePresence, m } from 'motion/react';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
+import { parseServerDate } from '@/lib/utils/format';
 
 const STALE_WARN_SEC = 15;   // > 15s → banner ámbar "demorados"
 const STALE_DEAD_SEC = 30;   // > 30s → banner rojo "sensores caídos"
@@ -81,7 +82,8 @@ export function ConnectionBanner() {
 
   let mostRecent = 0;
   allItems.forEach((i) => {
-    const t = new Date(i.updated_at).getTime();
+    const d = parseServerDate(i.updated_at);
+    const t = d ? d.getTime() : 0;
     if (t > mostRecent) mostRecent = t;
   });
 

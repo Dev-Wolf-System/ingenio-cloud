@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { IconCircleFilled, IconAlertCircle } from '@tabler/icons-react';
 import { cn } from '@/lib/utils/cn';
-import { formatNumber } from '@/lib/utils/format';
+import { formatNumber, parseServerDate } from '@/lib/utils/format';
 import { m } from 'motion/react';
 
 const STALE_WARN_SEC = 15;   // > 15s = amarillo (sensor demorado)
@@ -11,7 +11,9 @@ const STALE_DEAD_SEC = 30;   // > 30s = rojo (sensor caído)
 
 function getStaleness(updatedAt?: string): 'fresh' | 'warn' | 'dead' {
   if (!updatedAt) return 'fresh';
-  const age = (Date.now() - new Date(updatedAt).getTime()) / 1000;
+  const d = parseServerDate(updatedAt);
+  if (!d) return 'fresh';
+  const age = (Date.now() - d.getTime()) / 1000;
   if (age > STALE_DEAD_SEC) return 'dead';
   if (age > STALE_WARN_SEC) return 'warn';
   return 'fresh';
