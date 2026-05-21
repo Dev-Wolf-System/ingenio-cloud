@@ -97,6 +97,8 @@ export interface PremiumTileProps {
   updatedAt?: string;
   hint?: string;
   alert?: { severity: AlertSeverity; reason: 'low' | 'high'; min?: number | null; max?: number | null } | null;
+  /** Si se define, el tile es clickeable (cursor pointer + handler) */
+  onClick?: () => void;
 }
 
 const ALERT_STYLE: Record<AlertSeverity, { color: string; border: string; bg: string; glow: string }> = {
@@ -139,6 +141,7 @@ export function PremiumTile({
   updatedAt,
   hint,
   alert,
+  onClick,
 }: PremiumTileProps) {
   const style = ACCENT_STYLE[accent];
   const alertStyle = alert ? ALERT_STYLE[alert.severity] : null;
@@ -179,11 +182,26 @@ export function PremiumTile({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{ y: -2, transition: { duration: 0.2 } }}
+      whileTap={onClick ? { scale: 0.98 } : undefined}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       className={cn(
         'relative rounded-xl border-2 overflow-hidden group',
         !alertStyle && style.borderIdle,
         !alertStyle && style.borderHover,
         alertStyle && alert?.severity === 'critical' && 'animate-pulse',
+        onClick && 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60',
       )}
       style={{
         background: alertStyle ? alertStyle.bg : style.bg,

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   IconClock,
@@ -11,6 +12,7 @@ import {
 import { PremiumPanel } from './PremiumPanel';
 import { PremiumTile } from './PremiumTile';
 import { MoliendaHoraChart, type MoliendaHoraPayload } from './MoliendaHoraChart';
+import { ParadasDetalleModal, type ParadaDetalle } from './ParadasDetalleModal';
 import { AnalisisIA } from './AnalisisIA';
 import { formatNumber, formatHoraAR } from '@/lib/utils/format';
 
@@ -25,6 +27,7 @@ interface TurnoPrevio {
   gas_avg_m3_h?: number | null;
   paradas_count?: number | null;
   paradas_minutos?: number | null;
+  paradas_detalle?: ParadaDetalle[];
   stale?: boolean;
   error?: string;
 }
@@ -53,6 +56,7 @@ async function fetchMoliendaHora(): Promise<MoliendaHoraPayload> {
 
 export function ShiftSummaryPanel() {
   const qc = useQueryClient();
+  const [paradasOpen, setParadasOpen] = useState(false);
   const refreshAll = () => {
     qc.invalidateQueries({ queryKey: ['guardia'] });
   };
@@ -79,6 +83,8 @@ export function ShiftSummaryPanel() {
   });
 
   const tp = turnoQ.data;
+  const paradasDetalle = tp?.paradas_detalle ?? [];
+  const tieneParadas = (tp?.paradas_count ?? 0) > 0 || paradasDetalle.length > 0;
   const mol = moliendaActualQ.data as { promedio_t_h?: number | null; total_kg?: number | null } | null;
   const moliendaActual = mol?.promedio_t_h ?? null;
   const moliendaTotal = mol?.total_kg ?? null;
@@ -149,13 +155,29 @@ export function ShiftSummaryPanel() {
           unit="evt"
           precision={0}
           accent="danger"
+          onClick={tieneParadas ? () => setParadasOpen(true) : undefined}
           hint={
-            tp?.paradas_minutos != null && tp.paradas_minutos > 0
-              ? `${formatNumber(tp.paradas_minutos, 0)} min`
+            tieneParadas
+              ? tp?.paradas_minutos != null && tp.paradas_minutos > 0
+                ? `${formatNumber(tp.paradas_minutos, 0)} min · ver detalle`
+                : 'ver detalle'
               : undefined
           }
         />
       </div>
+
+      <ParadasDetalleModal
+        open={paradasOpen}
+        onClose={() => setParadasOpen(false)}
+        turno={tp?.turno}
+        rango={
+          tp?.turno_inicio
+            ? `${formatHoraAR(tp.turno_inicio)} → ${formatHoraAR(tp.turno_fin)}`
+            : undefined
+        }
+        paradas={paradasDetalle}
+        totalMinutos={tp?.paradas_minutos}
+      />
 
       <div className="mt-3">
         <MoliendaHoraChart data={moliendaHoraQ.data} />
