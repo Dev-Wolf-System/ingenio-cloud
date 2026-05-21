@@ -35,4 +35,10 @@ export class MetricsController {
     return this.svc.colorCintaLarga();
   }
 
+  /** GET /api/metrics/trapiche-bagazo — pol/humedad/fibra bagazo último valor (v_trapiche_bagazo_ultimo) */
+  @Get('trapiche-bagazo')
+  trapicheBagazo() {
+    return this.svc.trapicheBagazo();
+  }
+
 }

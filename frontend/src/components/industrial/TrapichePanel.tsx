@@ -45,8 +45,6 @@ interface TrapicheSlot {
 }
 
 const TRAPICHE_SLOTS: TrapicheSlot[] = [
-  { id: 'bagazo_pol',              label: 'Pol bagazo',            match: ['bagazo_pol', 'pol_bagazo', 'pol'],                       unit: '%',        precision: 2 },
-  { id: 'bagazo_humedad',          label: 'Humedad bagazo',        match: ['bagazo_humedad', 'humedad_bagazo'],                      unit: '%',        precision: 2 },
   { id: 'caudal_imbibicion',       label: 'Caudal imbibición',     match: ['bb_imbibicion_caudal', 'caudal_imbibicion', 'caudal_imb'], unit: 'm³/h', precision: 2 },
   { id: 'nivel_imbibicion',        label: 'Nivel imbibición',      match: ['bb_imbibicion_nivel', 'nivel_imbibicion'],                unit: '%',     precision: 1 },
   { id: 'temperatura_imbibicion',  label: 'Temp. imbibición',      match: ['bb_imbibicion_temp', 'temperatura_imbibicion', 'temp_imbibicion'], unit: '°C', precision: 1 },
@@ -121,14 +119,26 @@ async function fetchVelMolino() {
   const res = await fetch(`${apiUrl}/guardia/vel-molino`);
   if (!res.ok) return null;
   return res.json() as Promise<{
-    // Nuevo
     stats?: { promedio_rpm?: number; maximo_rpm?: number; minimo_rpm?: number };
-    // Legacy
     promedio?: number;
     maximo?: number;
     minimo?: number;
     turno?: string;
     mensaje?: string;
+  } | null>;
+}
+
+async function fetchBagazo() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+  const res = await fetch(`${apiUrl}/metrics/trapiche-bagazo`);
+  if (!res.ok) return null;
+  return res.json() as Promise<{
+    pol_bagazo: number | null;
+    pol_bagazo_hora: string | null;
+    humedad_bagazo: number | null;
+    humedad_bagazo_hora: string | null;
+    fibra_bagazo: number | null;
+    fibra_bagazo_hora: string | null;
   } | null>;
 }
 
@@ -142,6 +152,15 @@ export function TrapichePanel() {
     refetchInterval: 60_000,
     staleTime: 60_000,
   });
+  const bagazoQ = useQuery({
+    queryKey: ['metrics', 'trapiche-bagazo'],
+    queryFn: fetchBagazo,
+    refetchInterval: 5 * 60_000,
+    staleTime: 60_000,
+  });
+  const polBagazo = bagazoQ.data?.pol_bagazo ?? null;
+  const humedadBagazo = bagazoQ.data?.humedad_bagazo ?? null;
+  const fibraBagazo = bagazoQ.data?.fibra_bagazo ?? null;
   const velRealtime = pickItem(data, ['rpm_primer_molino', 'rpm_1er_molino', 'vel_primer_molino']);
   const velCachedPromedio =
     velMolinoQ.data?.stats?.promedio_rpm ?? velMolinoQ.data?.promedio ?? null;
@@ -184,18 +203,57 @@ export function TrapichePanel() {
   const expected = TRAPICHE_SLOTS.length + 1; // +1 por el slot combinado
   const hasAny = data.size > 0;
 
-  // IDs orden tiles para drag-drop (RPM + presión combinada + slots resueltos)
+  // IDs orden tiles para drag-drop (RPM + presión + bagazo + slots resueltos)
   const tileIds = useMemo(() => {
     const ids: string[] = [];
     if (velPromedio != null) ids.push('rpm_primer_molino');
     if (presionCombinada) ids.push('presion_6to_combinada');
+    if (polBagazo != null) ids.push('bagazo_pol');
+    if (humedadBagazo != null) ids.push('bagazo_humedad');
+    if (fibraBagazo != null) ids.push('bagazo_fibra');
     resolvedSlots.filter((r) => r.item != null).forEach((r) => ids.push(r.slot.id));
     return ids;
-  }, [velPromedio, presionCombinada, resolvedSlots]);
+  }, [velPromedio, presionCombinada, polBagazo, humedadBagazo, fibraBagazo, resolvedSlots]);
   const { ordered: orderedIds, saveOrder } = useTileOrder('trapiche', tileIds);
   const { locked } = useKanbanLock();
 
   const renderTileById = (id: string) => {
+    if (id === 'bagazo_pol' && polBagazo != null) {
+      return (
+        <PremiumTile
+          icon={<IconDroplet size={14} />}
+          label="Pol bagazo"
+          value={polBagazo}
+          unit="%"
+          precision={2}
+          accent="primary"
+        />
+      );
+    }
+    if (id === 'bagazo_humedad' && humedadBagazo != null) {
+      return (
+        <PremiumTile
+          icon={<IconDroplet size={14} />}
+          label="Humedad bagazo"
+          value={humedadBagazo}
+          unit="%"
+          precision={2}
+          accent="primary"
+        />
+      );
+    }
+    if (id === 'bagazo_fibra' && fibraBagazo != null) {
+      return (
+        <PremiumTile
+          icon={<IconChartBar size={14} />}
+          label="Fibra bagazo"
+          value={fibraBagazo}
+          unit="%"
+          precision={2}
+          accent="accent"
+        />
+      );
+    }
     if (id === 'rpm_primer_molino' && velPromedio != null) {
       return (
         <PremiumTile

@@ -86,6 +86,39 @@ export class MetricsService {
     }
   }
 
+  async trapicheBagazo() {
+    try {
+      const production = this.supabase.schema('production');
+      const { data, error } = await production
+        .from('v_trapiche_bagazo_ultimo')
+        .select('pol_bagazo, pol_bagazo_hora, humedad_bagazo, humedad_bagazo_hora, fibra_bagazo, fibra_bagazo_hora')
+        .maybeSingle();
+      if (error) {
+        this.logger.warn(`trapiche-bagazo fail: ${error.message}`);
+        return { stale: true };
+      }
+      const row = data as {
+        pol_bagazo?: number | null;
+        pol_bagazo_hora?: string | null;
+        humedad_bagazo?: number | null;
+        humedad_bagazo_hora?: string | null;
+        fibra_bagazo?: number | null;
+        fibra_bagazo_hora?: string | null;
+      } | null;
+      return {
+        pol_bagazo: row?.pol_bagazo ?? null,
+        pol_bagazo_hora: row?.pol_bagazo_hora ?? null,
+        humedad_bagazo: row?.humedad_bagazo ?? null,
+        humedad_bagazo_hora: row?.humedad_bagazo_hora ?? null,
+        fibra_bagazo: row?.fibra_bagazo ?? null,
+        fibra_bagazo_hora: row?.fibra_bagazo_hora ?? null,
+      };
+    } catch (err) {
+      this.logger.warn(`trapiche-bagazo exception: ${(err as Error).message}`);
+      return { stale: true };
+    }
+  }
+
   async catalog() {
     try {
       const industrial = this.supabase.schema('industrial');
