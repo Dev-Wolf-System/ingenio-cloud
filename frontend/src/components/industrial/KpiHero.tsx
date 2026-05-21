@@ -34,12 +34,12 @@ async function fetchCanchon() {
 async function fetchMoliendaActual() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
   const res = await fetch(`${apiUrl}/guardia/molienda-actual`);
-  if (!res.ok) return { molienda_kg: null, periodo: null, turno: null, ts_cierre: null };
+  if (!res.ok) return { cana_molida_kg: null, hora_label: null, dia: null, camiones: null };
   return res.json() as Promise<{
-    molienda_kg: number | null;
-    periodo: string | null;
-    turno: string | null;
-    ts_cierre: string | null;
+    cana_molida_kg: number | null;
+    hora_label: string | null;
+    dia: string | null;
+    camiones: number | null;
   }>;
 }
 
@@ -109,9 +109,9 @@ export function KpiHero() {
   const { ordered, saveOrder } = useTileOrder('kpi-hero', [...HERO_KEYS]);
   const { locked } = useKanbanLock();
 
-  const moliendaKg = molienda.data?.molienda_kg ?? null;
-  const moliendaPeriodo = molienda.data?.periodo ?? null;
-  const moliendaTurno = molienda.data?.turno ?? null;
+  const moliendaKg = molienda.data?.cana_molida_kg ?? null;
+  const moliendaHora = molienda.data?.hora_label ?? null;
+  const moliendaCamiones = molienda.data?.camiones ?? null;
   const bolsasItem = pickIncludes(produccion, [
     'produccion_bolsas',
     'bolsas_dia',
@@ -136,7 +136,7 @@ export function KpiHero() {
         return (
           <PremiumTile
             icon={<IconScale size={14} />}
-            label="Molienda actual"
+            label="Molienda en Curso"
             value={moliendaKg ?? undefined}
             unit="kg"
             precision={0}
@@ -145,8 +145,12 @@ export function KpiHero() {
             hint={
               moliendaKg != null
                 ? `${(moliendaKg / 1000).toFixed(2)} t${
-                    moliendaPeriodo ? ` · ${moliendaPeriodo}` : ''
-                  }${moliendaTurno ? ` · ${moliendaTurno}` : ''}`
+                    moliendaHora ? ` · ${moliendaHora}` : ''
+                  }${
+                    moliendaCamiones != null
+                      ? ` · ${moliendaCamiones} camión${moliendaCamiones === 1 ? '' : 'es'}`
+                      : ''
+                  }`
                 : 'Esperando primera lectura del turno'
             }
           />

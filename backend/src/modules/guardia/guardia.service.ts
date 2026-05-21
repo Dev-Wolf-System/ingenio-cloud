@@ -251,37 +251,42 @@ export class GuardiaService {
     }
   }
 
-  /** Último valor de molienda cargado del turno corriente (v_turno_hora_x_hora) */
+  /** Última hora de molienda en curso (production.v_molienda_balanza_hora) */
   async getMoliendaActualUltima() {
     try {
       const production = this.supabase.schema('production');
       const { data, error } = await production
-        .from('v_turno_hora_x_hora')
-        .select('turno, periodo, molienda_kg, ts_cierre')
-        .eq('turno_rel', 'actual')
-        .not('molienda_kg', 'is', null)
-        .order('ts_cierre', { ascending: false })
+        .from('v_molienda_balanza_hora')
+        .select('hora, hora_label, dia, camiones, cana_molida_kg')
+        .order('hora', { ascending: false })
         .limit(1)
         .maybeSingle();
       if (error) {
         this.logger.warn(`molienda-actual fail: ${error.message}`);
-        return { stale: true, molienda_kg: null, periodo: null, turno: null, ts_cierre: null };
+        return { stale: true, cana_molida_kg: null, hora_label: null, dia: null, camiones: null };
       }
       const row = data as {
-        turno?: string;
-        periodo?: string;
-        molienda_kg?: number | null;
-        ts_cierre?: string;
+        hora?: string;
+        hora_label?: string;
+        dia?: string;
+        camiones?: number | string | null;
+        cana_molida_kg?: number | string | null;
       } | null;
+      const toNum = (v: number | string | null | undefined): number | null => {
+        if (v == null) return null;
+        const n = typeof v === 'string' ? parseFloat(v) : v;
+        return Number.isFinite(n) ? n : null;
+      };
       return {
-        turno: row?.turno ?? null,
-        periodo: row?.periodo ?? null,
-        molienda_kg: row?.molienda_kg ?? null,
-        ts_cierre: row?.ts_cierre ?? null,
+        hora: row?.hora ?? null,
+        hora_label: row?.hora_label ?? null,
+        dia: row?.dia ?? null,
+        camiones: toNum(row?.camiones),
+        cana_molida_kg: toNum(row?.cana_molida_kg),
       };
     } catch (err) {
       this.logger.warn(`molienda-actual exception: ${(err as Error).message}`);
-      return { stale: true, molienda_kg: null, periodo: null, turno: null, ts_cierre: null };
+      return { stale: true, cana_molida_kg: null, hora_label: null, dia: null, camiones: null };
     }
   }
 
