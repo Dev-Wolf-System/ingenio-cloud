@@ -116,11 +116,6 @@ export class GuardiaService {
       await this.setCached('molienda_previo', prev, data.moliendaPromedio, 30);
       this.logger.log(`Resumen guardia fetched from Node-RED (turno ${data.turno_anterior})`);
 
-      // Análisis IA fire-and-forget (no bloquea respuesta)
-      this.runAnalisisIA(prev, data).catch((err) =>
-        this.logger.warn('Análisis IA falló: ' + (err as Error).message),
-      );
-
       return data;
     } catch (err) {
       this.logger.error('Fetch guardia Node-RED failed', err as Error);
@@ -203,26 +198,6 @@ export class GuardiaService {
     const resumen = await this.fetchResumenFromNodeRed(force);
     if (!resumen) return { mensaje: 'Sin datos del turno anterior' };
     return resumen;
-  }
-
-  /** Análisis IA del resumen — corre fire-and-forget post-fetch */
-  private async runAnalisisIA(shift: Shift, payload: ResumenGuardia) {
-    if (!this.ai.isAvailable()) {
-      this.logger.warn('IA no disponible (OPENAI_API_KEY missing o cliente no iniciado)');
-      return;
-    }
-    this.logger.log(`Iniciando análisis IA para turno ${shift.name} ${shift.start.toISOString().slice(0,10)}`);
-    try {
-      const result = await this.ai.analizarResumenGuardia(payload);
-      if (!result) {
-        this.logger.warn('Análisis IA devolvió null (parsing JSON failed o OpenAI sin respuesta)');
-        return;
-      }
-      await this.setCached('analisis_ia', shift, result, 60 * 12);
-      this.logger.log(`Análisis IA cacheado OK turno ${shift.name} ${shift.start.toISOString().slice(0,10)}`);
-    } catch (err) {
-      this.logger.error('Análisis IA exception: ' + (err as Error).message);
-    }
   }
 
   /**
