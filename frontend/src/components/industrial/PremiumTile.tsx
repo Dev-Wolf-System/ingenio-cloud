@@ -124,7 +124,7 @@ const ALERT_STYLE: Record<AlertSeverity, { color: string; border: string; bg: st
 
 const SIZE_CONFIG = {
   sm:   { pad: 'p-3',         valueText: 'text-xl',                  labelText: 'text-[11px]', iconSize: 5, gap: 'gap-1' },
-  md:   { pad: 'p-3.5',       valueText: 'text-[4rem] leading-none',  labelText: 'text-[11px]', iconSize: 5, gap: 'gap-1.5' },
+  md:   { pad: 'p-3.5',       valueText: 'text-2xl sm:text-[4rem] sm:leading-none', labelText: 'text-[11px]', iconSize: 5, gap: 'gap-1.5' },
   lg:   { pad: 'p-4',         valueText: 'text-4xl',                 labelText: 'text-[12px]', iconSize: 6, gap: 'gap-2' },
   hero: { pad: 'p-5 sm:p-6',  valueText: 'text-5xl sm:text-6xl',     labelText: 'text-[13px]', iconSize: 7, gap: 'gap-2' },
 } as const;
