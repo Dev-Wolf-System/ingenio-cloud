@@ -4,6 +4,7 @@ import { ShiftTimeline } from '@/components/industrial/ShiftTimeline';
 import { ShiftWelcomeBanner } from '@/components/industrial/ShiftWelcomeBanner';
 import { KpiHero } from '@/components/industrial/KpiHero';
 import { TrapichePanel } from '@/components/industrial/TrapichePanel';
+import { MoliendaProduccionHora } from '@/components/industrial/MoliendaProduccionHora';
 import { EnergyPanel } from '@/components/industrial/EnergyPanel';
 import { ProductionPanel } from '@/components/industrial/ProductionPanel';
 import { ShiftSummaryPanel } from '@/components/industrial/ShiftSummaryPanel';
@@ -30,8 +31,9 @@ export default function DashboardPage() {
         <ShiftTimeline />
         <KpiHero />
 
-        <section className="px-3 sm:px-4 pt-1 pb-2">
+        <section className="px-3 sm:px-4 pt-1 pb-2 grid grid-cols-1 lg:grid-cols-2 gap-3">
           <TrapichePanel />
+          <MoliendaProduccionHora />
         </section>
 
         <main className="grid gap-3 px-3 sm:px-4 pb-3 pt-2 grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1.45fr_1.4fr_1fr] flex-1">
