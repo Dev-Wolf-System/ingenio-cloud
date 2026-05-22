@@ -89,7 +89,7 @@ export function AnalisisIA() {
           <span className="w-6 h-6 rounded-md bg-primary-soft text-primary-light flex items-center justify-center">
             <IconRobot size={14} />
           </span>
-          <span className="text-[10px] uppercase tracking-[0.14em] font-display font-semibold text-text-primary">
+          <span className="text-xs uppercase tracking-[0.14em] font-display font-semibold text-text-primary">
             Análisis IA · Turno previo
           </span>
         </div>
@@ -114,7 +114,7 @@ export function AnalisisIA() {
         </div>
       </div>
 
-      <div className="relative p-3 text-xs">
+      <div className="relative p-3 sm:p-4 text-sm">
         {q.isLoading && (
           <div className="text-text-muted italic flex items-center gap-2">
             <IconSparkles size={12} className="animate-pulse" />
@@ -167,7 +167,7 @@ export function AnalisisIA() {
             {data!.puntos_clave && data!.puntos_clave.length > 0 && (
               <ul className="mt-2 space-y-1">
                 {data!.puntos_clave.map((p, i) => (
-                  <li key={i} className="flex items-start gap-2 text-text-muted text-[11px]">
+                  <li key={i} className="flex items-start gap-2 text-text-muted text-sm">
                     <span className="mt-1.5 w-1 h-1 rounded-full bg-primary-light shrink-0" />
                     <span>{p}</span>
                   </li>
