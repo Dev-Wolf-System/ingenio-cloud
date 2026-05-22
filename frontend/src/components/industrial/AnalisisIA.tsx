@@ -21,7 +21,9 @@ async function fetchAnalisis(): Promise<AnalisisPayload> {
   return res.json();
 }
 
-async function forceAnalisis(): Promise<{ ok: boolean; error?: string } & AnalisisPayload> {
+async function forceAnalisis(): Promise<
+  { ok: boolean; error?: string; regenerado?: boolean; cached?: boolean } & AnalisisPayload
+> {
   const res = await fetch(`${apiUrl}/guardia/analisis-ia/refresh`, { method: 'POST' });
   return res.json();
 }
@@ -36,10 +38,12 @@ export function AnalisisIA() {
   const qc = useQueryClient();
   const [generating, setGenerating] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [infoMsg, setInfoMsg] = useState<string | null>(null);
 
   const q = useQuery({
     queryKey: ['guardia', 'analisis-ia'],
     queryFn: fetchAnalisis,
+    refetchInterval: 5 * 60_000,
     staleTime: 60 * 60_000,
   });
 
@@ -51,10 +55,15 @@ export function AnalisisIA() {
   const onGenerate = async () => {
     setGenerating(true);
     setErrorMsg(null);
+    setInfoMsg(null);
     try {
       const result = await forceAnalisis();
       if (result.ok) {
-        qc.invalidateQueries({ queryKey: ['guardia', 'analisis-ia'] });
+        if (result.regenerado === false) {
+          setInfoMsg('Datos sin cambios — análisis vigente, no se regeneró.');
+        } else {
+          qc.invalidateQueries({ queryKey: ['guardia', 'analisis-ia'] });
+        }
       } else {
         setErrorMsg(result.error ?? 'Error desconocido');
       }
@@ -127,6 +136,16 @@ export function AnalisisIA() {
           >
             <IconAlertCircle size={12} className="mt-0.5 shrink-0" />
             <span>{errorMsg}</span>
+          </div>
+        )}
+
+        {infoMsg && (
+          <div
+            className="flex items-start gap-2 text-ok text-2xs mt-1 mb-1 p-2 rounded border border-ok/40"
+            style={{ background: 'var(--ok-soft)' }}
+          >
+            <IconSparkles size={12} className="mt-0.5 shrink-0" />
+            <span>{infoMsg}</span>
           </div>
         )}
 

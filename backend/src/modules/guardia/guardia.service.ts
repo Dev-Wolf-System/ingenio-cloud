@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { createHash } from 'crypto';
 import axios from 'axios';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AiService } from '../ai/ai.service';
@@ -510,50 +511,105 @@ export class GuardiaService {
     return ('paradas_detalle' in resumen && resumen.paradas_detalle) || [];
   }
 
+  /** Huella de los datos que alimentan la IA — si no cambia, no se regenera */
+  private fingerprintResumen(resumen: Record<string, unknown>): string {
+    const rel = {
+      turno: resumen['turno'] ?? null,
+      molienda: resumen['molienda_avg_t_h'] ?? null,
+      gas_total: resumen['gas_total_m3'] ?? null,
+      gas_avg: resumen['gas_avg_m3_h'] ?? null,
+      paradas_count: resumen['paradas_count'] ?? null,
+      paradas_min: resumen['paradas_minutos'] ?? null,
+      paradas: resumen['paradas_detalle'] ?? [],
+    };
+    return createHash('sha1').update(JSON.stringify(rel)).digest('hex');
+  }
+
   /** Análisis IA cacheado del turno previo */
   async getAnalisisIA() {
     const prev = getPreviousShift();
-    const cached = await this.getCached('analisis_ia', prev);
+    const cached = (await this.getCached('analisis_ia', prev)) as
+      | (Record<string, unknown> & { _fingerprint?: string; _generated_at?: string })
+      | null;
     if (!cached) {
       return {
         mensaje: 'Análisis IA aún no disponible',
         ia_available: this.ai.isAvailable(),
       };
     }
-    return cached;
+    const { _fingerprint, _generated_at, ...result } = cached;
+    void _fingerprint;
+    return { ...result, generated_at: _generated_at ?? null };
   }
 
-  /** Disparar análisis IA manual ahora (consume v_resumen_turno_previo + paradas detalle) */
-  async forceAnalisisIA() {
+  /**
+   * Genera el análisis IA del turno previo.
+   * Cachea por huella de datos: si la huella no cambió, devuelve el cache
+   * sin llamar a OpenAI (evita quemar tokens). Usado por el cron y el botón.
+   */
+  async generarAnalisisIA(): Promise<{
+    ok: boolean;
+    regenerado?: boolean;
+    cached?: boolean;
+    error?: string;
+    resumen?: string;
+    estado?: 'normal' | 'atencion' | 'critico';
+    puntos_clave?: string[];
+  }> {
     if (!this.ai.isAvailable()) {
       return { ok: false, error: 'OPENAI_API_KEY no configurada o cliente IA no iniciado' };
     }
 
-    // 1. Datos del turno previo desde Postgres (vista única con paradas_detalle jsonb)
     const resumen = await this.getResumenTurnoPrevio();
     if ('stale' in resumen && resumen.stale) {
       return { ok: false, error: 'Sin datos turno previo en v_resumen_turno_previo' };
     }
-    const detallesParadas = ('paradas_detalle' in resumen && resumen.paradas_detalle) || [];
-    const payloadIA = resumen;
 
     const prev = getPreviousShift();
+    const fp = this.fingerprintResumen(resumen as Record<string, unknown>);
+    const cached = (await this.getCached('analisis_ia', prev)) as
+      | (Record<string, unknown> & { _fingerprint?: string })
+      | null;
+
+    if (cached && cached._fingerprint === fp) {
+      this.logger.log(`generarAnalisisIA: datos sin cambios (fp=${fp.slice(0, 8)}), usa cache`);
+      return {
+        ok: true,
+        regenerado: false,
+        cached: true,
+        resumen: cached.resumen as string,
+        estado: cached.estado as 'normal' | 'atencion' | 'critico',
+        puntos_clave: (cached.puntos_clave as string[]) ?? [],
+      };
+    }
+
+    const detallesParadas = ('paradas_detalle' in resumen && resumen.paradas_detalle) || [];
     this.logger.log(
-      `forceAnalisisIA: iniciando turno ${prev.name} · ${detallesParadas.length} paradas detalle`,
+      `generarAnalisisIA: regenerando turno ${prev.name} · ${detallesParadas.length} paradas · fp=${fp.slice(0, 8)}`,
     );
     try {
-      const result = await this.ai.analizarResumenGuardia(payloadIA);
+      const result = await this.ai.analizarResumenGuardia(resumen);
       if (!result) {
         return { ok: false, error: 'OpenAI devolvió respuesta vacía o JSON inválido' };
       }
-      await this.setCached('analisis_ia', prev, result, 60 * 12);
-      this.logger.log(`forceAnalisisIA: cacheado OK turno ${prev.name}`);
-      return { ok: true, ...result };
+      await this.setCached(
+        'analisis_ia',
+        prev,
+        { ...result, _fingerprint: fp, _generated_at: new Date().toISOString() },
+        60 * 24,
+      );
+      this.logger.log(`generarAnalisisIA: cacheado OK turno ${prev.name}`);
+      return { ok: true, regenerado: true, ...result };
     } catch (err) {
       const msg = (err as Error).message;
-      this.logger.error(`forceAnalisisIA exception: ${msg}`);
+      this.logger.error(`generarAnalisisIA exception: ${msg}`);
       return { ok: false, error: `Error OpenAI: ${msg}` };
     }
+  }
+
+  /** Disparar análisis IA manual (botón "Generar"). Respeta la huella de datos. */
+  async forceAnalisisIA() {
+    return this.generarAnalisisIA();
   }
 
   /** Vel molino — siempre cache (llega por WS de Node-RED) */

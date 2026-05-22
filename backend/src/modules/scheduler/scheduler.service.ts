@@ -64,4 +64,28 @@ export class SchedulerService {
       // silent
     }
   }
+
+  /**
+   * Análisis IA del turno previo: cada 15 min revisa si hay datos nuevos.
+   * generarAnalisisIA usa huella de datos — si no cambió, no llama a OpenAI
+   * (no quema tokens). Solo regenera cuando el dato del turno previo cambia.
+   */
+  @Cron(CronExpression.EVERY_15_MINUTES, {
+    name: 'analisis_ia_guardia',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  })
+  async analisisIAGuardia() {
+    try {
+      const r = await this.guardia.generarAnalisisIA();
+      if (r.ok) {
+        this.logger.log(
+          `Cron IA: ${r.regenerado ? 'regenerado (datos nuevos)' : 'sin cambios — cache vigente'}`,
+        );
+      } else {
+        this.logger.warn(`Cron IA: ${r.error}`);
+      }
+    } catch (err) {
+      this.logger.warn('Cron analisis IA failed', err as Error);
+    }
+  }
 }
