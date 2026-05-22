@@ -251,12 +251,12 @@ export class GuardiaService {
     }
   }
 
-  /** Última hora de molienda en curso (production.v_molienda_balanza_hora) */
+  /** Última hora de molienda en curso (production.v_descarga_balanza_hora) */
   async getMoliendaActualUltima() {
     try {
       const production = this.supabase.schema('production');
       const { data, error } = await production
-        .from('v_molienda_balanza_hora')
+        .from('v_descarga_balanza_hora')
         .select('hora, hora_label, dia, camiones, cana_molida_kg')
         .order('hora', { ascending: false })
         .limit(1)
