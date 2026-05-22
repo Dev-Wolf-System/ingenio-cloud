@@ -206,6 +206,7 @@ function BloqueChart({
   const { puntos, stats } = serie;
   const conData = puntos.some((p) => p.molienda_t != null);
   const tend = stats.tendencia_pct;
+  const gradId = `mb-bar-${subtitulo.replace(/[^a-zA-Z0-9]/g, '')}`;
 
   const trendIcon =
     tend > 2 ? <IconTrendingUp size={12} /> : tend < -2 ? <IconTrendingDown size={12} /> : <IconMinus size={12} />;
@@ -244,7 +245,7 @@ function BloqueChart({
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart data={puntos} margin={{ top: 8, right: 6, left: 0, bottom: 0 }}>
               <defs>
-                <linearGradient id={`mb-bar-${subtitulo}`} x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="var(--primary-light)" stopOpacity={0.9} />
                   <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.5} />
                 </linearGradient>
@@ -318,7 +319,7 @@ function BloqueChart({
                         ? 'var(--ok)'
                         : p.molienda_t <= stats.min_t
                         ? 'var(--warn)'
-                        : `url(#mb-bar-${subtitulo})`
+                        : `url(#${gradId})`
                     }
                   />
                 ))}
