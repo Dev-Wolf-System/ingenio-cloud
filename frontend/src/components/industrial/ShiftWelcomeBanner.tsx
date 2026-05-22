@@ -182,7 +182,7 @@ export function ShiftWelcomeBanner() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h2
-                    className="text-2xl sm:text-3xl font-bold tracking-tight leading-tight"
+                    className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight"
                     style={{
                       background:
                         'linear-gradient(135deg, var(--primary-light) 0%, var(--text-primary) 60%, var(--accent) 100%)',
@@ -194,7 +194,7 @@ export function ShiftWelcomeBanner() {
                   >
                     {greeting.saludo}, equipo
                   </h2>
-                  <p className="text-sm text-text-secondary mt-1">
+                  <p className="text-base text-text-secondary mt-1">
                     Comienza el <span className="font-semibold text-text-primary">{shift.displayName}</span>.
                     Resumen del turno anterior:
                   </p>
@@ -255,13 +255,13 @@ export function ShiftWelcomeBanner() {
                       Análisis IA · Estado {iaData!.estado ?? '—'}
                     </span>
                   </div>
-                  <p className="text-sm text-text-primary leading-relaxed">{iaData!.resumen}</p>
+                  <p className="text-base text-text-primary leading-relaxed">{iaData!.resumen}</p>
                   {iaData!.puntos_clave && iaData!.puntos_clave.length > 0 && (
                     <ul className="mt-3 space-y-1">
                       {iaData!.puntos_clave.slice(0, 4).map((p, i) => (
                         <li
                           key={i}
-                          className="text-xs text-text-secondary flex gap-2 items-start"
+                          className="text-sm text-text-secondary flex gap-2 items-start"
                         >
                           <span style={{ color: estadoColor }} className="mt-0.5">▸</span>
                           <span>{p}</span>
@@ -321,10 +321,10 @@ function MiniKpi({ label, value }: { label: string; value: string }) {
         borderColor: 'var(--border-subtle)',
       }}
     >
-      <div className="text-[10px] uppercase tracking-wider text-text-muted font-medium">
+      <div className="text-[11px] uppercase tracking-wider text-text-muted font-medium">
         {label}
       </div>
-      <div className="text-lg font-semibold mono text-text-primary tabular-nums mt-0.5 leading-none">
+      <div className="text-xl font-semibold mono text-text-primary tabular-nums mt-0.5 leading-none">
         {value}
       </div>
     </div>
