@@ -29,6 +29,12 @@ export class MetricsController {
     return this.svc.canchonResumen();
   }
 
+  /** GET /api/metrics/bolsas-dia — total de bolsas producidas del día (production.v_bolsas_dia) */
+  @Get('bolsas-dia')
+  bolsasDia() {
+    return this.svc.bolsasDia();
+  }
+
   /** GET /api/metrics/color-cinta-larga — color ICUMSA + humedad última lectura cinta larga */
   @Get('color-cinta-larga')
   colorCintaLarga() {

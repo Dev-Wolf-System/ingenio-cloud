@@ -33,6 +33,18 @@ async function fetchCanchon() {
   return res.json() as Promise<{ total_camiones: number | null }>;
 }
 
+async function fetchBolsasDia() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+  const res = await fetch(`${apiUrl}/metrics/bolsas-dia`);
+  if (!res.ok) return { total_bolsas: null, horas_cargadas: null, ultima_hora: null, fecha_industrial: null };
+  return res.json() as Promise<{
+    total_bolsas: number | null;
+    horas_cargadas: number | null;
+    ultima_hora: string | null;
+    fecha_industrial: string | null;
+  }>;
+}
+
 async function fetchMoliendaActual() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
   const res = await fetch(`${apiUrl}/guardia/molienda-actual`);
@@ -62,17 +74,6 @@ async function fetchColorCintaLarga() {
   }>;
 }
 
-function pickIncludes(map: Map<string, DashboardItem>, patterns: string[]): DashboardItem | null {
-  const entries = Array.from(map.entries());
-  for (const p of patterns) {
-    const lower = p.toLowerCase();
-    for (const [k, item] of entries) {
-      if (k.toLowerCase().includes(lower)) return item;
-    }
-  }
-  return null;
-}
-
 function sumKeysIncluding(map: Map<string, DashboardItem>, patterns: string[]): number | null {
   const entries = Array.from(map.entries());
   let total = 0;
@@ -93,7 +94,6 @@ const HERO_KEYS = ['molienda', 'bolsas', 'gas', 'color', 'camiones', 'alertas'] 
 
 export function KpiHero() {
   const energia = useDashboardData('energia');
-  const produccion = useDashboardData('produccion');
   const alerts = useQuery({
     queryKey: ['alerts', 'active'],
     queryFn: fetchAlerts,
@@ -114,6 +114,11 @@ export function KpiHero() {
     queryFn: fetchMoliendaActual,
     refetchInterval: 60_000,
   });
+  const bolsas = useQuery({
+    queryKey: ['metrics', 'bolsas-dia'],
+    queryFn: fetchBolsasDia,
+    refetchInterval: 5 * 60_000,
+  });
   const [moliendaModalOpen, setMoliendaModalOpen] = useState(false);
   const moliendaBloques = useQuery({
     queryKey: ['guardia', 'molienda-bloques'],
@@ -128,13 +133,9 @@ export function KpiHero() {
   const moliendaKg = molienda.data?.molienda_kg ?? null;
   const moliendaHora = molienda.data?.etiqueta ?? null;
   const moliendaAcum = molienda.data?.acumulado_kg ?? null;
-  const bolsasItem = pickIncludes(produccion, [
-    'produccion_bolsas',
-    'bolsas_dia',
-    'bolsas_azucar',
-    'azucar_diaria',
-    'bolsas',
-  ]);
+  const bolsasTotal = bolsas.data?.total_bolsas ?? null;
+  const bolsasHoras = bolsas.data?.horas_cargadas ?? null;
+  const bolsasUltima = bolsas.data?.ultima_hora ?? null;
   const gasTotal = sumKeysIncluding(energia, ['caudal_gas']);
   const totalCamiones = canchon.data?.total_camiones ?? null;
   const colorIcumsa = colorCinta.data?.color_icumsa ?? null;
@@ -177,13 +178,18 @@ export function KpiHero() {
           <PremiumTile
             icon={<IconChartBar size={14} />}
             label="Bolsas azúcar"
-            value={bolsasItem?.value}
-            unit={bolsasItem?.unit ?? 'bolsas'}
+            value={bolsasTotal ?? undefined}
+            unit="bolsas"
             precision={0}
             accent="accent"
             size="hero"
-            updatedAt={bolsasItem?.updated_at}
-            hint={bolsasItem ? 'Producidas hoy' : 'Esperando Datos'}
+            hint={
+              bolsasTotal != null
+                ? `Producidas hoy${
+                    bolsasHoras != null ? ` · ${bolsasHoras}/24 h cargadas` : ''
+                  }${bolsasUltima ? ` · últ. ${bolsasUltima.slice(0, 5)}` : ''}`
+                : 'Esperando Datos'
+            }
           />
         );
       case 'gas':

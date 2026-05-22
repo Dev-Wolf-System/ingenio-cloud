@@ -63,6 +63,42 @@ export class MetricsService {
     }
   }
 
+  async bolsasDia() {
+    try {
+      const production = this.supabase.schema('production');
+      const { data, error } = await production
+        .from('v_bolsas_dia')
+        .select('fecha_industrial, total_bolsas, horas_cargadas, ultima_hora')
+        .order('fecha_industrial', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) {
+        this.logger.warn(`bolsas-dia fail: ${error.message}`);
+        return { stale: true, total_bolsas: null, horas_cargadas: null, ultima_hora: null, fecha_industrial: null };
+      }
+      const row = data as {
+        fecha_industrial?: string | null;
+        total_bolsas?: number | string | null;
+        horas_cargadas?: number | string | null;
+        ultima_hora?: string | null;
+      } | null;
+      const toNum = (v: number | string | null | undefined): number | null => {
+        if (v == null) return null;
+        const n = typeof v === 'string' ? parseFloat(v) : v;
+        return Number.isFinite(n) ? n : null;
+      };
+      return {
+        fecha_industrial: row?.fecha_industrial ?? null,
+        total_bolsas: toNum(row?.total_bolsas),
+        horas_cargadas: toNum(row?.horas_cargadas),
+        ultima_hora: row?.ultima_hora ?? null,
+      };
+    } catch (err) {
+      this.logger.warn(`bolsas-dia exception: ${(err as Error).message}`);
+      return { stale: true, total_bolsas: null, horas_cargadas: null, ultima_hora: null, fecha_industrial: null };
+    }
+  }
+
   async colorCintaLarga() {
     try {
       const pub = this.supabase.schema('public');
