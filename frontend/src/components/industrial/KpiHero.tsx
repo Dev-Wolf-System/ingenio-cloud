@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   IconScale,
@@ -16,6 +17,7 @@ import { formatHoraAR } from '@/lib/utils/format';
 import { PremiumTile, type TileAccent } from './PremiumTile';
 import { SortableGroup } from './SortableGroup';
 import { SortableTile } from './SortableTile';
+import { MoliendaEstadoModal, type MoliendaBloquesPayload } from './MoliendaEstadoModal';
 
 async function fetchAlerts() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
@@ -41,6 +43,13 @@ async function fetchMoliendaActual() {
     dia: string | null;
     camiones: number | null;
   }>;
+}
+
+async function fetchMoliendaBloques(): Promise<MoliendaBloquesPayload> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+  const res = await fetch(`${apiUrl}/guardia/molienda-bloques`);
+  if (!res.ok) return {};
+  return res.json();
 }
 
 async function fetchColorCintaLarga() {
@@ -106,6 +115,13 @@ export function KpiHero() {
     queryFn: fetchMoliendaActual,
     refetchInterval: 60_000,
   });
+  const [moliendaModalOpen, setMoliendaModalOpen] = useState(false);
+  const moliendaBloques = useQuery({
+    queryKey: ['guardia', 'molienda-bloques'],
+    queryFn: fetchMoliendaBloques,
+    enabled: moliendaModalOpen,
+    staleTime: 60_000,
+  });
   const { ordered, saveOrder } = useTileOrder('kpi-hero', [...HERO_KEYS]);
   const { locked } = useKanbanLock();
 
@@ -142,6 +158,7 @@ export function KpiHero() {
             precision={0}
             accent="primary"
             size="hero"
+            onClick={() => setMoliendaModalOpen(true)}
             hint={
               moliendaKg != null
                 ? `${(moliendaKg / 1000).toFixed(2)} t${
@@ -150,7 +167,7 @@ export function KpiHero() {
                     moliendaCamiones != null
                       ? ` · ${moliendaCamiones} camión${moliendaCamiones === 1 ? '' : 'es'}`
                       : ''
-                  }`
+                  } · ver detalle`
                 : 'Esperando primera lectura del turno'
             }
           />
@@ -242,14 +259,22 @@ export function KpiHero() {
   };
 
   return (
-    <SortableGroup items={ordered} onReorder={saveOrder} disabled={locked}>
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
-        {ordered.map((id) => (
-          <SortableTile key={id} id={id}>
-            {renderTile(id)}
-          </SortableTile>
-        ))}
-      </div>
-    </SortableGroup>
+    <>
+      <SortableGroup items={ordered} onReorder={saveOrder} disabled={locked}>
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
+          {ordered.map((id) => (
+            <SortableTile key={id} id={id}>
+              {renderTile(id)}
+            </SortableTile>
+          ))}
+        </div>
+      </SortableGroup>
+      <MoliendaEstadoModal
+        open={moliendaModalOpen}
+        onClose={() => setMoliendaModalOpen(false)}
+        data={moliendaBloques.data}
+        loading={moliendaBloques.isLoading}
+      />
+    </>
   );
 }

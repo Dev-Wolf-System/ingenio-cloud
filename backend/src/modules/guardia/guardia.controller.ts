@@ -59,6 +59,12 @@ export class GuardiaController {
     return this.svc.getMoliendaActualUltima();
   }
 
+  /** GET /api/guardia/molienda-bloques — estado de molienda por bloques (zafra, día/turno) */
+  @Get('molienda-bloques')
+  moliendaBloques() {
+    return this.svc.getMoliendaBloques();
+  }
+
   /** GET /api/guardia/molienda-hora — molienda hora x hora turno previo + stats */
   @Get('molienda-hora')
   moliendaHora() {

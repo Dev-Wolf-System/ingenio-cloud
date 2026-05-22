@@ -290,6 +290,134 @@ export class GuardiaService {
     }
   }
 
+  /** Construye serie de un bloque: puntos en t + acumulado + recta de tendencia + stats */
+  private buildBloqueSerie(
+    raw: Array<{ label: string; molienda_kg: number | null; acumulado_kg?: number | null }>,
+  ) {
+    const base = raw.map((r) => ({
+      label: r.label,
+      molienda_t: r.molienda_kg != null ? Number((r.molienda_kg / 1000).toFixed(2)) : null,
+    }));
+    // acumulado: usar provisto por la vista, o running sum si falta
+    let run = 0;
+    const conAcum = base.map((p, i) => {
+      const provided = raw[i].acumulado_kg;
+      let acumulado_t: number;
+      if (provided != null) {
+        acumulado_t = Number((provided / 1000).toFixed(2));
+      } else {
+        if (p.molienda_t != null) run += p.molienda_t;
+        acumulado_t = Number(run.toFixed(2));
+      }
+      return { ...p, acumulado_t };
+    });
+    // regresión lineal sobre molienda_t usando el índice completo (recta continua)
+    const idxVals = conAcum
+      .map((p, i) => ({ i, v: p.molienda_t }))
+      .filter((x): x is { i: number; v: number } => x.v != null);
+    const vals = idxVals.map((x) => x.v);
+    let slope = 0;
+    let intercept = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+    if (idxVals.length >= 2) {
+      const n = idxVals.length;
+      const xs = idxVals.map((x) => x.i);
+      const sx = xs.reduce((a, b) => a + b, 0);
+      const sy = vals.reduce((a, b) => a + b, 0);
+      const sxy = xs.reduce((a, x, k) => a + x * vals[k], 0);
+      const sxx = xs.reduce((a, x) => a + x * x, 0);
+      slope = (n * sxy - sx * sy) / (n * sxx - sx * sx || 1);
+      intercept = (sy - slope * sx) / n;
+    }
+    const puntos = conAcum.map((p, i) => ({
+      ...p,
+      tendencia_t:
+        idxVals.length >= 2 ? Number((intercept + slope * i).toFixed(2)) : null,
+    }));
+    const max_t = vals.length ? Math.max(...vals) : 0;
+    const min_t = vals.length ? Math.min(...vals) : 0;
+    const promedio_t = vals.length
+      ? Number((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2))
+      : 0;
+    const acumulado_t = conAcum.length ? conAcum[conAcum.length - 1].acumulado_t : 0;
+    const tendencia_pct =
+      promedio_t > 0 && idxVals.length >= 2
+        ? Number((((slope * (conAcum.length - 1)) / promedio_t) * 100).toFixed(1))
+        : 0;
+    return { puntos, stats: { acumulado_t, max_t, min_t, promedio_t, tendencia_pct } };
+  }
+
+  /** Estado de molienda por bloques: zafra, día/turno corriente y anterior */
+  async getMoliendaBloques() {
+    const num = (v: number | string | null | undefined): number | null => {
+      if (v == null) return null;
+      const n = typeof v === 'string' ? parseFloat(v) : v;
+      return Number.isFinite(n) ? n : null;
+    };
+    const empty = { puntos: [], stats: { acumulado_t: 0, max_t: 0, min_t: 0, promedio_t: 0, tendencia_pct: 0 } };
+    const out: Record<string, unknown> = {
+      anio_zafra: null,
+      zafra: empty,
+      dia_corriente: empty,
+      turno_actual: empty,
+      dia_anterior: empty,
+      turno_anterior: empty,
+    };
+
+    try {
+      const production = this.supabase.schema('production');
+      const { data, error } = await production
+        .from('v_molienda_bloques')
+        .select('bloque, hora, anio_zafra, etiqueta, molienda_kg, acumulado_kg')
+        .order('hora', { ascending: true });
+      if (error) {
+        this.logger.warn(`molienda-bloques fail: ${error.message}`);
+      } else {
+        const rows = (data ?? []) as Array<{
+          bloque: string;
+          anio_zafra: number;
+          etiqueta: string;
+          molienda_kg: number | string | null;
+          acumulado_kg: number | string | null;
+        }>;
+        out.anio_zafra = rows[0]?.anio_zafra ?? null;
+        for (const b of ['zafra', 'dia_corriente', 'turno_actual', 'dia_anterior']) {
+          const sub = rows.filter((r) => r.bloque === b);
+          out[b] = this.buildBloqueSerie(
+            sub.map((r) => ({
+              label: r.etiqueta,
+              molienda_kg: num(r.molienda_kg),
+              acumulado_kg: num(r.acumulado_kg),
+            })),
+          );
+        }
+      }
+    } catch (err) {
+      this.logger.warn(`molienda-bloques exception: ${(err as Error).message}`);
+    }
+
+    // turno_anterior: v_turno_hora_x_hora (la vista de bloques no lo trae)
+    try {
+      const production = this.supabase.schema('production');
+      const { data, error } = await production
+        .from('v_turno_hora_x_hora')
+        .select('periodo, molienda_kg, ts_cierre')
+        .eq('turno_rel', 'previo')
+        .order('ts_cierre', { ascending: true });
+      if (!error) {
+        const rows = (data ?? []) as Array<{ periodo: string; molienda_kg: number | string | null }>;
+        out.turno_anterior = this.buildBloqueSerie(
+          rows.map((r) => ({ label: r.periodo, molienda_kg: num(r.molienda_kg) })),
+        );
+      } else {
+        this.logger.warn(`molienda-bloques turno_anterior fail: ${error.message}`);
+      }
+    } catch (err) {
+      this.logger.warn(`molienda-bloques turno_anterior exception: ${(err as Error).message}`);
+    }
+
+    return out;
+  }
+
   /** Molienda hora x hora del turno previo (production.v_turno_hora_x_hora) */
   async getMoliendaHoraPrevio() {
     try {
