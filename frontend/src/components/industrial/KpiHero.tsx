@@ -120,7 +120,8 @@ export function KpiHero() {
     queryKey: ['guardia', 'molienda-bloques'],
     queryFn: fetchMoliendaBloques,
     enabled: moliendaModalOpen,
-    staleTime: 60_000,
+    refetchInterval: moliendaModalOpen ? 30_000 : false,
+    staleTime: 30_000,
   });
   const { ordered, saveOrder } = useTileOrder('kpi-hero', [...HERO_KEYS]);
   const { locked } = useKanbanLock();
