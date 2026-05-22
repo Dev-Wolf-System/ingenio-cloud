@@ -47,7 +47,7 @@ function accentForKey(key: string): TileAccent {
 }
 
 // Keys que NO mostrar en panel — se exhiben en otros lugares o quedan obsoletos
-// (cinta larga se muestra en KpiHero "Color azúcar", cinta corta deprecated)
+// (cinta larga → KpiHero "Color azúcar"; bolsas → KpiHero "Bolsas azúcar"; cinta corta deprecated)
 const HIDDEN_KEYS = [
   'color_cinta_corta',
   'humedad_cinta_corta',
@@ -55,11 +55,17 @@ const HIDDEN_KEYS = [
   'humedad_cinta_larga',
 ];
 
+// Substrings que ocultan cualquier key que los contenga (KPI ya presente en KpiHero)
+const HIDDEN_SUBSTRINGS = ['bolsa'];
+
 export function ProductionPanel() {
   const data = useDashboardData('produccion');
   const { data: thresholds } = useThresholds();
   const baseKeys = Array.from(data.keys())
-    .filter((k) => !HIDDEN_KEYS.includes(k.toLowerCase()))
+    .filter((k) => {
+      const lk = k.toLowerCase();
+      return !HIDDEN_KEYS.includes(lk) && !HIDDEN_SUBSTRINGS.some((s) => lk.includes(s));
+    })
     .sort();
   const { ordered, saveOrder } = useTileOrder('produccion', baseKeys);
   const { locked } = useKanbanLock();
