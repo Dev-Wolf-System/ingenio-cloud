@@ -29,6 +29,11 @@ const VAPOR_COMBO_ID = 'vapor_alta_baja';
 const CAUDAL_KEYS = ['Caudal_Vapor_Cald2', 'Caudal_Vapor_Cald3', 'Caudal_Vapor_Cald6'] as const;
 const CAUDAL_COMBO_ID = 'caudal_vapor_calderas';
 
+// Potencia Siemens + WEG → un tile combinado (suma total)
+const POTENCIA_SIEMENS_KEY = 'Potencia_Activa_Siemens';
+const POTENCIA_WEG_KEY = 'Potencia_Activa_Weg';
+const POTENCIA_COMBO_ID = 'potencia_total';
+
 function iconFor(key: string): React.ReactNode {
   const k = key.toLowerCase();
   if (k.includes('temp')) return <IconTemperature size={14} />;
@@ -61,21 +66,31 @@ export function EnergyPanel() {
   const caud6 = data.get(CAUDAL_KEYS[2]);
   const hasCaudal = caud2 != null || caud3 != null || caud6 != null;
 
-  const oculto = new Set<string>([VAPOR_ALTA_KEY, VAPOR_BAJA_KEY, ...CAUDAL_KEYS]);
+  const potSiemens = data.get(POTENCIA_SIEMENS_KEY);
+  const potWeg = data.get(POTENCIA_WEG_KEY);
+  const hasPotencia = potSiemens != null || potWeg != null;
+
+  const oculto = new Set<string>([
+    VAPOR_ALTA_KEY, VAPOR_BAJA_KEY,
+    ...CAUDAL_KEYS,
+    POTENCIA_SIEMENS_KEY, POTENCIA_WEG_KEY,
+  ]);
   const baseKeys = Array.from(data.keys())
     .filter((k) => !oculto.has(k) && !/caudal_gas/i.test(k))
     .sort();
   const allKeys = [
+    ...(hasPotencia ? [POTENCIA_COMBO_ID] : []),
     ...(hasCaudal ? [CAUDAL_COMBO_ID] : []),
     ...(hasVapor ? [VAPOR_COMBO_ID] : []),
     ...baseKeys,
   ];
   const { ordered, saveOrder } = useTileOrder('energia', allKeys);
   const { locked } = useKanbanLock();
-  const count = baseKeys.length + (hasVapor ? 1 : 0) + (hasCaudal ? 1 : 0);
+  const count = baseKeys.length + (hasVapor ? 1 : 0) + (hasCaudal ? 1 : 0) + (hasPotencia ? 1 : 0);
 
   const [caudalModalOpen, setCaudalModalOpen] = useState(false);
   const [vaporModalOpen, setVaporModalOpen] = useState(false);
+  const [potenciaModalOpen, setPotenciaModalOpen] = useState(false);
 
   return (
     <>
@@ -97,6 +112,30 @@ export function EnergyPanel() {
           <SortableGroup items={ordered} onReorder={saveOrder} disabled={locked}>
             <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-2">
               {ordered.map((key) => {
+                if (key === POTENCIA_COMBO_ID) {
+                  const ps = potSiemens?.value ?? null;
+                  const pw = potWeg?.value ?? null;
+                  const total = [ps, pw].filter((v): v is number => v != null).reduce((a, b) => a + b, 0);
+                  const unit = potSiemens?.unit ?? potWeg?.unit ?? 'Kw';
+                  return (
+                    <SortableTile key={key} id={key}>
+                      <PremiumTile
+                        icon={<IconBolt size={14} />}
+                        label="Potencia Total"
+                        value={hasPotencia ? total : undefined}
+                        unit={unit}
+                        precision={1}
+                        accent="accent"
+                        updatedAt={potSiemens?.updated_at ?? potWeg?.updated_at}
+                        hint={
+                          `Siemens ${ps != null ? ps.toFixed(1) : '—'} · ` +
+                          `WEG ${pw != null ? pw.toFixed(1) : '—'} · ver detalle`
+                        }
+                        onClick={() => setPotenciaModalOpen(true)}
+                      />
+                    </SortableTile>
+                  );
+                }
                 if (key === VAPOR_COMBO_ID) {
                   const a = alta?.value ?? null;
                   const b = baja?.value ?? null;
@@ -178,6 +217,28 @@ export function EnergyPanel() {
           </SortableGroup>
         )}
       </PremiumPanel>
+
+      {/* Modal: Potencia Siemens + WEG */}
+      <DesgloceModal
+        open={potenciaModalOpen}
+        onClose={() => setPotenciaModalOpen(false)}
+        title="Potencia Total"
+        subtitle="Generación eléctrica en tiempo real"
+        icon={<IconBolt size={20} />}
+        accentVar="var(--ok)"
+        precision={1}
+        rows={[
+          { label: 'Siemens', value: potSiemens?.value ?? null, unit: potSiemens?.unit ?? 'Kw' },
+          { label: 'WEG', value: potWeg?.value ?? null, unit: potWeg?.unit ?? 'Kw' },
+        ]}
+        totalLabel="Total"
+        total={hasPotencia
+          ? [potSiemens?.value ?? null, potWeg?.value ?? null]
+              .filter((v): v is number => v != null)
+              .reduce((a, b) => a + b, 0)
+          : null}
+        totalUnit={potSiemens?.unit ?? potWeg?.unit ?? 'Kw'}
+      />
 
       {/* Modal: Caudal Vapor por caldera */}
       <DesgloceModal
