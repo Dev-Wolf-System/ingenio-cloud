@@ -296,7 +296,7 @@ export function PremiumTile({
         </div>
 
         {hint && (
-          <div className="text-[10px] text-text-muted mono mt-1.5 truncate">{hint}</div>
+          <div className="text-[10px] text-text-primary mono mt-1.5 truncate">{hint}</div>
         )}
       </div>
     </m.div>

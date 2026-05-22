@@ -18,6 +18,7 @@ import { PremiumTile, type TileAccent } from './PremiumTile';
 import { SortableGroup } from './SortableGroup';
 import { SortableTile } from './SortableTile';
 import { MoliendaEstadoModal, type MoliendaBloquesPayload } from './MoliendaEstadoModal';
+import { DesgloceModal } from './DesgloceModal';
 
 async function fetchAlerts() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
@@ -120,6 +121,7 @@ export function KpiHero() {
     refetchInterval: 5 * 60_000,
   });
   const [moliendaModalOpen, setMoliendaModalOpen] = useState(false);
+  const [gasModalOpen, setGasModalOpen] = useState(false);
   const moliendaBloques = useQuery({
     queryKey: ['guardia', 'molienda-bloques'],
     queryFn: fetchMoliendaBloques,
@@ -137,6 +139,15 @@ export function KpiHero() {
   const bolsasHoras = bolsas.data?.horas_cargadas ?? null;
   const bolsasUltima = bolsas.data?.ultima_hora ?? null;
   const gasTotal = sumKeysIncluding(energia, ['caudal_gas']);
+  // Gas individual por caldera (claves tipo Caudal_Gas_CaldX)
+  const gasRows = Array.from(energia.entries())
+    .filter(([k]) => /caudal_gas/i.test(k))
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, item]) => ({
+      label: k.replace(/_/g, ' '),
+      value: item.value,
+      unit: item.unit ?? 'm³/h',
+    }));
   const totalCamiones = canchon.data?.total_camiones ?? null;
   const colorIcumsa = colorCinta.data?.color_icumsa ?? null;
   const humedadCinta = colorCinta.data?.humedad ?? null;
@@ -202,7 +213,8 @@ export function KpiHero() {
             precision={1}
             accent="warn"
             size="hero"
-            hint={gasTotal != null ? 'Calderas 2+3+6' : 'Sin caudales'}
+            onClick={() => setGasModalOpen(true)}
+            hint={gasTotal != null ? 'Calderas 2+3+6 · ver detalle' : 'Sin caudales'}
           />
         );
       case 'color':
@@ -280,6 +292,19 @@ export function KpiHero() {
         onClose={() => setMoliendaModalOpen(false)}
         data={moliendaBloques.data}
         loading={moliendaBloques.isLoading}
+      />
+      <DesgloceModal
+        open={gasModalOpen}
+        onClose={() => setGasModalOpen(false)}
+        title="Consumo gas por caldera"
+        subtitle="Caudal en tiempo real"
+        icon={<IconFlame size={20} />}
+        accentVar="var(--warn)"
+        precision={1}
+        rows={gasRows}
+        totalLabel="Total"
+        total={gasTotal}
+        totalUnit="m³/h"
       />
     </>
   );
