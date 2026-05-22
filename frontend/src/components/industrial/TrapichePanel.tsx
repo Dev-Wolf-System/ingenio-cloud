@@ -155,8 +155,8 @@ export function TrapichePanel() {
   const bagazoQ = useQuery({
     queryKey: ['metrics', 'trapiche-bagazo'],
     queryFn: fetchBagazo,
-    refetchInterval: 5 * 60_000,
-    staleTime: 60_000,
+    refetchInterval: 10 * 60_000,
+    staleTime: 10 * 60_000,
   });
   const polBagazo = bagazoQ.data?.pol_bagazo ?? null;
   const humedadBagazo = bagazoQ.data?.humedad_bagazo ?? null;
