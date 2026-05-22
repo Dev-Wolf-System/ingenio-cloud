@@ -102,7 +102,7 @@ export function KpiHero() {
   const canchon = useQuery({
     queryKey: ['canchon', 'resumen'],
     queryFn: fetchCanchon,
-    refetchInterval: 60_000,
+    refetchInterval: 30_000,
   });
   const colorCinta = useQuery({
     queryKey: ['color', 'cinta-larga'],
@@ -230,7 +230,7 @@ export function KpiHero() {
               canchon.isLoading
                 ? 'Consultando…'
                 : totalCamiones != null
-                ? 'Actualiza c/ 1 min'
+                ? 'Actualiza c/ 30 seg'
                 : 'Sin señal'
             }
           />
