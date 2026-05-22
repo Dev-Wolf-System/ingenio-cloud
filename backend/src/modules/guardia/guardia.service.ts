@@ -235,10 +235,19 @@ export class GuardiaService {
         const n = typeof v === 'string' ? parseFloat(v) : v;
         return Number.isFinite(n) ? n : null;
       };
+      // La vista devuelve `timestamp without time zone` (hora ART local).
+      // PostgREST lo serializa sin offset → el frontend lo malinterpreta como UTC (-3h).
+      // Si el string no trae zona, le agregamos el offset ART explícito.
+      const tagART = (v: string | null | undefined): string | null => {
+        if (!v) return null;
+        const s = String(v).trim();
+        if (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(s)) return s; // ya tiene zona
+        return s.replace(' ', 'T') + '-03:00';
+      };
       return {
         turno: row.turno ?? null,
-        turno_inicio: row.turno_inicio ?? null,
-        turno_fin: row.turno_fin ?? null,
+        turno_inicio: tagART(row.turno_inicio),
+        turno_fin: tagART(row.turno_fin),
         molienda_avg_t_h: toNum(row.molienda_avg_t_h),
         gas_total_m3: toNum(row.gas_total_m3),
         gas_avg_m3_h: toNum(row.gas_avg_m3_h),
