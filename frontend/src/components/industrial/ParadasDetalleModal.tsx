@@ -63,7 +63,7 @@ export function ParadasDetalleModal({
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 20, opacity: 0, scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="relative w-full max-w-2xl rounded-2xl overflow-hidden border-2 flex flex-col max-h-[85vh]"
+            className="relative w-full sm:max-w-3xl rounded-2xl overflow-hidden border-2 flex flex-col max-h-[85vh]"
             style={{
               background:
                 'var(--panel-mesh-1), var(--panel-mesh-2), linear-gradient(135deg, var(--surface-panel-from), var(--surface-panel-to))',

@@ -54,7 +54,7 @@ export function DesgloceModal({
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 16, opacity: 0, scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 340, damping: 30 }}
-            className="relative w-full max-w-sm rounded-2xl overflow-hidden border-2 flex flex-col"
+            className="relative w-full sm:max-w-3xl rounded-2xl overflow-hidden border-2 flex flex-col"
             style={{
               background:
                 'var(--panel-mesh-1), var(--panel-mesh-2), linear-gradient(135deg, var(--surface-panel-from), var(--surface-panel-to))',
