@@ -70,7 +70,7 @@ export class SchedulerService {
    * generarAnalisisIA usa huella de datos — si no cambió, no llama a OpenAI
    * (no quema tokens). Solo regenera cuando el dato del turno previo cambia.
    */
-  @Cron(CronExpression.EVERY_15_MINUTES, {
+  @Cron('0 */15 * * * *', {
     name: 'analisis_ia_guardia',
     timeZone: 'America/Argentina/Buenos_Aires',
   })
