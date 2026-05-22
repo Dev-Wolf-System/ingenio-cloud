@@ -139,6 +139,10 @@ async function fetchBagazo() {
     humedad_bagazo_hora: string | null;
     fibra_bagazo: number | null;
     fibra_bagazo_hora: string | null;
+    pol_cachaza: number | null;
+    pol_cachaza_hora: string | null;
+    humedad_cachaza: number | null;
+    humedad_cachaza_hora: string | null;
   } | null>;
 }
 
@@ -161,6 +165,8 @@ export function TrapichePanel() {
   const polBagazo = bagazoQ.data?.pol_bagazo ?? null;
   const humedadBagazo = bagazoQ.data?.humedad_bagazo ?? null;
   const fibraBagazo = bagazoQ.data?.fibra_bagazo ?? null;
+  const polCachaza = bagazoQ.data?.pol_cachaza ?? null;
+  const humedadCachaza = bagazoQ.data?.humedad_cachaza ?? null;
   const velRealtime = pickItem(data, ['rpm_primer_molino', 'rpm_1er_molino', 'vel_primer_molino']);
   const velCachedPromedio =
     velMolinoQ.data?.stats?.promedio_rpm ?? velMolinoQ.data?.promedio ?? null;
@@ -211,9 +217,11 @@ export function TrapichePanel() {
     if (polBagazo != null) ids.push('bagazo_pol');
     if (humedadBagazo != null) ids.push('bagazo_humedad');
     if (fibraBagazo != null) ids.push('bagazo_fibra');
+    if (polCachaza != null) ids.push('cachaza_pol');
+    if (humedadCachaza != null) ids.push('cachaza_humedad');
     resolvedSlots.filter((r) => r.item != null).forEach((r) => ids.push(r.slot.id));
     return ids;
-  }, [velPromedio, presionCombinada, polBagazo, humedadBagazo, fibraBagazo, resolvedSlots]);
+  }, [velPromedio, presionCombinada, polBagazo, humedadBagazo, fibraBagazo, polCachaza, humedadCachaza, resolvedSlots]);
   const { ordered: orderedIds, saveOrder } = useTileOrder('trapiche', tileIds);
   const { locked } = useKanbanLock();
 
@@ -248,6 +256,30 @@ export function TrapichePanel() {
           icon={<IconChartBar size={14} />}
           label="Fibra bagazo"
           value={fibraBagazo}
+          unit="%"
+          precision={2}
+          accent="accent"
+        />
+      );
+    }
+    if (id === 'cachaza_pol' && polCachaza != null) {
+      return (
+        <PremiumTile
+          icon={<IconFlask size={14} />}
+          label="Pol cachaza"
+          value={polCachaza}
+          unit="%"
+          precision={2}
+          accent="accent"
+        />
+      );
+    }
+    if (id === 'cachaza_humedad' && humedadCachaza != null) {
+      return (
+        <PremiumTile
+          icon={<IconDroplet size={14} />}
+          label="Humedad cachaza"
+          value={humedadCachaza}
           unit="%"
           precision={2}
           accent="accent"

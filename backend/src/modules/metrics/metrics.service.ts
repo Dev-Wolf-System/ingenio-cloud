@@ -91,7 +91,10 @@ export class MetricsService {
       const production = this.supabase.schema('production');
       const { data, error } = await production
         .from('v_trapiche_bagazo_ultimo')
-        .select('pol_bagazo, pol_bagazo_hora, humedad_bagazo, humedad_bagazo_hora, fibra_bagazo, fibra_bagazo_hora')
+        .select(
+          'pol_bagazo, pol_bagazo_hora, humedad_bagazo, humedad_bagazo_hora, fibra_bagazo, fibra_bagazo_hora, ' +
+            'pol_cachaza, pol_cachaza_hora, humedad_cachaza, humedad_cachaza_hora',
+        )
         .maybeSingle();
       if (error) {
         this.logger.warn(`trapiche-bagazo fail: ${error.message}`);
@@ -104,6 +107,10 @@ export class MetricsService {
         humedad_bagazo_hora?: string | null;
         fibra_bagazo?: number | null;
         fibra_bagazo_hora?: string | null;
+        pol_cachaza?: number | null;
+        pol_cachaza_hora?: string | null;
+        humedad_cachaza?: number | null;
+        humedad_cachaza_hora?: string | null;
       } | null;
       return {
         pol_bagazo: row?.pol_bagazo ?? null,
@@ -112,6 +119,10 @@ export class MetricsService {
         humedad_bagazo_hora: row?.humedad_bagazo_hora ?? null,
         fibra_bagazo: row?.fibra_bagazo ?? null,
         fibra_bagazo_hora: row?.fibra_bagazo_hora ?? null,
+        pol_cachaza: row?.pol_cachaza ?? null,
+        pol_cachaza_hora: row?.pol_cachaza_hora ?? null,
+        humedad_cachaza: row?.humedad_cachaza ?? null,
+        humedad_cachaza_hora: row?.humedad_cachaza_hora ?? null,
       };
     } catch (err) {
       this.logger.warn(`trapiche-bagazo exception: ${(err as Error).message}`);
