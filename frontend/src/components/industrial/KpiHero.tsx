@@ -36,12 +36,11 @@ async function fetchCanchon() {
 async function fetchMoliendaActual() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
   const res = await fetch(`${apiUrl}/guardia/molienda-actual`);
-  if (!res.ok) return { cana_molida_kg: null, hora_label: null, dia: null, camiones: null };
+  if (!res.ok) return { molienda_kg: null, acumulado_kg: null, etiqueta: null };
   return res.json() as Promise<{
-    cana_molida_kg: number | null;
-    hora_label: string | null;
-    dia: string | null;
-    camiones: number | null;
+    molienda_kg: number | null;
+    acumulado_kg: number | null;
+    etiqueta: string | null;
   }>;
 }
 
@@ -126,9 +125,9 @@ export function KpiHero() {
   const { ordered, saveOrder } = useTileOrder('kpi-hero', [...HERO_KEYS]);
   const { locked } = useKanbanLock();
 
-  const moliendaKg = molienda.data?.cana_molida_kg ?? null;
-  const moliendaHora = molienda.data?.hora_label ?? null;
-  const moliendaCamiones = molienda.data?.camiones ?? null;
+  const moliendaKg = molienda.data?.molienda_kg ?? null;
+  const moliendaHora = molienda.data?.etiqueta ?? null;
+  const moliendaAcum = molienda.data?.acumulado_kg ?? null;
   const bolsasItem = pickIncludes(produccion, [
     'produccion_bolsas',
     'bolsas_dia',
@@ -165,8 +164,8 @@ export function KpiHero() {
                 ? `${(moliendaKg / 1000).toFixed(2)} t${
                     moliendaHora ? ` · ${moliendaHora}` : ''
                   }${
-                    moliendaCamiones != null
-                      ? ` · ${moliendaCamiones} camión${moliendaCamiones === 1 ? '' : 'es'}`
+                    moliendaAcum != null
+                      ? ` · acum ${(moliendaAcum / 1000).toFixed(1)} t`
                       : ''
                   } · ver detalle`
                 : 'Esperando primera lectura del turno'

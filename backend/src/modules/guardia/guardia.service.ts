@@ -252,26 +252,26 @@ export class GuardiaService {
     }
   }
 
-  /** Última hora de molienda en curso (production.v_descarga_balanza_hora) */
+  /** Última hora de molienda del turno en curso (production.v_molienda_bloques) */
   async getMoliendaActualUltima() {
     try {
       const production = this.supabase.schema('production');
       const { data, error } = await production
-        .from('v_descarga_balanza_hora')
-        .select('hora, hora_label, dia, camiones, cana_molida_kg')
+        .from('v_molienda_bloques')
+        .select('etiqueta, molienda_kg, acumulado_kg, hora')
+        .eq('bloque', 'turno_actual')
         .order('hora', { ascending: false })
         .limit(1)
         .maybeSingle();
       if (error) {
         this.logger.warn(`molienda-actual fail: ${error.message}`);
-        return { stale: true, cana_molida_kg: null, hora_label: null, dia: null, camiones: null };
+        return { stale: true, molienda_kg: null, acumulado_kg: null, etiqueta: null };
       }
       const row = data as {
+        etiqueta?: string;
+        molienda_kg?: number | string | null;
+        acumulado_kg?: number | string | null;
         hora?: string;
-        hora_label?: string;
-        dia?: string;
-        camiones?: number | string | null;
-        cana_molida_kg?: number | string | null;
       } | null;
       const toNum = (v: number | string | null | undefined): number | null => {
         if (v == null) return null;
@@ -279,15 +279,14 @@ export class GuardiaService {
         return Number.isFinite(n) ? n : null;
       };
       return {
+        etiqueta: row?.etiqueta ?? null,
         hora: row?.hora ?? null,
-        hora_label: row?.hora_label ?? null,
-        dia: row?.dia ?? null,
-        camiones: toNum(row?.camiones),
-        cana_molida_kg: toNum(row?.cana_molida_kg),
+        molienda_kg: toNum(row?.molienda_kg),
+        acumulado_kg: toNum(row?.acumulado_kg),
       };
     } catch (err) {
       this.logger.warn(`molienda-actual exception: ${(err as Error).message}`);
-      return { stale: true, cana_molida_kg: null, hora_label: null, dia: null, camiones: null };
+      return { stale: true, molienda_kg: null, acumulado_kg: null, etiqueta: null };
     }
   }
 
