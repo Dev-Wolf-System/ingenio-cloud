@@ -285,6 +285,7 @@ function BloqueChart({
                   fontSize: 12,
                 }}
                 labelStyle={{ color: 'var(--text-muted)' }}
+                itemStyle={{ color: 'var(--text-primary)' }}
                 formatter={(value, name) => {
                   if (value == null) return ['—', name];
                   const lbl =
@@ -306,6 +307,7 @@ function BloqueChart({
               <Bar
                 yAxisId="left"
                 dataKey="molienda_t"
+                fill={`url(#${gradId})`}
                 radius={[4, 4, 0, 0]}
                 isAnimationActive={false}
               >
