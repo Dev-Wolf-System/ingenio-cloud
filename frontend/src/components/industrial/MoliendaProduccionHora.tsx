@@ -108,6 +108,7 @@ export function MoliendaProduccionHora() {
       subtitle="Día industrial corriente · 08:00 hasta ahora"
       icon={<IconTable size={18} className="text-primary-light" />}
       accent="primary"
+      className="h-full"
     >
       {q.isLoading ? (
         <div className="flex-1 flex items-center justify-center py-10 text-sm text-text-muted">
