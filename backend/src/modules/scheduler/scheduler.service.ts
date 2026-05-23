@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { GuardiaService } from '../guardia/guardia.service';
+import { InfluxGasService } from '../influx/influx-gas.service';
 
 /**
  * Cron jobs internos del backend.
@@ -10,7 +11,10 @@ import { GuardiaService } from '../guardia/guardia.service';
 export class SchedulerService {
   private readonly logger = new Logger(SchedulerService.name);
 
-  constructor(private readonly guardia: GuardiaService) {}
+  constructor(
+    private readonly guardia: GuardiaService,
+    private readonly influxGas: InfluxGasService,
+  ) {}
 
   /**
    * Refrescar resumen guardia desde Node-RED a los 15 min de cada cambio de turno.
@@ -86,6 +90,23 @@ export class SchedulerService {
       }
     } catch (err) {
       this.logger.warn('Cron analisis IA failed', err as Error);
+    }
+  }
+
+  /**
+   * Cada minuto: trae promedio últimos 60 min de gas desde InfluxDB3
+   * y upserta en production.gas_hora_estimado como fallback
+   * cuando el lab aún no cargó el dato real.
+   */
+  @Cron('* * * * *', {
+    name: 'sync_gas_estimado',
+    timeZone: 'America/Argentina/Buenos_Aires',
+  })
+  async syncGasEstimado() {
+    try {
+      await this.influxGas.syncGasEstimado();
+    } catch (err) {
+      this.logger.warn('Cron sync gas estimado failed', err as Error);
     }
   }
 }

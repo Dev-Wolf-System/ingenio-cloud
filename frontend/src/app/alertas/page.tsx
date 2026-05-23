@@ -179,7 +179,7 @@ export default function AlertasConfigPage() {
       />
 
       <div className="relative z-10">
-        <TopBar plant="Planta Sur · Configuración Alertas" />
+        <TopBar plant="Sala de Monitoreo · Configuración Alertas" />
 
         <main className="px-3 sm:px-4 py-3 sm:py-4 max-w-[1600px] mx-auto space-y-3 sm:space-y-4">
           {/* Breadcrumb + actions */}

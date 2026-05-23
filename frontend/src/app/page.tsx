@@ -27,7 +27,7 @@ export default function DashboardPage() {
       <ShiftWelcomeBanner />
 
       <div className="relative z-10 flex flex-col flex-1">
-        <TopBar plant="Planta Sur" />
+        <TopBar plant="Sala de Monitoreo" />
         <ShiftTimeline />
         <KpiHero />
 

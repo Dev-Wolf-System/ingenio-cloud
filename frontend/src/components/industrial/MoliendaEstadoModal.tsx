@@ -80,7 +80,7 @@ export function MoliendaEstadoModal({ open, onClose, data, loading }: MoliendaEs
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 20, opacity: 0, scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="relative w-full max-w-7xl rounded-2xl overflow-hidden border-2 flex flex-col max-h-[88vh]"
+            className="relative w-full max-w-[95vw] 2xl:max-w-[90vw] rounded-2xl overflow-hidden border-2 flex flex-col max-h-[90vh]"
             style={{
               background:
                 'var(--panel-mesh-1), var(--panel-mesh-2), linear-gradient(135deg, var(--surface-panel-from), var(--surface-panel-to))',

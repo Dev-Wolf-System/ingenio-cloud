@@ -11,7 +11,7 @@ import { useShift } from '@/lib/hooks/useShift';
 import { formatTime } from '@/lib/utils/format';
 import { ThemeToggle } from './ThemeToggle';
 
-export function TopBar({ plant = 'Planta Sur' }: { plant?: string }) {
+export function TopBar({ plant = 'Sala de Monitoreo' }: { plant?: string }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const now = useClock();

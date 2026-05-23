@@ -114,7 +114,7 @@ export function AnalisisIA() {
         </div>
       </div>
 
-      <div className="relative p-3 sm:p-4 text-sm">
+      <div className="relative p-3 sm:p-4 text-sm sm:text-base">
         {q.isLoading && (
           <div className="text-text-muted italic flex items-center gap-2">
             <IconSparkles size={12} className="animate-pulse" />
@@ -163,11 +163,11 @@ export function AnalisisIA() {
 
         {hasAnalisis && (
           <>
-            <p className="text-text-secondary leading-relaxed">{data!.resumen}</p>
+            <p className="text-text-secondary leading-relaxed sm:text-lg">{data!.resumen}</p>
             {data!.puntos_clave && data!.puntos_clave.length > 0 && (
-              <ul className="mt-2 space-y-1">
+              <ul className="mt-2 space-y-1.5">
                 {data!.puntos_clave.map((p, i) => (
-                  <li key={i} className="flex items-start gap-2 text-text-muted text-sm">
+                  <li key={i} className="flex items-start gap-2 text-text-muted text-sm sm:text-base">
                     <span className="mt-1.5 w-1 h-1 rounded-full bg-primary-light shrink-0" />
                     <span>{p}</span>
                   </li>
