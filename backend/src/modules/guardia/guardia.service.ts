@@ -636,7 +636,7 @@ export class GuardiaService {
         .from('v_dia_industrial_hxh')
         .select(
           'periodo, ts_cierre, molienda_kg, molienda_es_estimado, gas_consumo, gas_es_estimado, ' +
-          'bolsas_azucar, bagazo_humedad, bagazo_pol, color_azucar',
+          'bolsas_azucar, bagazo_humedad, bagazo_pol, cachaza_pol, color_azucar',
         )
         .order('ts_cierre', { ascending: true });
 
@@ -655,6 +655,7 @@ export class GuardiaService {
         bolsas_azucar: number | null;
         bagazo_humedad: number | null;
         bagazo_pol: number | null;
+        cachaza_pol: number | null;
         color_azucar: number | null;
       }>;
 
@@ -669,6 +670,7 @@ export class GuardiaService {
         bolsas_azucar: toNum(r.bolsas_azucar),
         bagazo_humedad: toNum(r.bagazo_humedad),
         bagazo_pol: toNum(r.bagazo_pol),
+        cachaza_pol: toNum(r.cachaza_pol),
         color_azucar: toNum(r.color_azucar),
       }));
 
@@ -678,6 +680,7 @@ export class GuardiaService {
       const conBolsas = filas.filter((f) => f.bolsas_azucar != null).map((f) => f.bolsas_azucar!);
       const conHum = filas.filter((f) => f.bagazo_humedad != null).map((f) => f.bagazo_humedad!);
       const conPol = filas.filter((f) => f.bagazo_pol != null).map((f) => f.bagazo_pol!);
+      const conCachazaPol = filas.filter((f) => f.cachaza_pol != null).map((f) => f.cachaza_pol!);
       const conColor = filas.filter((f) => f.color_azucar != null).map((f) => f.color_azucar!);
 
       const avg = (arr: number[]) =>
@@ -693,6 +696,7 @@ export class GuardiaService {
           bolsas_azucar_acum: sum(conBolsas),
           bagazo_humedad_prom: avg(conHum),
           bagazo_pol_prom: avg(conPol),
+          cachaza_pol_prom: avg(conCachazaPol),
           color_azucar_prom: avg(conColor),
         },
       };
