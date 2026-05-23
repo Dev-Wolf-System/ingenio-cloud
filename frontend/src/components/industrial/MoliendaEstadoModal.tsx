@@ -278,23 +278,41 @@ function BloqueChart({
               />
               <Tooltip
                 cursor={{ fill: 'var(--bg-hover)', opacity: 0.4 }}
-                contentStyle={{
-                  background: 'var(--bg-card)',
-                  border: '1px solid var(--border-strong)',
-                  borderRadius: 6,
-                  fontSize: 12,
-                }}
-                labelStyle={{ color: 'var(--text-muted)' }}
-                itemStyle={{ color: 'var(--text-primary)' }}
-                formatter={(value, name) => {
-                  if (value == null) return ['—', name];
-                  const lbl =
-                    name === 'acumulado_t'
-                      ? 'Acumulado'
-                      : name === 'tendencia_t'
-                      ? 'Tendencia'
-                      : 'Molienda';
-                  return [`${formatNumber(Number(value), 1)} t`, lbl];
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const COLOR: Record<string, string> = {
+                    molienda_t:  'var(--primary-light)',
+                    acumulado_t: 'var(--accent)',
+                    tendencia_t: 'var(--primary-light)',
+                  };
+                  const LABEL: Record<string, string> = {
+                    molienda_t:  'Molienda',
+                    acumulado_t: 'Acumulado',
+                    tendencia_t: 'Tendencia',
+                  };
+                  return (
+                    <div style={{
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-strong)',
+                      borderRadius: 6,
+                      padding: '6px 10px',
+                      fontSize: 12,
+                    }}>
+                      <p style={{ color: 'var(--text-muted)', marginBottom: 4 }}>{label}</p>
+                      {payload.map((entry) => {
+                        const key = entry.dataKey as string;
+                        const color = COLOR[key] ?? (entry.stroke as string) ?? (entry.fill as string) ?? 'var(--text-primary)';
+                        const val = entry.value != null ? `${formatNumber(Number(entry.value), 1)} t` : '—';
+                        return (
+                          <p key={key} style={{ color, margin: '2px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
+                            <span style={{ color: 'var(--text-muted)' }}>{LABEL[key] ?? key}:</span>
+                            <span style={{ fontWeight: 600 }}>{val}</span>
+                          </p>
+                        );
+                      })}
+                    </div>
+                  );
                 }}
               />
               <ReferenceLine
