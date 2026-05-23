@@ -31,7 +31,7 @@ export default function DashboardPage() {
         <ShiftTimeline />
         <KpiHero />
 
-        <section className="px-3 sm:px-4 pt-1 pb-2 grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <section className="px-3 sm:px-4 pt-1 pb-2 grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
           <TrapichePanel />
           <MoliendaProduccionHora />
         </section>
