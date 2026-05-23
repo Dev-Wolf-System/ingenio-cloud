@@ -636,7 +636,7 @@ export class GuardiaService {
         .from('v_dia_industrial_hxh')
         .select(
           'periodo, ts_cierre, molienda_kg, gas_consumo, gas_es_estimado, ' +
-          'bagazo_humedad, color_azucar, cenizas_azucar',
+          'bagazo_humedad, color_azucar, calidad_azucar',
         )
         .order('ts_cierre', { ascending: true });
 
@@ -653,7 +653,7 @@ export class GuardiaService {
         gas_es_estimado: boolean;
         bagazo_humedad: number | null;
         color_azucar: number | null;
-        cenizas_azucar: number | null;
+        calidad_azucar: number | null;
       }>;
 
       const toNum = (v: number | null) => (v != null && Number.isFinite(v) ? v : null);
@@ -665,7 +665,7 @@ export class GuardiaService {
         gas_estimado: r.gas_es_estimado ?? false,
         bagazo_humedad: toNum(r.bagazo_humedad),
         color_azucar: toNum(r.color_azucar),
-        cenizas: toNum(r.cenizas_azucar),
+        calidad: toNum(r.calidad_azucar),
       }));
 
       // Acumulados y promedios
@@ -673,7 +673,7 @@ export class GuardiaService {
       const conGas = filas.filter((f) => f.gas_m3 != null).map((f) => f.gas_m3!);
       const conHum = filas.filter((f) => f.bagazo_humedad != null).map((f) => f.bagazo_humedad!);
       const conColor = filas.filter((f) => f.color_azucar != null).map((f) => f.color_azucar!);
-      const conCen = filas.filter((f) => f.cenizas != null).map((f) => f.cenizas!);
+      const conCal = filas.filter((f) => f.calidad != null).map((f) => f.calidad!);
 
       const avg = (arr: number[]) =>
         arr.length ? Number((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2)) : null;
@@ -687,7 +687,7 @@ export class GuardiaService {
           gas_acum_m3: sum(conGas),
           bagazo_humedad_prom: avg(conHum),
           color_azucar_prom: avg(conColor),
-          cenizas_prom: avg(conCen),
+          calidad_prom: avg(conCal),
         },
       };
     } catch (err) {

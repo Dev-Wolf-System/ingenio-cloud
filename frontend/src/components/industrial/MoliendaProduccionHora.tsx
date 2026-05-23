@@ -12,7 +12,7 @@ interface Fila {
   gas_estimado: boolean;
   bagazo_humedad: number | null;
   color_azucar: number | null;
-  cenizas: number | null;
+  calidad: number | null;
 }
 
 interface Stats {
@@ -20,7 +20,7 @@ interface Stats {
   gas_acum_m3: number | null;
   bagazo_humedad_prom: number | null;
   color_azucar_prom: number | null;
-  cenizas_prom: number | null;
+  calidad_prom: number | null;
 }
 
 interface ProduccionHoraPayload {
@@ -153,13 +153,13 @@ export function MoliendaProduccionHora() {
               color="var(--accent)"
             />
             <StatCard
-              label="Cenizas"
-              value={stats?.cenizas_prom ?? null}
-              unit="%"
-              decimals={2}
+              label="Calidad"
+              value={stats?.calidad_prom ?? null}
+              unit=""
+              decimals={1}
               sublabel="promedio del día"
-              icon={<span className="text-[10px]">%</span>}
-              color="var(--text-secondary)"
+              icon={<span className="text-[10px]">★</span>}
+              color="var(--ok)"
             />
           </div>
 
@@ -184,7 +184,7 @@ export function MoliendaProduccionHora() {
                     <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--accent)' }}>
                       <span className="inline-flex items-center gap-0.5"><IconWaveSine size={10} />Color (UI)</span>
                     </th>
-                    <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider text-text-muted font-semibold whitespace-nowrap">Cenizas (%)</th>
+                    <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--ok)' }}>Calidad</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -215,7 +215,7 @@ export function MoliendaProduccionHora() {
                       </td>
                       <TableCell value={f.bagazo_humedad} decimals={1} />
                       <TableCell value={f.color_azucar} decimals={0} />
-                      <TableCell value={f.cenizas} decimals={2} muted />
+                      <TableCell value={f.calidad} decimals={1} />
                     </tr>
                   ))}
                 </tbody>
