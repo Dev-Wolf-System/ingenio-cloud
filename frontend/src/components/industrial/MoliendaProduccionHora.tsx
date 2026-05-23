@@ -114,9 +114,9 @@ export function MoliendaProduccionHora() {
           Cargando…
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="flex flex-col gap-4 h-full">
           {/* Tarjetas de stats */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-2 flex-wrap shrink-0">
             <StatCard
               label="Molienda"
               value={stats?.molienda_acum_t ?? null}
@@ -166,11 +166,11 @@ export function MoliendaProduccionHora() {
 
           {/* Tabla hora×hora */}
           {!hayDatos ? (
-            <div className="flex items-center justify-center py-8 text-sm text-text-muted">
+            <div className="flex-1 flex items-center justify-center py-8 text-sm text-text-muted">
               Sin datos del día corriente aún
             </div>
           ) : (
-            <div className="overflow-auto max-h-[280px]">
+            <div className="overflow-auto flex-1 min-h-0">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-border">
