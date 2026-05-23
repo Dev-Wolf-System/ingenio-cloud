@@ -194,7 +194,7 @@ export function MoliendaProduccionHora() {
               Sin datos del día corriente aún
             </div>
           ) : (
-            <div className="overflow-auto flex-1 min-h-0">
+            <div className="overflow-auto flex-1 min-h-[220px] sm:min-h-0">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-border">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useLayoutEffect, useState, type ReactNode } from 'react';
+import { useRef, useLayoutEffect, useState, useEffect, type ReactNode } from 'react';
 
 export function HeightMatchedGrid({
   left,
@@ -15,6 +15,15 @@ export function HeightMatchedGrid({
 }) {
   const leftRef = useRef<HTMLDivElement>(null);
   const [h, setH] = useState<number | null>(null);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   useLayoutEffect(() => {
     const el = leftRef.current;
@@ -28,8 +37,8 @@ export function HeightMatchedGrid({
     <div className={`grid gap-3 ${colsClass} ${className}`}>
       <div ref={leftRef}>{left}</div>
       <div
-        className="min-h-0 overflow-hidden flex flex-col"
-        style={h != null ? { height: h } : undefined}
+        className="min-h-0 lg:overflow-hidden flex flex-col"
+        style={isDesktop && h != null ? { height: h } : undefined}
       >
         {right}
       </div>
