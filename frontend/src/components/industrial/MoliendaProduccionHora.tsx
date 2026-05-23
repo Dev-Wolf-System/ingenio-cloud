@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { IconScale, IconFlame, IconDroplet, IconWaveSine, IconTable, IconPackage } from '@tabler/icons-react';
+import { IconScale, IconFlame, IconDroplet, IconWaveSine, IconTable, IconPackage, IconFlask } from '@tabler/icons-react';
 import { PremiumPanel } from './PremiumPanel';
 import { formatNumber } from '@/lib/utils/format';
 
@@ -167,6 +167,15 @@ export function MoliendaProduccionHora() {
               sublabel="promedio del día"
               icon={<IconDroplet size={11} />}
               color="var(--warn)"
+            />
+            <StatCard
+              label="Alcohol Ind."
+              value={null}
+              unit="L"
+              decimals={0}
+              sublabel="acumulado del día"
+              icon={<IconFlask size={11} />}
+              color="var(--ok)"
             />
             <StatCard
               label="Color"
