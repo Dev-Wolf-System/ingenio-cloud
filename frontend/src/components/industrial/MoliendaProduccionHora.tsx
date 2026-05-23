@@ -122,7 +122,7 @@ export function MoliendaProduccionHora() {
       ) : (
         <div className="flex flex-col gap-4 h-full">
           {/* Tarjetas de stats */}
-          <div className="flex gap-2 flex-wrap shrink-0">
+          <div className="grid grid-cols-4 sm:flex sm:flex-wrap gap-2 shrink-0">
             <StatCard
               label="Molienda"
               value={stats?.molienda_acum_t ?? null}
