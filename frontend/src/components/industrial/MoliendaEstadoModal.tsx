@@ -182,7 +182,7 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
     <section>
       <div className="flex items-center gap-2 mb-2">
         <span
-          className="text-xs sm:text-sm font-bold uppercase tracking-wider"
+          className="text-sm sm:text-base font-bold uppercase tracking-wider"
           style={{ color: 'var(--primary-light)' }}
         >
           {titulo}
@@ -216,10 +216,10 @@ function BloqueChart({
   return (
     <div className="rounded-xl border border-border bg-bg-card p-3">
       <div className="flex items-baseline justify-between mb-1.5 flex-wrap gap-2">
-        <div className="text-2xs sm:text-xs uppercase tracking-wide text-text-muted font-semibold">
+        <div className="text-xs sm:text-sm uppercase tracking-wide text-text-muted font-semibold">
           {subtitulo}
         </div>
-        <div className="flex items-center gap-2.5 text-2xs sm:text-xs mono text-text-muted">
+        <div className="flex items-center gap-2.5 text-xs sm:text-sm mono text-text-muted">
           <span>min <b className="text-warn">{formatNumber(stats.min_t, 0)}</b></span>
           <span>prom <b className="text-primary-light">{formatNumber(stats.promedio_t, 0)}</b></span>
           <span>max <b className="text-ok">{formatNumber(stats.max_t, 0)}</b></span>
@@ -252,7 +252,7 @@ function BloqueChart({
               </defs>
               <XAxis
                 dataKey="label"
-                tick={{ fontSize: 9, fill: 'var(--text-muted)' }}
+                tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
                 axisLine={false}
                 tickLine={false}
                 interval={0}
@@ -262,7 +262,7 @@ function BloqueChart({
               />
               <YAxis
                 yAxisId="left"
-                tick={{ fontSize: 9, fill: 'var(--text-muted)' }}
+                tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
                 axisLine={false}
                 tickLine={false}
                 width={36}
@@ -296,7 +296,7 @@ function BloqueChart({
                       border: '1px solid var(--border-strong)',
                       borderRadius: 6,
                       padding: '6px 10px',
-                      fontSize: 12,
+                      fontSize: 13,
                     }}>
                       <p style={{ color: 'var(--text-muted)', marginBottom: 4 }}>{label}</p>
                       {payload.map((entry) => {
