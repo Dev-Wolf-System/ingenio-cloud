@@ -92,8 +92,8 @@ export function DesgloceModal({
                 </div>
               )}
               <div>
-                <h2 className="text-lg font-bold tracking-tight text-text-primary">{title}</h2>
-                {subtitle && <p className="text-xs text-text-muted mt-0.5">{subtitle}</p>}
+                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-text-primary">{title}</h2>
+                {subtitle && <p className="text-xs sm:text-sm text-text-muted mt-0.5">{subtitle}</p>}
               </div>
             </div>
 
@@ -104,11 +104,11 @@ export function DesgloceModal({
                   key={i}
                   className="flex items-center justify-between rounded-xl px-4 py-3 border border-border bg-bg-card"
                 >
-                  <span className="text-sm text-text-secondary font-medium">{row.label}</span>
-                  <span className="mono text-base font-bold tabular-nums" style={{ color: accentVar }}>
+                  <span className="text-sm sm:text-base text-text-secondary font-medium">{row.label}</span>
+                  <span className="mono text-base sm:text-lg font-bold tabular-nums" style={{ color: accentVar }}>
                     {row.value != null ? formatNumber(row.value, precision) : '—'}
                     {row.unit && (
-                      <span className="text-xs text-text-muted font-normal ml-1">{row.unit}</span>
+                      <span className="text-xs sm:text-sm text-text-muted font-normal ml-1">{row.unit}</span>
                     )}
                   </span>
                 </div>
@@ -119,9 +119,9 @@ export function DesgloceModal({
                   className="flex items-center justify-between rounded-xl px-4 py-3 border-2 mt-1"
                   style={{ borderColor: accentVar, background: 'color-mix(in srgb, currentColor 6%, transparent)' }}
                 >
-                  <span className="text-sm font-bold text-text-primary uppercase tracking-wide">{totalLabel}</span>
+                  <span className="text-sm sm:text-base font-bold text-text-primary uppercase tracking-wide">{totalLabel}</span>
                   <span
-                    className="mono text-xl font-bold tabular-nums"
+                    className="mono text-xl sm:text-2xl font-bold tabular-nums"
                     style={{ color: accentVar }}
                   >
                     {total != null ? formatNumber(total, precision) : '—'}

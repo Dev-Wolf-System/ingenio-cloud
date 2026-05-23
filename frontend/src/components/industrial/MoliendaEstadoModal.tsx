@@ -80,7 +80,7 @@ export function MoliendaEstadoModal({ open, onClose, data, loading }: MoliendaEs
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 20, opacity: 0, scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-            className="relative w-full max-w-[95vw] 2xl:max-w-[90vw] rounded-2xl overflow-hidden border-2 flex flex-col max-h-[90vh]"
+            className="relative w-full max-w-[90vw] rounded-2xl overflow-hidden border-2 flex flex-col max-h-[90vh]"
             style={{
               background:
                 'var(--panel-mesh-1), var(--panel-mesh-2), linear-gradient(135deg, var(--surface-panel-from), var(--surface-panel-to))',
@@ -122,7 +122,7 @@ export function MoliendaEstadoModal({ open, onClose, data, loading }: MoliendaEs
                 >
                   Estado de molienda
                 </h2>
-                <p className="text-xs text-text-secondary mt-0.5">
+                <p className="text-xs sm:text-sm text-text-secondary mt-0.5">
                   Zafra, día y turno · corriente y anterior
                 </p>
               </div>
@@ -182,7 +182,7 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
     <section>
       <div className="flex items-center gap-2 mb-2">
         <span
-          className="text-xs font-bold uppercase tracking-wider"
+          className="text-xs sm:text-sm font-bold uppercase tracking-wider"
           style={{ color: 'var(--primary-light)' }}
         >
           {titulo}
@@ -216,10 +216,10 @@ function BloqueChart({
   return (
     <div className="rounded-xl border border-border bg-bg-card p-3">
       <div className="flex items-baseline justify-between mb-1.5 flex-wrap gap-2">
-        <div className="text-2xs uppercase tracking-wide text-text-muted font-semibold">
+        <div className="text-2xs sm:text-xs uppercase tracking-wide text-text-muted font-semibold">
           {subtitulo}
         </div>
-        <div className="flex items-center gap-2.5 text-2xs mono text-text-muted">
+        <div className="flex items-center gap-2.5 text-2xs sm:text-xs mono text-text-muted">
           <span>min <b className="text-warn">{formatNumber(stats.min_t, 0)}</b></span>
           <span>prom <b className="text-primary-light">{formatNumber(stats.promedio_t, 0)}</b></span>
           <span>max <b className="text-ok">{formatNumber(stats.max_t, 0)}</b></span>
