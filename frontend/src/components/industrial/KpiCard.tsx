@@ -96,7 +96,7 @@ export function KpiCard({
       <div className="flex items-baseline gap-1.5">
         <span
           className="mono font-semibold text-text-primary leading-none tabular-nums"
-          style={{ fontSize: 'clamp(0.95rem, 1.2vw, 1.25rem)' }}
+          style={{ fontSize: 'clamp(0.8rem, 1vw, 1.05rem)' }}
         >
           {isNumber ? (
             <AnimatedNumber value={value as number} decimals={precision} />
