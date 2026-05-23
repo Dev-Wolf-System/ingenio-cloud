@@ -31,12 +31,12 @@ export default function DashboardPage() {
         <ShiftTimeline />
         <KpiHero />
 
-        <section className="px-3 sm:px-4 pt-1 pb-2 grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <section className="px-3 sm:px-4 pt-1 pb-2 grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
           <TrapichePanel />
           <MoliendaProduccionHora />
         </section>
 
-        <main className="grid gap-3 px-3 sm:px-4 pb-3 pt-2 grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1.45fr_1.4fr_1fr] flex-1">
+        <main className="grid gap-3 px-3 sm:px-4 pb-3 pt-2 grid-cols-1 lg:grid-cols-2 xl:grid-cols-[1.45fr_1.4fr_1fr] items-start flex-1">
           <EnergyPanel />
           <ProductionPanel />
           <div className="lg:col-span-2 xl:col-span-1">
