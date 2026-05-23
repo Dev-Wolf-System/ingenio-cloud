@@ -216,10 +216,10 @@ function BloqueChart({
   return (
     <div className="rounded-xl border border-border bg-bg-card p-3">
       <div className="flex items-baseline justify-between mb-1.5 flex-wrap gap-2">
-        <div className="text-xs sm:text-sm uppercase tracking-wide text-text-muted font-semibold">
+        <div className="text-sm sm:text-base uppercase tracking-wide text-text-muted font-semibold">
           {subtitulo}
         </div>
-        <div className="flex items-center gap-2.5 text-xs sm:text-sm mono text-text-muted">
+        <div className="flex items-center gap-2.5 text-sm sm:text-base mono text-text-muted">
           <span>min <b className="text-warn">{formatNumber(stats.min_t, 0)}</b></span>
           <span>prom <b className="text-primary-light">{formatNumber(stats.promedio_t, 0)}</b></span>
           <span>max <b className="text-ok">{formatNumber(stats.max_t, 0)}</b></span>
