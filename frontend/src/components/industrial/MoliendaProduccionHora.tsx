@@ -57,15 +57,15 @@ function StatCard({
       className="flex-1 min-w-0 rounded-xl border border-border bg-bg-card px-3 py-2.5 flex flex-col gap-0.5"
       style={{ borderColor: value != null ? `color-mix(in srgb, ${color} 30%, transparent)` : undefined }}
     >
-      <div className="flex items-center gap-1.5 text-2xs uppercase tracking-wider font-semibold text-text-muted">
+      <div className="flex items-center gap-1.5 text-2xs sm:text-xs uppercase tracking-wider font-semibold text-text-muted">
         <span style={{ color }}>{icon}</span>
         {label}
       </div>
-      <div className="mono tabular-nums font-bold text-lg leading-tight" style={{ color: value != null ? color : 'var(--text-disabled)' }}>
+      <div className="mono tabular-nums font-bold text-lg sm:text-xl leading-tight" style={{ color: value != null ? color : 'var(--text-disabled)' }}>
         {value != null ? formatNumber(value, decimals) : '—'}
         {value != null && <span className="text-xs font-normal text-text-muted ml-1">{unit}</span>}
       </div>
-      <div className="text-[10px] text-text-disabled">{sublabel}</div>
+      <div className="text-[10px] sm:text-xs text-text-disabled">{sublabel}</div>
     </div>
   );
 }
@@ -77,10 +77,10 @@ function TableCell({ value, unit, decimals = 1, muted = false }: {
   muted?: boolean;
 }) {
   if (value == null) return (
-    <td className="px-2 py-1.5 text-center text-text-disabled text-xs mono">—</td>
+    <td className="px-2 py-1.5 text-center text-text-disabled text-xs sm:text-sm mono">—</td>
   );
   return (
-    <td className={`px-2 py-1.5 text-center mono tabular-nums text-xs ${muted ? 'text-text-muted' : 'text-text-primary'}`}>
+    <td className={`px-2 py-1.5 text-center mono tabular-nums text-xs sm:text-sm ${muted ? 'text-text-muted' : 'text-text-primary'}`}>
       {formatNumber(value, decimals)}
       {unit && <span className="text-text-disabled ml-0.5">{unit}</span>}
     </td>
@@ -173,7 +173,7 @@ export function MoliendaProduccionHora() {
               <table className="w-full text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="px-2 py-1.5 text-left text-2xs uppercase tracking-wider text-text-muted font-semibold whitespace-nowrap">Hora</th>
+                    <th className="px-2 py-1.5 text-left text-2xs sm:text-xs uppercase tracking-wider text-text-muted font-semibold whitespace-nowrap">Hora</th>
                     <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap text-primary-light">Molienda (t)</th>
                     <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--warn)' }}>
                       <span className="inline-flex items-center gap-0.5"><IconFlame size={10} />Gas (m³)</span>
@@ -193,18 +193,18 @@ export function MoliendaProduccionHora() {
                       key={f.periodo}
                       className={`border-b border-border/50 transition-colors hover:bg-bg-hover ${i % 2 !== 0 ? 'bg-bg-card/40' : ''}`}
                     >
-                      <td className="px-2 py-1.5 text-left mono text-xs text-text-secondary font-medium whitespace-nowrap">
+                      <td className="px-2 py-1.5 text-left mono text-xs sm:text-sm text-text-secondary font-medium whitespace-nowrap">
                         {f.periodo}
                       </td>
                       <TableCell value={f.molienda_t} decimals={2} />
-                      <td className="px-2 py-1.5 text-center mono tabular-nums text-xs">
+                      <td className="px-2 py-1.5 text-center mono tabular-nums text-xs sm:text-sm">
                         {f.gas_m3 != null ? (
                           <span className="inline-flex items-center gap-1">
                             <span className={f.gas_estimado ? 'text-text-muted' : 'text-text-primary'}>
                               {formatNumber(f.gas_m3, 0)}
                             </span>
                             {f.gas_estimado && (
-                              <span className="text-[9px] px-1 rounded" style={{ background: 'var(--warn-soft)', color: 'var(--warn)' }}>
+                              <span className="text-[9px] sm:text-[11px] px-1 rounded" style={{ background: 'var(--warn-soft)', color: 'var(--warn)' }}>
                                 est.
                               </span>
                             )}
