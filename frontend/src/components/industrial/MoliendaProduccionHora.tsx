@@ -54,18 +54,18 @@ function StatCard({
 }) {
   return (
     <div
-      className="flex-1 min-w-0 rounded-xl border border-border bg-bg-card px-4 py-3 flex flex-col gap-1"
+      className="flex-1 min-w-0 rounded-xl border border-border bg-bg-card px-3 py-2.5 flex flex-col gap-0.5"
       style={{ borderColor: value != null ? `color-mix(in srgb, ${color} 30%, transparent)` : undefined }}
     >
-      <div className="flex items-center gap-1.5 text-xs sm:text-sm uppercase tracking-wider font-semibold text-text-muted">
+      <div className="flex items-center gap-1.5 text-2xs uppercase tracking-wider font-semibold text-text-muted">
         <span style={{ color }}>{icon}</span>
         {label}
       </div>
-      <div className="mono tabular-nums font-bold text-2xl sm:text-3xl leading-tight" style={{ color: value != null ? color : 'var(--text-disabled)' }}>
+      <div className="mono tabular-nums font-bold text-lg leading-tight" style={{ color: value != null ? color : 'var(--text-disabled)' }}>
         {value != null ? formatNumber(value, decimals) : '—'}
-        {value != null && <span className="text-sm sm:text-base font-normal text-text-muted ml-1">{unit}</span>}
+        {value != null && <span className="text-xs font-normal text-text-muted ml-1">{unit}</span>}
       </div>
-      <div className="text-xs sm:text-sm text-text-disabled">{sublabel}</div>
+      <div className="text-[10px] text-text-disabled">{sublabel}</div>
     </div>
   );
 }
@@ -115,14 +115,14 @@ export function MoliendaProduccionHora() {
       ) : (
         <div className="space-y-4">
           {/* Tarjetas de stats */}
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             <StatCard
               label="Molienda"
               value={stats?.molienda_acum_t ?? null}
               unit="t"
               decimals={1}
               sublabel="acumulado del día"
-              icon={<IconScale size={13} />}
+              icon={<IconScale size={11} />}
               color="var(--primary-light)"
             />
             <StatCard
@@ -131,7 +131,7 @@ export function MoliendaProduccionHora() {
               unit="m³"
               decimals={0}
               sublabel="acumulado del día"
-              icon={<IconFlame size={13} />}
+              icon={<IconFlame size={11} />}
               color="var(--warn)"
             />
             <StatCard
@@ -140,7 +140,7 @@ export function MoliendaProduccionHora() {
               unit="%"
               decimals={1}
               sublabel="promedio del día"
-              icon={<IconDroplet size={13} />}
+              icon={<IconDroplet size={11} />}
               color="var(--accent)"
             />
             <StatCard
@@ -149,7 +149,7 @@ export function MoliendaProduccionHora() {
               unit="UI"
               decimals={0}
               sublabel="promedio del día"
-              icon={<IconWaveSine size={13} />}
+              icon={<IconWaveSine size={11} />}
               color="var(--accent)"
             />
             <StatCard
@@ -158,7 +158,7 @@ export function MoliendaProduccionHora() {
               unit=""
               decimals={1}
               sublabel="promedio del día"
-              icon={<span className="text-xs">★</span>}
+              icon={<span className="text-[10px]">★</span>}
               color="var(--ok)"
             />
           </div>
