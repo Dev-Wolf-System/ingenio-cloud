@@ -627,4 +627,77 @@ export class GuardiaService {
     if (!cached) return { mensaje: 'Sin datos del turno anterior' };
     return cached;
   }
+
+  /** Tabla molienda+producción hora×hora del turno actual */
+  async getProduccionHora() {
+    try {
+      const production = this.supabase.schema('production');
+      const { data, error } = await production
+        .from('v_turno_hora_x_hora')
+        .select(
+          'turno, periodo, ts_cierre, molienda_kg, gas_consumo, gas_es_estimado, ' +
+          'bagazo_humedad, color_azucar, cenizas_azucar',
+        )
+        .eq('turno_rel', 'actual')
+        .order('ts_cierre', { ascending: true });
+
+      if (error) {
+        this.logger.warn(`produccion-hora fail: ${error.message}`);
+        return { stale: true, filas: [], stats: null };
+      }
+
+      const rows = (data ?? []) as Array<{
+        turno: string;
+        periodo: string;
+        ts_cierre: string;
+        molienda_kg: number | null;
+        gas_consumo: number | null;
+        gas_es_estimado: boolean;
+        bagazo_humedad: number | null;
+        color_azucar: number | null;
+        cenizas_azucar: number | null;
+      }>;
+
+      const toNum = (v: number | null) => (v != null && Number.isFinite(v) ? v : null);
+
+      const filas = rows.map((r) => ({
+        periodo: r.periodo,
+        molienda_t: r.molienda_kg != null ? Number((r.molienda_kg / 1000).toFixed(2)) : null,
+        gas_m3: toNum(r.gas_consumo),
+        gas_estimado: r.gas_es_estimado ?? false,
+        bagazo_humedad: toNum(r.bagazo_humedad),
+        color_azucar: toNum(r.color_azucar),
+        cenizas: toNum(r.cenizas_azucar),
+      }));
+
+      // Acumulados y promedios
+      const conMol = filas.filter((f) => f.molienda_t != null).map((f) => f.molienda_t!);
+      const conGas = filas.filter((f) => f.gas_m3 != null).map((f) => f.gas_m3!);
+      const conHum = filas.filter((f) => f.bagazo_humedad != null).map((f) => f.bagazo_humedad!);
+      const conColor = filas.filter((f) => f.color_azucar != null).map((f) => f.color_azucar!);
+      const conCen = filas.filter((f) => f.cenizas != null).map((f) => f.cenizas!);
+
+      const avg = (arr: number[]) =>
+        arr.length ? Number((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2)) : null;
+      const sum = (arr: number[]) =>
+        arr.length ? Number(arr.reduce((a, b) => a + b, 0).toFixed(2)) : null;
+
+      const turno = rows[0]?.turno ?? null;
+
+      return {
+        turno,
+        filas,
+        stats: {
+          molienda_acum_t: sum(conMol),
+          gas_acum_m3: sum(conGas),
+          bagazo_humedad_prom: avg(conHum),
+          color_azucar_prom: avg(conColor),
+          cenizas_prom: avg(conCen),
+        },
+      };
+    } catch (err) {
+      this.logger.warn(`produccion-hora exception: ${(err as Error).message}`);
+      return { stale: true, filas: [], stats: null };
+    }
+  }
 }

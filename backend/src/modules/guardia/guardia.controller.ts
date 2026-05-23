@@ -71,6 +71,12 @@ export class GuardiaController {
     return this.svc.getMoliendaHoraPrevio();
   }
 
+  /** GET /api/guardia/produccion-hora — tabla molienda+producción hora×hora turno actual */
+  @Get('produccion-hora')
+  produccionHora() {
+    return this.svc.getProduccionHora();
+  }
+
   /** GET /api/guardia/analisis-ia — análisis IA del turno previo */
   @Get('analisis-ia')
   analisisIA() {
