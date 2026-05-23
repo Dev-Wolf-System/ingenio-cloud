@@ -34,6 +34,7 @@ export default function DashboardPage() {
 
         <HeightMatchedGrid
           className="px-3 sm:px-4 pt-1 pb-2"
+          colsClass="grid-cols-1 lg:grid-cols-[1.45fr_2.4fr]"
           left={<TrapichePanel />}
           right={<MoliendaProduccionHora />}
         />

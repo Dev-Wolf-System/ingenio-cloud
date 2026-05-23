@@ -367,7 +367,7 @@ export function TrapichePanel() {
           <EmptyState />
         ) : (
           <SortableGroup items={orderedIds} onReorder={saveOrder} disabled={locked}>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {orderedIds.map((id) => (
                 <SortableTile key={id} id={id}>
                   {renderTileById(id)}

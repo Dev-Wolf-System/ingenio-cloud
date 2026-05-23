@@ -636,7 +636,7 @@ export class GuardiaService {
         .from('v_dia_industrial_hxh')
         .select(
           'periodo, ts_cierre, molienda_kg, molienda_es_estimado, gas_consumo, gas_es_estimado, ' +
-          'bolsas_azucar, bagazo_humedad, bagazo_pol, cachaza_pol, color_azucar',
+          'bolsas_azucar, bagazo_humedad, bagazo_pol, cachaza_pol, color_azucar, alcohol_gl',
         )
         .order('ts_cierre', { ascending: true });
 
@@ -657,6 +657,7 @@ export class GuardiaService {
         bagazo_pol: number | null;
         cachaza_pol: number | null;
         color_azucar: number | null;
+        alcohol_gl: number | null;
       }>;
 
       const toNum = (v: number | null) => (v != null && Number.isFinite(v) ? v : null);
@@ -672,6 +673,7 @@ export class GuardiaService {
         bagazo_pol: toNum(r.bagazo_pol),
         cachaza_pol: toNum(r.cachaza_pol),
         color_azucar: toNum(r.color_azucar),
+        alcohol_gl: toNum(r.alcohol_gl),
       }));
 
       // Acumulados y promedios
@@ -682,6 +684,7 @@ export class GuardiaService {
       const conPol = filas.filter((f) => f.bagazo_pol != null).map((f) => f.bagazo_pol!);
       const conCachazaPol = filas.filter((f) => f.cachaza_pol != null).map((f) => f.cachaza_pol!);
       const conColor = filas.filter((f) => f.color_azucar != null).map((f) => f.color_azucar!);
+      const conAlcohol = filas.filter((f) => f.alcohol_gl != null).map((f) => f.alcohol_gl!);
 
       const avg = (arr: number[]) =>
         arr.length ? Number((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2)) : null;
@@ -698,6 +701,7 @@ export class GuardiaService {
           bagazo_pol_prom: avg(conPol),
           cachaza_pol_prom: avg(conCachazaPol),
           color_azucar_prom: avg(conColor),
+          alcohol_gl_prom: avg(conAlcohol),
         },
       };
     } catch (err) {
