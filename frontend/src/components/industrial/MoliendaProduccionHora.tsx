@@ -109,7 +109,7 @@ export function MoliendaProduccionHora() {
 
   return (
     <PremiumPanel
-      title="MOLIENDA Y PRODUCCIÓN HORA POR HORA"
+      title="MOLIENDA Y PRODUCCIÓN TIEMPO REAL"
       subtitle="Día industrial corriente · 07:00 hasta ahora"
       icon={<IconTable size={18} className="text-primary-light" />}
       accent="primary"

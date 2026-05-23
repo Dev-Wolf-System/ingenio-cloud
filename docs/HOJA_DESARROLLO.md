@@ -1,7 +1,7 @@
 # Ingenio Cloud — Hoja de Desarrollo
 
 > Documento vivo. Estado real del proyecto + arquitectura + endpoints + roadmap.
-> Última actualización: 2026-05-19 · Sprint 0 cerrado + Polish UX/UI + Drag-drop + Resumen Postgres directo
+> Última actualización: 2026-05-22 · Modales desglose energia · Fix timezone turno · Potencia unificada · Polish texto/favicon
 
 ---
 
@@ -21,6 +21,7 @@
 
 #### Frontend Next.js 14 (App Router + motion/react)
 - **Dashboard premium**: 5 KpiHero (Molienda kg, Bolsas, Gas total, Camiones canchón, Alertas)
+  - Gas total KpiHero **clickeable** → `DesgloceModal` con desglose por sensor `caudal_gas*`
 - **4 paneles**: Energía (warn), Producción (accent), Trapiche (primary), Resumen Guardia
 - **TrapichePanel**: whitelist 8 KPIs + EstadoBanner full-width + filtra rows huérfanas
 - **Página `/alertas`** CRUD umbrales con tabla + filtros + severity + toggle
@@ -36,6 +37,19 @@
 - **AnimatedNumber** CountUp con motion + locale es-AR
 - **Fuentes distintivas**: Familjen Grotesk display + Onest body + JetBrains mono
 - **Logo plate blanco en dark mode** para mejor contraste
+- **Favicon** reemplazado por logo oficial Ingenio Cloud (`src/app/icon.png` — Next.js App Router convention)
+- **EnergyPanel** mejorado:
+  - Gas `caudal_gas*` tiles ocultos del panel (ya aparecen en KpiHero)
+  - `Potencia_Activa_Siemens` + `Potencia_Activa_Weg` unificadas en 1 tile "Potencia Total" (suma)
+  - Tiles Caudal Vapor, Presión Vapor y Potencia Total **clickeables** → `DesgloceModal` con desglose
+- **DesgloceModal** (`components/industrial/DesgloceModal.tsx`) — nuevo modal genérico reutilizable:
+  - Props: `rows: DesgloceRow[], totalLabel?, total?, totalUnit?, accentVar?`
+  - Tamaño unificado: `w-full sm:max-w-2xl lg:max-w-3xl xl:max-w-4xl`
+- **Modales**: todos los modales "simples" unificados a `sm:max-w-3xl` (MoliendaEstadoModal excluido por tener charts)
+- **PremiumTile** SIZE_CONFIG: `size=lg` corregido para igualar `size=md` en desktop, labels/hint más grandes
+- **ShiftWelcomeBanner**: títulos y texto más grandes; modal a `sm:max-w-3xl`
+- **AnalisisIA**: texto escalado responsive (`text-sm sm:text-base`, resumen `sm:text-lg`)
+- **Fix timezone turno previo**: `tagART()` helper en `guardia.service.ts` — appends `-03:00` a timestamps sin TZ de `v_resumen_turno_previo` (PostgREST serializa `timestamp without time zone` sin sufijo, causaba -3h en frontend)
 
 #### Supabase self-hosted stack
 - PostgreSQL 15 + PostgREST v14.6 + Realtime + Kong gateway + Studio + Auth
@@ -153,6 +167,9 @@ ingenio-cloud/
 │       │       ├── ShiftSummaryPanel.tsx (resumen turno previo)
 │       │       ├── MillSpeedChart.tsx
 │       │       ├── AnalisisIA.tsx
+│       │       ├── DesgloceModal.tsx         (modal genérico rows+total, reutilizable)
+│       │       ├── ParadasDetalleModal.tsx
+│       │       ├── ShiftWelcomeBanner.tsx
 │       │       └── CopilotBanner.tsx
 │       ├── lib/
 │       │   ├── hooks/
@@ -554,6 +571,8 @@ WHERE area='trapiche'
 | Cert `api.ingcloud.*` no emitió | (resuelto) | Routing por path `/api` y `/ws` bajo mismo host | Dominio propio + wildcard cert (S6+) |
 | Hydration flash dark→light | Pequeño parpadeo en load | Hook lee localStorage post-mount | Inline script en `<head>` que setea data-theme antes hydrate |
 | Sin notificación push | Alertas solo en panel UI | KpiHero pulse | Integrar Evolution API WhatsApp (S1+) |
+| ✅ RESUELTO: Turno previo mostraba -3h (02:00 en vez de 05:00) | `v_resumen_turno_previo` devuelve `timestamp without time zone`, PostgREST serializa con `.000Z` falso → parseDate lo trata UTC | `tagART()` en `guardia.service.ts` agrega `-03:00` a strings sin TZ | — |
+| ✅ RESUELTO: MSSQL canchón devolvía 117 camiones | `fecha_salida IS NULL` incluye rows históricas de importación incorrecta | Agregar `AND fecha_entrada = CONVERT(varchar(10), GETDATE(), 103)` | Limpiar rows históricas con NULL |
 
 ### DNS Kong colisión (caso resuelto, documentar para futuro)
 
@@ -693,6 +712,35 @@ feat(alertas): engine completo umbrales — visual frontend + cron backend
 | `9851f42` | Quitar tile 'Vel. molino' redundante (queda en MillSpeedChart) |
 | `1392e57` | AI service: log raw content + tolerancia parsing markdown |
 | `8aacd13` | Botón 'Generar' análisis IA manual + diagnóstico expuesto |
+
+---
+
+### Sesión 2026-05-22
+
+| Commit | Feature |
+|---|---|
+| `025f9d5` | **DesgloceModal genérico** + modales desglose para Caudal Vapor, Presión Vapor y Gas Total (KpiHero) |
+| `c104944` | **Fix timezone turno previo**: `tagART()` en `guardia.service.ts` — `v_resumen_turno_previo` devuelve `timestamp without time zone`, PostgREST lo serializa sin TZ → frontend parseaba como UTC → -3h; fix appends `-03:00` |
+| `ebb5a3e` | **Potencia Siemens + WEG unificada** en tile combinado "Potencia Total" (suma) con modal desglose; ambas ocultas individualmente del grid |
+| `3aa04ec` | `PremiumTile` labels y hint más grandes (responsive `text-[11px] sm:text-[12px]`) |
+| `41e83c4` | `ShiftWelcomeBanner` títulos y texto más grandes (`text-3xl sm:text-4xl`, subtitle `text-base`) |
+| `a2bd9ab` | Todos los modales simples a `sm:max-w-3xl` unificados; mobile sin cambios |
+| `1569f4a` | `PremiumTile` size=`lg` igualado a size=`md` en desktop (`text-[2.5rem]`) — antes `lg` era más chico que `md` |
+| `1ed3512` | `AnalisisIA` texto escalado para pantallas grandes (`sm:text-base`, resumen `sm:text-lg`) |
+| `38dc98a` | Favicon reemplazado por logo Ingenio Cloud (`src/app/icon.png` — Next.js App Router auto-discovery) |
+
+#### Aclaraciones técnicas sesión 2026-05-22
+
+**Causa bug timezone turno previo**:
+- Vista `public.v_resumen_turno_previo` → columna tipo `timestamp without time zone`
+- PostgREST serializa como `"2026-05-22T08:00:00.000Z"` (agrega `.000Z` sin timezone real)
+- `parseServerDate()` del frontend detecta la `Z` → lo trata como UTC → resta 3h → mostraba "02:00 hs" en vez de "05:00 hs"
+- Fix backend: `tagART()` que agrega `-03:00` si el string no tiene sufijo TZ; si ya tiene TZ (futuro), pasa sin cambios
+
+**Query MSSQL canchón (SQL Server 2008 R2)**:
+- `fecha_salida IS NULL` solo devuelve 117 por rows históricas con NULL por error de importación
+- Fix: agregar `AND fecha_entrada = CONVERT(varchar(10), GETDATE(), 103)` para filtrar solo hoy
+- Nota: `TRY_CONVERT` no disponible en SQL 2008 R2, usar `CONVERT` directo
 
 ---
 
