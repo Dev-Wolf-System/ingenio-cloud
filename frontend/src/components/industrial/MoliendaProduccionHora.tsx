@@ -58,15 +58,15 @@ function StatCard({
       className="flex-1 min-w-0 rounded-xl border border-border bg-bg-card px-3 py-2.5 flex flex-col gap-0.5"
       style={{ borderColor: value != null ? `color-mix(in srgb, ${color} 30%, transparent)` : undefined }}
     >
-      <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider font-semibold text-text-muted">
+      <div className="flex items-center gap-1.5 text-sm uppercase tracking-wider font-semibold text-text-muted">
         <span style={{ color }}>{icon}</span>
         {label}
       </div>
-      <div className="mono tabular-nums font-bold text-lg sm:text-2xl leading-tight" style={{ color: value != null ? color : 'var(--text-disabled)' }}>
+      <div className="mono tabular-nums font-bold text-xl sm:text-3xl leading-tight" style={{ color: value != null ? color : 'var(--text-disabled)' }}>
         {value != null ? formatNumber(value, decimals) : '—'}
-        {value != null && <span className="text-sm font-normal text-text-secondary ml-1">{unit}</span>}
+        {value != null && <span className="text-base font-normal text-text-secondary ml-1">{unit}</span>}
       </div>
-      <div className="text-xs text-text-muted">{sublabel}</div>
+      <div className="text-sm text-text-muted">{sublabel}</div>
     </div>
   );
 }
@@ -78,10 +78,10 @@ function TableCell({ value, unit, decimals = 1, muted = false }: {
   muted?: boolean;
 }) {
   if (value == null) return (
-    <td className="px-3 py-2 text-center text-text-disabled text-sm sm:text-base mono">—</td>
+    <td className="px-3 py-2 text-center text-text-disabled text-base sm:text-lg mono">—</td>
   );
   return (
-    <td className={`px-3 py-2 text-center mono tabular-nums text-sm sm:text-base ${muted ? 'text-text-muted' : 'text-text-primary'}`}>
+    <td className={`px-3 py-2 text-center mono tabular-nums text-base sm:text-lg ${muted ? 'text-text-muted' : 'text-text-primary'}`}>
       {formatNumber(value, decimals)}
       {unit && <span className="text-text-disabled ml-0.5">{unit}</span>}
     </td>
@@ -175,18 +175,18 @@ export function MoliendaProduccionHora() {
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="px-3 py-2 text-left text-xs sm:text-sm uppercase tracking-wider text-text-muted font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10">Hora</th>
-                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10 text-primary-light">Molienda (t)</th>
-                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--warn)' }}>
+                    <th className="px-3 py-2 text-left text-base sm:text-lg uppercase tracking-wider text-text-muted font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10">Hora</th>
+                    <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10 text-primary-light">Molienda (t)</th>
+                    <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--warn)' }}>
                       <span className="inline-flex items-center gap-0.5"><IconFlame size={12} />Gas (m³)</span>
                     </th>
-                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--accent)' }}>
+                    <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--accent)' }}>
                       <span className="inline-flex items-center gap-0.5"><IconDroplet size={12} />Hum. Baz. (%)</span>
                     </th>
-                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--accent)' }}>
+                    <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--accent)' }}>
                       <span className="inline-flex items-center gap-0.5"><IconWaveSine size={12} />Color (UI)</span>
                     </th>
-                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--ok)' }}>Calidad</th>
+                    <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--ok)' }}>Calidad</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -195,10 +195,10 @@ export function MoliendaProduccionHora() {
                       key={f.periodo}
                       className={`border-b border-border/50 transition-colors hover:bg-bg-hover ${i % 2 !== 0 ? 'bg-bg-card/40' : ''}`}
                     >
-                      <td className="px-3 py-2 text-left mono text-sm sm:text-base text-text-secondary font-medium whitespace-nowrap">
+                      <td className="px-3 py-2 text-left mono text-base sm:text-lg text-text-secondary font-medium whitespace-nowrap">
                         {f.periodo}
                       </td>
-                      <td className="px-3 py-2 text-center mono tabular-nums text-sm sm:text-base">
+                      <td className="px-3 py-2 text-center mono tabular-nums text-base sm:text-lg">
                         {f.molienda_t != null ? (
                           <span className="inline-flex items-center gap-1">
                             <span className={f.molienda_estimada ? 'text-text-muted' : 'text-text-primary'}>
@@ -214,7 +214,7 @@ export function MoliendaProduccionHora() {
                           <span className="text-text-disabled">—</span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-center mono tabular-nums text-sm sm:text-base">
+                      <td className="px-3 py-2 text-center mono tabular-nums text-base sm:text-lg">
                         {f.gas_m3 != null ? (
                           <span className="inline-flex items-center gap-1">
                             <span className={f.gas_estimado ? 'text-text-muted' : 'text-text-primary'}>
