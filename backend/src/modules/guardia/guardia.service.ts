@@ -628,17 +628,16 @@ export class GuardiaService {
     return cached;
   }
 
-  /** Tabla molienda+producción hora×hora del turno actual */
+  /** Tabla molienda+producción hora×hora del día industrial corriente */
   async getProduccionHora() {
     try {
       const production = this.supabase.schema('production');
       const { data, error } = await production
-        .from('v_turno_hora_x_hora')
+        .from('v_dia_industrial_hxh')
         .select(
-          'turno, periodo, ts_cierre, molienda_kg, gas_consumo, gas_es_estimado, ' +
+          'periodo, ts_cierre, molienda_kg, gas_consumo, gas_es_estimado, ' +
           'bagazo_humedad, color_azucar, cenizas_azucar',
         )
-        .eq('turno_rel', 'actual')
         .order('ts_cierre', { ascending: true });
 
       if (error) {
@@ -647,7 +646,6 @@ export class GuardiaService {
       }
 
       const rows = (data ?? []) as Array<{
-        turno: string;
         periodo: string;
         ts_cierre: string;
         molienda_kg: number | null;
@@ -682,10 +680,7 @@ export class GuardiaService {
       const sum = (arr: number[]) =>
         arr.length ? Number(arr.reduce((a, b) => a + b, 0).toFixed(2)) : null;
 
-      const turno = rows[0]?.turno ?? null;
-
       return {
-        turno,
         filas,
         stats: {
           molienda_acum_t: sum(conMol),

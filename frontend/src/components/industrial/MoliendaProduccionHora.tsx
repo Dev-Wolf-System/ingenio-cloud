@@ -16,7 +16,6 @@ interface Fila {
 }
 
 interface ProduccionHoraPayload {
-  turno?: string | null;
   filas?: Fila[];
   stats?: {
     molienda_acum_t: number | null;
@@ -61,7 +60,6 @@ export function MoliendaProduccionHora() {
 
   const filas = q.data?.filas ?? [];
   const stats = q.data?.stats;
-  const turno = q.data?.turno ?? '—';
   const hayDatos = filas.some(
     (f) => f.molienda_t != null || f.gas_m3 != null || f.bagazo_humedad != null,
   );
@@ -69,7 +67,7 @@ export function MoliendaProduccionHora() {
   return (
     <PremiumPanel
       title="MOLIENDA Y PRODUCCIÓN HORA POR HORA"
-      subtitle={`Turno ${turno} · actualiza c/5 min`}
+      subtitle="Día industrial corriente · 08:00 hasta ahora"
       icon={<IconTable size={18} className="text-primary-light" />}
       accent="primary"
     >
