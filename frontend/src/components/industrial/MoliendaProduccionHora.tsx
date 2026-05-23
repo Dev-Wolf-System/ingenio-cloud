@@ -54,18 +54,18 @@ function StatCard({
 }) {
   return (
     <div
-      className="flex-1 min-w-0 rounded-xl border border-border bg-bg-card px-3 py-2.5 flex flex-col gap-0.5"
+      className="flex-1 min-w-0 rounded-xl border border-border bg-bg-card px-4 py-3 flex flex-col gap-1"
       style={{ borderColor: value != null ? `color-mix(in srgb, ${color} 30%, transparent)` : undefined }}
     >
-      <div className="flex items-center gap-1.5 text-2xs sm:text-xs uppercase tracking-wider font-semibold text-text-muted">
+      <div className="flex items-center gap-1.5 text-xs sm:text-sm uppercase tracking-wider font-semibold text-text-muted">
         <span style={{ color }}>{icon}</span>
         {label}
       </div>
-      <div className="mono tabular-nums font-bold text-lg sm:text-xl leading-tight" style={{ color: value != null ? color : 'var(--text-disabled)' }}>
+      <div className="mono tabular-nums font-bold text-2xl sm:text-3xl leading-tight" style={{ color: value != null ? color : 'var(--text-disabled)' }}>
         {value != null ? formatNumber(value, decimals) : '—'}
-        {value != null && <span className="text-xs font-normal text-text-muted ml-1">{unit}</span>}
+        {value != null && <span className="text-sm sm:text-base font-normal text-text-muted ml-1">{unit}</span>}
       </div>
-      <div className="text-[10px] sm:text-xs text-text-disabled">{sublabel}</div>
+      <div className="text-xs sm:text-sm text-text-disabled">{sublabel}</div>
     </div>
   );
 }
@@ -77,10 +77,10 @@ function TableCell({ value, unit, decimals = 1, muted = false }: {
   muted?: boolean;
 }) {
   if (value == null) return (
-    <td className="px-2 py-1.5 text-center text-text-disabled text-xs sm:text-sm mono">—</td>
+    <td className="px-3 py-2 text-center text-text-disabled text-sm sm:text-base mono">—</td>
   );
   return (
-    <td className={`px-2 py-1.5 text-center mono tabular-nums text-xs sm:text-sm ${muted ? 'text-text-muted' : 'text-text-primary'}`}>
+    <td className={`px-3 py-2 text-center mono tabular-nums text-sm sm:text-base ${muted ? 'text-text-muted' : 'text-text-primary'}`}>
       {formatNumber(value, decimals)}
       {unit && <span className="text-text-disabled ml-0.5">{unit}</span>}
     </td>
@@ -109,20 +109,20 @@ export function MoliendaProduccionHora() {
       accent="primary"
     >
       {q.isLoading ? (
-        <div className="flex-1 flex items-center justify-center py-10 text-xs text-text-muted">
+        <div className="flex-1 flex items-center justify-center py-10 text-sm text-text-muted">
           Cargando…
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {/* Tarjetas de stats */}
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex gap-3 flex-wrap">
             <StatCard
               label="Molienda"
               value={stats?.molienda_acum_t ?? null}
               unit="t"
               decimals={1}
               sublabel="acumulado del día"
-              icon={<IconScale size={11} />}
+              icon={<IconScale size={13} />}
               color="var(--primary-light)"
             />
             <StatCard
@@ -131,7 +131,7 @@ export function MoliendaProduccionHora() {
               unit="m³"
               decimals={0}
               sublabel="acumulado del día"
-              icon={<IconFlame size={11} />}
+              icon={<IconFlame size={13} />}
               color="var(--warn)"
             />
             <StatCard
@@ -140,7 +140,7 @@ export function MoliendaProduccionHora() {
               unit="%"
               decimals={1}
               sublabel="promedio del día"
-              icon={<IconDroplet size={11} />}
+              icon={<IconDroplet size={13} />}
               color="var(--accent)"
             />
             <StatCard
@@ -149,7 +149,7 @@ export function MoliendaProduccionHora() {
               unit="UI"
               decimals={0}
               sublabel="promedio del día"
-              icon={<IconWaveSine size={11} />}
+              icon={<IconWaveSine size={13} />}
               color="var(--accent)"
             />
             <StatCard
@@ -158,33 +158,33 @@ export function MoliendaProduccionHora() {
               unit=""
               decimals={1}
               sublabel="promedio del día"
-              icon={<span className="text-[10px]">★</span>}
+              icon={<span className="text-xs">★</span>}
               color="var(--ok)"
             />
           </div>
 
           {/* Tabla hora×hora */}
           {!hayDatos ? (
-            <div className="flex items-center justify-center py-8 text-xs text-text-muted">
+            <div className="flex items-center justify-center py-8 text-sm text-text-muted">
               Sin datos del día corriente aún
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse">
+              <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="px-2 py-1.5 text-left text-2xs sm:text-xs uppercase tracking-wider text-text-muted font-semibold whitespace-nowrap">Hora</th>
-                    <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap text-primary-light">Molienda (t)</th>
-                    <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--warn)' }}>
-                      <span className="inline-flex items-center gap-0.5"><IconFlame size={10} />Gas (m³)</span>
+                    <th className="px-3 py-2 text-left text-xs sm:text-sm uppercase tracking-wider text-text-muted font-semibold whitespace-nowrap">Hora</th>
+                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap text-primary-light">Molienda (t)</th>
+                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--warn)' }}>
+                      <span className="inline-flex items-center gap-0.5"><IconFlame size={12} />Gas (m³)</span>
                     </th>
-                    <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--accent)' }}>
-                      <span className="inline-flex items-center gap-0.5"><IconDroplet size={10} />Hum. Baz. (%)</span>
+                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--accent)' }}>
+                      <span className="inline-flex items-center gap-0.5"><IconDroplet size={12} />Hum. Baz. (%)</span>
                     </th>
-                    <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--accent)' }}>
-                      <span className="inline-flex items-center gap-0.5"><IconWaveSine size={10} />Color (UI)</span>
+                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--accent)' }}>
+                      <span className="inline-flex items-center gap-0.5"><IconWaveSine size={12} />Color (UI)</span>
                     </th>
-                    <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--ok)' }}>Calidad</th>
+                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--ok)' }}>Calidad</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -193,18 +193,18 @@ export function MoliendaProduccionHora() {
                       key={f.periodo}
                       className={`border-b border-border/50 transition-colors hover:bg-bg-hover ${i % 2 !== 0 ? 'bg-bg-card/40' : ''}`}
                     >
-                      <td className="px-2 py-1.5 text-left mono text-xs sm:text-sm text-text-secondary font-medium whitespace-nowrap">
+                      <td className="px-3 py-2 text-left mono text-sm sm:text-base text-text-secondary font-medium whitespace-nowrap">
                         {f.periodo}
                       </td>
                       <TableCell value={f.molienda_t} decimals={2} />
-                      <td className="px-2 py-1.5 text-center mono tabular-nums text-xs sm:text-sm">
+                      <td className="px-3 py-2 text-center mono tabular-nums text-sm sm:text-base">
                         {f.gas_m3 != null ? (
                           <span className="inline-flex items-center gap-1">
                             <span className={f.gas_estimado ? 'text-text-muted' : 'text-text-primary'}>
                               {formatNumber(f.gas_m3, 0)}
                             </span>
                             {f.gas_estimado && (
-                              <span className="text-[9px] sm:text-[11px] px-1 rounded" style={{ background: 'var(--warn-soft)', color: 'var(--warn)' }}>
+                              <span className="text-[10px] sm:text-xs px-1 rounded" style={{ background: 'var(--warn-soft)', color: 'var(--warn)' }}>
                                 est.
                               </span>
                             )}
