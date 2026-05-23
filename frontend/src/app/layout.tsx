@@ -50,8 +50,8 @@ export const metadata: Metadata = {
   },
   description: 'Plataforma Inteligente de Monitoreo, Producción y Asistencia Operativa Industrial',
   icons: {
-    icon: [{ url: '/logo-ingenio-cloud.png', sizes: 'any' }],
-    apple: '/logo-ingenio-cloud.png',
+    icon: '/icon.png',
+    apple: '/icon.png',
   },
   openGraph: {
     title: 'Ingenio Cloud',

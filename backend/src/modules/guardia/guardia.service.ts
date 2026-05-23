@@ -645,7 +645,7 @@ export class GuardiaService {
         return { stale: true, filas: [], stats: null };
       }
 
-      const rows = (data ?? []) as Array<{
+      const rows = (data ?? []) as unknown as Array<{
         periodo: string;
         ts_cierre: string;
         molienda_kg: number | null;
