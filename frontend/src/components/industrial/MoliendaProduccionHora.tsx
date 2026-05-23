@@ -60,15 +60,15 @@ function StatCard({
       className="flex-1 min-w-0 rounded-xl border border-border bg-bg-card px-3 py-2.5 flex flex-col gap-0.5"
       style={{ borderColor: value != null ? `color-mix(in srgb, ${color} 30%, transparent)` : undefined }}
     >
-      <div className="flex items-center gap-1.5 text-sm uppercase tracking-wider font-semibold text-text-muted">
+      <div className="flex items-center gap-1.5 text-xs sm:text-sm uppercase tracking-wider font-semibold text-text-muted">
         <span style={{ color }}>{icon}</span>
         {label}
       </div>
-      <div className="mono tabular-nums font-bold text-xl sm:text-3xl leading-tight" style={{ color: value != null ? color : 'var(--text-disabled)' }}>
+      <div className="mono tabular-nums font-bold text-base sm:text-3xl leading-tight" style={{ color: value != null ? color : 'var(--text-disabled)' }}>
         {value != null ? formatNumber(value, decimals) : '—'}
-        {value != null && <span className="text-base font-normal text-text-secondary ml-1">{unit}</span>}
+        {value != null && <span className="text-xs sm:text-base font-normal text-text-secondary ml-1">{unit}</span>}
       </div>
-      <div className="text-sm text-text-muted">{sublabel}</div>
+      <div className="text-xs sm:text-sm text-text-muted">{sublabel}</div>
     </div>
   );
 }
