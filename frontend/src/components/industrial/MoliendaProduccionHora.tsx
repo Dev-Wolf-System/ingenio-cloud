@@ -62,7 +62,7 @@ function StatCard({
         <span style={{ color }}>{icon}</span>
         {label}
       </div>
-      <div className="mono tabular-nums font-bold text-2xl leading-tight" style={{ color: value != null ? color : 'var(--text-disabled)' }}>
+      <div className="mono tabular-nums font-bold text-lg sm:text-2xl leading-tight" style={{ color: value != null ? color : 'var(--text-disabled)' }}>
         {value != null ? formatNumber(value, decimals) : '—'}
         {value != null && <span className="text-sm font-normal text-text-secondary ml-1">{unit}</span>}
       </div>
