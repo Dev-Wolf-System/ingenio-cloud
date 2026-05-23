@@ -13,6 +13,7 @@ interface Fila {
   gas_estimado: boolean;
   bolsas_azucar: number | null;
   bagazo_humedad: number | null;
+  bagazo_pol: number | null;
   color_azucar: number | null;
 }
 
@@ -21,6 +22,7 @@ interface Stats {
   gas_acum_m3: number | null;
   bolsas_azucar_acum: number | null;
   bagazo_humedad_prom: number | null;
+  bagazo_pol_prom: number | null;
   color_azucar_prom: number | null;
 }
 
@@ -146,6 +148,15 @@ export function MoliendaProduccionHora() {
               color="var(--accent)"
             />
             <StatCard
+              label="Pol Bagazo"
+              value={stats?.bagazo_pol_prom ?? null}
+              unit="%"
+              decimals={2}
+              sublabel="promedio del día"
+              icon={<IconDroplet size={11} />}
+              color="var(--primary-light)"
+            />
+            <StatCard
               label="Color"
               value={stats?.color_azucar_prom ?? null}
               unit="UI"
@@ -185,6 +196,9 @@ export function MoliendaProduccionHora() {
                     </th>
                     <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--accent)' }}>
                       <span className="inline-flex items-center gap-0.5"><IconDroplet size={12} />Hum. Baz. (%)</span>
+                    </th>
+                    <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10 text-primary-light">
+                      Pol Baz. (%)
                     </th>
                     <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--accent)' }}>
                       <span className="inline-flex items-center gap-0.5"><IconWaveSine size={12} />Color (UI)</span>
@@ -234,6 +248,7 @@ export function MoliendaProduccionHora() {
                       </td>
                       <TableCell value={f.bolsas_azucar} decimals={0} />
                       <TableCell value={f.bagazo_humedad} decimals={1} />
+                      <TableCell value={f.bagazo_pol} decimals={2} />
                       <TableCell value={f.color_azucar} decimals={0} />
                     </tr>
                   ))}
