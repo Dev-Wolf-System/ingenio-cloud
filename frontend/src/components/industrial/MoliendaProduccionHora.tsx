@@ -91,8 +91,8 @@ export function MoliendaProduccionHora() {
   const q = useQuery({
     queryKey: ['guardia', 'produccion-hora'],
     queryFn: fetchProduccionHora,
-    refetchInterval: 5 * 60_000,
-    staleTime: 60_000,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
   });
 
   const filas = q.data?.filas ?? [];
