@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { IconScale, IconFlame, IconDroplet, IconWaveSine, IconTable, IconPackage, IconFlask } from '@tabler/icons-react';
+import { IconScale, IconFlame, IconDroplet, IconWaveSine, IconTable, IconPackage } from '@tabler/icons-react';
 import { PremiumPanel } from './PremiumPanel';
 import { formatNumber } from '@/lib/utils/format';
 
@@ -27,7 +27,6 @@ interface Stats {
   bagazo_pol_prom: number | null;
   cachaza_pol_prom: number | null;
   color_azucar_prom: number | null;
-  alcohol_gl_prom: number | null;
 }
 
 interface ProduccionHoraPayload {
@@ -170,15 +169,6 @@ export function MoliendaProduccionHora() {
               color="var(--warn)"
             />
             <StatCard
-              label="°GL Alcohol"
-              value={stats?.alcohol_gl_prom ?? null}
-              unit="°GL"
-              decimals={1}
-              sublabel="promedio del día"
-              icon={<IconFlask size={11} />}
-              color="var(--ok)"
-            />
-            <StatCard
               label="Color"
               value={stats?.color_azucar_prom ?? null}
               unit="UI"
@@ -228,8 +218,8 @@ export function MoliendaProduccionHora() {
                     <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--warn)' }}>
                       Pol Cach. (%)
                     </th>
-                    <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--ok)' }}>
-                      <span className="inline-flex items-center gap-0.5"><IconFlask size={12} />°GL Alc.</span>
+                    <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10 text-text-muted">
+                      Alcohol Ind.
                     </th>
                   </tr>
                 </thead>
