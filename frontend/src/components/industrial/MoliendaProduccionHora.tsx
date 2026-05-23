@@ -170,22 +170,22 @@ export function MoliendaProduccionHora() {
               Sin datos del día corriente aún
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-auto max-h-[280px]">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="px-3 py-2 text-left text-xs sm:text-sm uppercase tracking-wider text-text-muted font-semibold whitespace-nowrap">Hora</th>
-                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap text-primary-light">Molienda (t)</th>
-                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--warn)' }}>
+                    <th className="px-3 py-2 text-left text-xs sm:text-sm uppercase tracking-wider text-text-muted font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10">Hora</th>
+                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10 text-primary-light">Molienda (t)</th>
+                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--warn)' }}>
                       <span className="inline-flex items-center gap-0.5"><IconFlame size={12} />Gas (m³)</span>
                     </th>
-                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--accent)' }}>
+                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--accent)' }}>
                       <span className="inline-flex items-center gap-0.5"><IconDroplet size={12} />Hum. Baz. (%)</span>
                     </th>
-                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--accent)' }}>
+                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--accent)' }}>
                       <span className="inline-flex items-center gap-0.5"><IconWaveSine size={12} />Color (UI)</span>
                     </th>
-                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--ok)' }}>Calidad</th>
+                    <th className="px-3 py-2 text-center text-xs sm:text-sm uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--ok)' }}>Calidad</th>
                   </tr>
                 </thead>
                 <tbody>
