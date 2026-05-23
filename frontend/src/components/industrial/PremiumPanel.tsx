@@ -113,7 +113,7 @@ export function PremiumPanel({
         {headerRight}
       </header>
 
-      <div className="flex-1 p-3 overflow-auto">{children}</div>
+      <div className="flex-1 p-3 overflow-hidden flex flex-col">{children}</div>
     </m.section>
   );
 }
