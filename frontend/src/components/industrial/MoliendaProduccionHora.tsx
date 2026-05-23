@@ -8,6 +8,7 @@ import { formatNumber } from '@/lib/utils/format';
 interface Fila {
   periodo: string;
   molienda_t: number | null;
+  molienda_estimada: boolean;
   gas_m3: number | null;
   gas_estimado: boolean;
   bagazo_humedad: number | null;
@@ -196,7 +197,22 @@ export function MoliendaProduccionHora() {
                       <td className="px-3 py-2 text-left mono text-sm sm:text-base text-text-secondary font-medium whitespace-nowrap">
                         {f.periodo}
                       </td>
-                      <TableCell value={f.molienda_t} decimals={2} />
+                      <td className="px-3 py-2 text-center mono tabular-nums text-sm sm:text-base">
+                        {f.molienda_t != null ? (
+                          <span className="inline-flex items-center gap-1">
+                            <span className={f.molienda_estimada ? 'text-text-muted' : 'text-text-primary'}>
+                              {formatNumber(f.molienda_t, 2)}
+                            </span>
+                            {f.molienda_estimada && (
+                              <span className="text-[10px] sm:text-xs px-1 rounded" style={{ background: 'var(--primary-soft)', color: 'var(--primary-light)' }}>
+                                bal.
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-text-disabled">—</span>
+                        )}
+                      </td>
                       <td className="px-3 py-2 text-center mono tabular-nums text-sm sm:text-base">
                         {f.gas_m3 != null ? (
                           <span className="inline-flex items-center gap-1">

@@ -635,7 +635,7 @@ export class GuardiaService {
       const { data, error } = await production
         .from('v_dia_industrial_hxh')
         .select(
-          'periodo, ts_cierre, molienda_kg, gas_consumo, gas_es_estimado, ' +
+          'periodo, ts_cierre, molienda_kg, molienda_es_estimado, gas_consumo, gas_es_estimado, ' +
           'bagazo_humedad, color_azucar, calidad_azucar',
         )
         .order('ts_cierre', { ascending: true });
@@ -649,6 +649,7 @@ export class GuardiaService {
         periodo: string;
         ts_cierre: string;
         molienda_kg: number | null;
+        molienda_es_estimado: boolean;
         gas_consumo: number | null;
         gas_es_estimado: boolean;
         bagazo_humedad: number | null;
@@ -661,6 +662,7 @@ export class GuardiaService {
       const filas = rows.map((r) => ({
         periodo: r.periodo,
         molienda_t: r.molienda_kg != null ? Number((r.molienda_kg / 1000).toFixed(2)) : null,
+        molienda_estimada: r.molienda_es_estimado ?? false,
         gas_m3: toNum(r.gas_consumo),
         gas_estimado: r.gas_es_estimado ?? false,
         bagazo_humedad: toNum(r.bagazo_humedad),
