@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { IconTable, IconFlame, IconDroplet, IconWaveSine } from '@tabler/icons-react';
+import { IconScale, IconFlame, IconDroplet, IconWaveSine, IconTable } from '@tabler/icons-react';
 import { PremiumPanel } from './PremiumPanel';
 import { formatNumber } from '@/lib/utils/format';
 
@@ -15,15 +15,17 @@ interface Fila {
   cenizas: number | null;
 }
 
+interface Stats {
+  molienda_acum_t: number | null;
+  gas_acum_m3: number | null;
+  bagazo_humedad_prom: number | null;
+  color_azucar_prom: number | null;
+  cenizas_prom: number | null;
+}
+
 interface ProduccionHoraPayload {
   filas?: Fila[];
-  stats?: {
-    molienda_acum_t: number | null;
-    gas_acum_m3: number | null;
-    bagazo_humedad_prom: number | null;
-    color_azucar_prom: number | null;
-    cenizas_prom: number | null;
-  } | null;
+  stats?: Stats | null;
   stale?: boolean;
 }
 
@@ -33,17 +35,52 @@ async function fetchProduccionHora(): Promise<ProduccionHoraPayload> {
   return res.json();
 }
 
-function Cell({ value, unit, decimals = 1, muted = false }: {
+function StatCard({
+  label,
+  value,
+  unit,
+  decimals,
+  sublabel,
+  icon,
+  color,
+}: {
+  label: string;
+  value: number | null;
+  unit: string;
+  decimals: number;
+  sublabel: string;
+  icon: React.ReactNode;
+  color: string;
+}) {
+  return (
+    <div
+      className="flex-1 min-w-0 rounded-xl border border-border bg-bg-card px-3 py-2.5 flex flex-col gap-0.5"
+      style={{ borderColor: value != null ? `color-mix(in srgb, ${color} 30%, transparent)` : undefined }}
+    >
+      <div className="flex items-center gap-1.5 text-2xs uppercase tracking-wider font-semibold text-text-muted">
+        <span style={{ color }}>{icon}</span>
+        {label}
+      </div>
+      <div className="mono tabular-nums font-bold text-lg leading-tight" style={{ color: value != null ? color : 'var(--text-disabled)' }}>
+        {value != null ? formatNumber(value, decimals) : '—'}
+        {value != null && <span className="text-xs font-normal text-text-muted ml-1">{unit}</span>}
+      </div>
+      <div className="text-[10px] text-text-disabled">{sublabel}</div>
+    </div>
+  );
+}
+
+function TableCell({ value, unit, decimals = 1, muted = false }: {
   value: number | null;
   unit?: string;
   decimals?: number;
   muted?: boolean;
 }) {
   if (value == null) return (
-    <td className="px-2 py-2 text-center text-text-disabled text-xs mono">—</td>
+    <td className="px-2 py-1.5 text-center text-text-disabled text-xs mono">—</td>
   );
   return (
-    <td className={`px-2 py-2 text-center mono tabular-nums text-xs ${muted ? 'text-text-muted' : 'text-text-primary'}`}>
+    <td className={`px-2 py-1.5 text-center mono tabular-nums text-xs ${muted ? 'text-text-muted' : 'text-text-primary'}`}>
       {formatNumber(value, decimals)}
       {unit && <span className="text-text-disabled ml-0.5">{unit}</span>}
     </td>
@@ -59,7 +96,7 @@ export function MoliendaProduccionHora() {
   });
 
   const filas = q.data?.filas ?? [];
-  const stats = q.data?.stats;
+  const stats = q.data?.stats ?? null;
   const hayDatos = filas.some(
     (f) => f.molienda_t != null || f.gas_m3 != null || f.bagazo_humedad != null,
   );
@@ -75,99 +112,116 @@ export function MoliendaProduccionHora() {
         <div className="flex-1 flex items-center justify-center py-10 text-xs text-text-muted">
           Cargando…
         </div>
-      ) : !hayDatos ? (
-        <div className="flex-1 flex items-center justify-center py-10 text-xs text-text-muted">
-          Sin datos del turno corriente aún
-        </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="px-2 py-2 text-left text-2xs uppercase tracking-wider text-text-muted font-semibold whitespace-nowrap">
-                  Hora
-                </th>
-                <th className="px-2 py-2 text-center text-2xs uppercase tracking-wider text-primary-light font-semibold whitespace-nowrap">
-                  Molienda (t)
-                </th>
-                <th className="px-2 py-2 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--warn)' }}>
-                  <span className="inline-flex items-center gap-1"><IconFlame size={10} />Gas (m³)</span>
-                </th>
-                <th className="px-2 py-2 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--accent)' }}>
-                  <span className="inline-flex items-center gap-1"><IconDroplet size={10} />Hum. Baz. (%)</span>
-                </th>
-                <th className="px-2 py-2 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--accent)' }}>
-                  <span className="inline-flex items-center gap-1"><IconWaveSine size={10} />Color (UI)</span>
-                </th>
-                <th className="px-2 py-2 text-center text-2xs uppercase tracking-wider text-text-muted font-semibold whitespace-nowrap">
-                  Cenizas (%)
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filas.map((f, i) => (
-                <tr
-                  key={f.periodo}
-                  className={`border-b border-border/50 transition-colors hover:bg-bg-hover ${
-                    i % 2 === 0 ? '' : 'bg-bg-card/40'
-                  }`}
-                >
-                  <td className="px-2 py-2 text-left mono text-xs text-text-secondary font-medium whitespace-nowrap">
-                    {f.periodo}
-                  </td>
-                  <Cell value={f.molienda_t} decimals={2} />
-                  <td className="px-2 py-2 text-center mono tabular-nums text-xs">
-                    {f.gas_m3 != null ? (
-                      <span className="inline-flex items-center gap-1">
-                        <span className={f.gas_estimado ? 'text-text-muted' : 'text-text-primary'}>
-                          {formatNumber(f.gas_m3, 0)}
-                        </span>
-                        {f.gas_estimado && (
-                          <span
-                            className="text-[9px] px-1 rounded"
-                            style={{ background: 'var(--warn-soft)', color: 'var(--warn)' }}
-                          >
-                            est.
-                          </span>
-                        )}
-                      </span>
-                    ) : (
-                      <span className="text-text-disabled">—</span>
-                    )}
-                  </td>
-                  <Cell value={f.bagazo_humedad} decimals={1} />
-                  <Cell value={f.color_azucar} decimals={0} />
-                  <Cell value={f.cenizas} decimals={2} muted />
-                </tr>
-              ))}
-            </tbody>
+        <div className="space-y-3">
+          {/* Tarjetas de stats */}
+          <div className="flex gap-2 flex-wrap">
+            <StatCard
+              label="Molienda"
+              value={stats?.molienda_acum_t ?? null}
+              unit="t"
+              decimals={1}
+              sublabel="acumulado del día"
+              icon={<IconScale size={11} />}
+              color="var(--primary-light)"
+            />
+            <StatCard
+              label="Gas"
+              value={stats?.gas_acum_m3 ?? null}
+              unit="m³"
+              decimals={0}
+              sublabel="acumulado del día"
+              icon={<IconFlame size={11} />}
+              color="var(--warn)"
+            />
+            <StatCard
+              label="Hum. Bagazo"
+              value={stats?.bagazo_humedad_prom ?? null}
+              unit="%"
+              decimals={1}
+              sublabel="promedio del día"
+              icon={<IconDroplet size={11} />}
+              color="var(--accent)"
+            />
+            <StatCard
+              label="Color"
+              value={stats?.color_azucar_prom ?? null}
+              unit="UI"
+              decimals={0}
+              sublabel="promedio del día"
+              icon={<IconWaveSine size={11} />}
+              color="var(--accent)"
+            />
+            <StatCard
+              label="Cenizas"
+              value={stats?.cenizas_prom ?? null}
+              unit="%"
+              decimals={2}
+              sublabel="promedio del día"
+              icon={<span className="text-[10px]">%</span>}
+              color="var(--text-secondary)"
+            />
+          </div>
 
-            {/* Fila de totales/promedios */}
-            {stats && (
-              <tfoot>
-                <tr className="border-t-2 border-border bg-bg-card">
-                  <td className="px-2 py-2 text-left text-2xs uppercase tracking-wider text-text-muted font-bold">
-                    Acum/Prom
-                  </td>
-                  <td className="px-2 py-2 text-center mono tabular-nums text-xs font-bold text-primary-light">
-                    {stats.molienda_acum_t != null ? formatNumber(stats.molienda_acum_t, 2) : '—'}
-                  </td>
-                  <td className="px-2 py-2 text-center mono tabular-nums text-xs font-bold" style={{ color: 'var(--warn)' }}>
-                    {stats.gas_acum_m3 != null ? formatNumber(stats.gas_acum_m3, 0) : '—'}
-                  </td>
-                  <td className="px-2 py-2 text-center mono tabular-nums text-xs font-bold" style={{ color: 'var(--accent)' }}>
-                    {stats.bagazo_humedad_prom != null ? formatNumber(stats.bagazo_humedad_prom, 1) : '—'}
-                  </td>
-                  <td className="px-2 py-2 text-center mono tabular-nums text-xs font-bold" style={{ color: 'var(--accent)' }}>
-                    {stats.color_azucar_prom != null ? formatNumber(stats.color_azucar_prom, 0) : '—'}
-                  </td>
-                  <td className="px-2 py-2 text-center mono tabular-nums text-xs font-bold text-text-muted">
-                    {stats.cenizas_prom != null ? formatNumber(stats.cenizas_prom, 2) : '—'}
-                  </td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
+          {/* Tabla hora×hora */}
+          {!hayDatos ? (
+            <div className="flex items-center justify-center py-8 text-xs text-text-muted">
+              Sin datos del día corriente aún
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="px-2 py-1.5 text-left text-2xs uppercase tracking-wider text-text-muted font-semibold whitespace-nowrap">Hora</th>
+                    <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap text-primary-light">Molienda (t)</th>
+                    <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--warn)' }}>
+                      <span className="inline-flex items-center gap-0.5"><IconFlame size={10} />Gas (m³)</span>
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--accent)' }}>
+                      <span className="inline-flex items-center gap-0.5"><IconDroplet size={10} />Hum. Baz. (%)</span>
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider font-semibold whitespace-nowrap" style={{ color: 'var(--accent)' }}>
+                      <span className="inline-flex items-center gap-0.5"><IconWaveSine size={10} />Color (UI)</span>
+                    </th>
+                    <th className="px-2 py-1.5 text-center text-2xs uppercase tracking-wider text-text-muted font-semibold whitespace-nowrap">Cenizas (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filas.map((f, i) => (
+                    <tr
+                      key={f.periodo}
+                      className={`border-b border-border/50 transition-colors hover:bg-bg-hover ${i % 2 !== 0 ? 'bg-bg-card/40' : ''}`}
+                    >
+                      <td className="px-2 py-1.5 text-left mono text-xs text-text-secondary font-medium whitespace-nowrap">
+                        {f.periodo}
+                      </td>
+                      <TableCell value={f.molienda_t} decimals={2} />
+                      <td className="px-2 py-1.5 text-center mono tabular-nums text-xs">
+                        {f.gas_m3 != null ? (
+                          <span className="inline-flex items-center gap-1">
+                            <span className={f.gas_estimado ? 'text-text-muted' : 'text-text-primary'}>
+                              {formatNumber(f.gas_m3, 0)}
+                            </span>
+                            {f.gas_estimado && (
+                              <span className="text-[9px] px-1 rounded" style={{ background: 'var(--warn-soft)', color: 'var(--warn)' }}>
+                                est.
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-text-disabled">—</span>
+                        )}
+                      </td>
+                      <TableCell value={f.bagazo_humedad} decimals={1} />
+                      <TableCell value={f.color_azucar} decimals={0} />
+                      <TableCell value={f.cenizas} decimals={2} muted />
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </PremiumPanel>
