@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { IconScale, IconFlame, IconDroplet, IconWaveSine, IconTable } from '@tabler/icons-react';
+import { IconScale, IconFlame, IconDroplet, IconWaveSine, IconTable, IconPackage } from '@tabler/icons-react';
 import { PremiumPanel } from './PremiumPanel';
 import { formatNumber } from '@/lib/utils/format';
 
@@ -11,17 +11,17 @@ interface Fila {
   molienda_estimada: boolean;
   gas_m3: number | null;
   gas_estimado: boolean;
+  bolsas_azucar: number | null;
   bagazo_humedad: number | null;
   color_azucar: number | null;
-  calidad: number | null;
 }
 
 interface Stats {
   molienda_acum_t: number | null;
   gas_acum_m3: number | null;
+  bolsas_azucar_acum: number | null;
   bagazo_humedad_prom: number | null;
   color_azucar_prom: number | null;
-  calidad_prom: number | null;
 }
 
 interface ProduccionHoraPayload {
@@ -99,7 +99,7 @@ export function MoliendaProduccionHora() {
   const filas = q.data?.filas ?? [];
   const stats = q.data?.stats ?? null;
   const hayDatos = filas.some(
-    (f) => f.molienda_t != null || f.gas_m3 != null || f.bagazo_humedad != null,
+    (f) => f.molienda_t != null || f.gas_m3 != null || f.bolsas_azucar != null || f.bagazo_humedad != null,
   );
 
   return (
@@ -155,12 +155,12 @@ export function MoliendaProduccionHora() {
               color="var(--accent)"
             />
             <StatCard
-              label="Calidad"
-              value={stats?.calidad_prom ?? null}
-              unit=""
-              decimals={1}
-              sublabel="promedio del día"
-              icon={<span className="text-[10px]">★</span>}
+              label="Bolsas"
+              value={stats?.bolsas_azucar_acum ?? null}
+              unit="bls"
+              decimals={0}
+              sublabel="acumulado del día"
+              icon={<IconPackage size={11} />}
               color="var(--ok)"
             />
           </div>
@@ -180,13 +180,15 @@ export function MoliendaProduccionHora() {
                     <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--warn)' }}>
                       <span className="inline-flex items-center gap-0.5"><IconFlame size={12} />Gas (m³)</span>
                     </th>
+                    <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--ok)' }}>
+                      <span className="inline-flex items-center gap-0.5"><IconPackage size={12} />Bolsas</span>
+                    </th>
                     <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--accent)' }}>
                       <span className="inline-flex items-center gap-0.5"><IconDroplet size={12} />Hum. Baz. (%)</span>
                     </th>
                     <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--accent)' }}>
                       <span className="inline-flex items-center gap-0.5"><IconWaveSine size={12} />Color (UI)</span>
                     </th>
-                    <th className="px-3 py-2 text-center text-base sm:text-lg uppercase tracking-wider font-semibold whitespace-nowrap sticky top-0 bg-bg-card z-10" style={{ color: 'var(--ok)' }}>Calidad</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -230,9 +232,9 @@ export function MoliendaProduccionHora() {
                           <span className="text-text-disabled">—</span>
                         )}
                       </td>
+                      <TableCell value={f.bolsas_azucar} decimals={0} />
                       <TableCell value={f.bagazo_humedad} decimals={1} />
                       <TableCell value={f.color_azucar} decimals={0} />
-                      <TableCell value={f.calidad} decimals={1} />
                     </tr>
                   ))}
                 </tbody>

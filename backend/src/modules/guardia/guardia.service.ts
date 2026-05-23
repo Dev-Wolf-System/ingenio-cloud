@@ -636,7 +636,7 @@ export class GuardiaService {
         .from('v_dia_industrial_hxh')
         .select(
           'periodo, ts_cierre, molienda_kg, molienda_es_estimado, gas_consumo, gas_es_estimado, ' +
-          'bagazo_humedad, color_azucar, calidad_azucar',
+          'bolsas_azucar, bagazo_humedad, color_azucar',
         )
         .order('ts_cierre', { ascending: true });
 
@@ -652,9 +652,9 @@ export class GuardiaService {
         molienda_es_estimado: boolean;
         gas_consumo: number | null;
         gas_es_estimado: boolean;
+        bolsas_azucar: number | null;
         bagazo_humedad: number | null;
         color_azucar: number | null;
-        calidad_azucar: number | null;
       }>;
 
       const toNum = (v: number | null) => (v != null && Number.isFinite(v) ? v : null);
@@ -665,17 +665,17 @@ export class GuardiaService {
         molienda_estimada: r.molienda_es_estimado ?? false,
         gas_m3: toNum(r.gas_consumo),
         gas_estimado: r.gas_es_estimado ?? false,
+        bolsas_azucar: toNum(r.bolsas_azucar),
         bagazo_humedad: toNum(r.bagazo_humedad),
         color_azucar: toNum(r.color_azucar),
-        calidad: toNum(r.calidad_azucar),
       }));
 
       // Acumulados y promedios
       const conMol = filas.filter((f) => f.molienda_t != null).map((f) => f.molienda_t!);
       const conGas = filas.filter((f) => f.gas_m3 != null).map((f) => f.gas_m3!);
+      const conBolsas = filas.filter((f) => f.bolsas_azucar != null).map((f) => f.bolsas_azucar!);
       const conHum = filas.filter((f) => f.bagazo_humedad != null).map((f) => f.bagazo_humedad!);
       const conColor = filas.filter((f) => f.color_azucar != null).map((f) => f.color_azucar!);
-      const conCal = filas.filter((f) => f.calidad != null).map((f) => f.calidad!);
 
       const avg = (arr: number[]) =>
         arr.length ? Number((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2)) : null;
@@ -687,9 +687,9 @@ export class GuardiaService {
         stats: {
           molienda_acum_t: sum(conMol),
           gas_acum_m3: sum(conGas),
+          bolsas_azucar_acum: sum(conBolsas),
           bagazo_humedad_prom: avg(conHum),
           color_azucar_prom: avg(conColor),
-          calidad_prom: avg(conCal),
         },
       };
     } catch (err) {
