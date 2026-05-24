@@ -55,6 +55,13 @@ const envSchema = z.object({
   EVOLUTION_API_URL: z.string().optional(),
   EVOLUTION_API_KEY: z.string().optional(),
 
+  // Reportes de turno (webhook genérico → n8n maneja routing Telegram)
+  WEBHOOK_REPORTE_TURNO_URL: z.string().url().optional(),
+  WEBHOOK_REPORTE_TURNO_SECRET: z.string().optional(),
+  REPORTE_TURNO_ENABLED: z.string().optional().default('true'),
+  REPORTE_TURNO_RETRY_INTERVAL_MINUTES: z.coerce.number().default(1),
+  REPORTE_TURNO_RETRY_MAX_HOURS: z.coerce.number().default(4),
+
   // Defaults
   DEFAULT_TENANT_SLUG: z.string().default('lacorona'),
   DEFAULT_PLANT_SLUG: z.string().default('planta-sur'),

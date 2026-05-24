@@ -12,6 +12,7 @@ import { HealthModule } from './modules/health/health.module';
 import { RealtimeModule } from './modules/realtime/realtime.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { AiModule } from './modules/ai/ai.module';
+import { ReportesModule } from './modules/reportes/reportes.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AiModule } from './modules/ai/ai.module';
     AiModule,
     RealtimeModule,
     SchedulerModule,
+    ReportesModule,
   ],
 })
 export class AppModule {}
