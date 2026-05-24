@@ -163,7 +163,7 @@ export class ReportesDataService {
       this.logger.warn(`fetchHxH fail: ${error.message}`);
       return [];
     }
-    return (data ?? []) as HxHRow[];
+    return (data ?? []) as unknown as HxHRow[];
   }
 
   private async fetchParadas(ventana: TurnoVentana) {

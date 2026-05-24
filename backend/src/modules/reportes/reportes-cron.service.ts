@@ -71,8 +71,9 @@ export class ReportesCronService implements OnModuleInit {
   }
 
   private async intentar() {
-    if (!this.retryActivo) return;
-    const { ventana, intento, iniciado } = this.retryActivo;
+    const ctx = this.retryActivo;
+    if (!ctx) return;
+    const { ventana, intento, iniciado } = ctx;
     const maxHoras = Number(this.config.get('REPORTE_TURNO_RETRY_MAX_HOURS') ?? 4);
     const intervaloMin = Number(this.config.get('REPORTE_TURNO_RETRY_INTERVAL_MINUTES') ?? 1);
 
@@ -100,7 +101,8 @@ export class ReportesCronService implements OnModuleInit {
       this.logger.error(`Reporte ${ventana.turno} intento=${intento} excepción: ${(err as Error).message}`);
     }
 
-    // reagendar
+    // reagendar (chequear que no haya sido cancelado durante el await)
+    if (!this.retryActivo || this.retryActivo !== ctx) return;
     this.retryActivo.intento = intento + 1;
     this.retryActivo.timer = setTimeout(() => this.intentar(), intervaloMin * 60_000);
   }
