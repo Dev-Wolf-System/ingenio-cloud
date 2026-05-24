@@ -2,9 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type { ReporteCompleto, ReportePayload } from './reportes.types';
 
 /**
- * Formatea reporte en mensaje Telegram parse_mode=Markdown (legacy).
- * Estilo plano sin negritas, alineado por columnas con espacios.
- * Escape de caracteres especiales Markdown (_ * [ `) en contenido dinámico.
+ * Formatea reporte completo en mensaje Telegram (parse_mode=HTML).
+ * Estilo limpio sin negritas pesadas, alineado por columnas con espacios.
  */
 @Injectable()
 export class ReportesFormatterService {
@@ -17,7 +16,7 @@ export class ReportesFormatterService {
       turno_inicio: reporte.ventana.inicio,
       turno_fin: reporte.ventana.fin,
       datos_completos: true,
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       mensaje_telegram: mensaje,
       datos: {
         produccion: reporte.produccion,
@@ -38,18 +37,21 @@ export class ReportesFormatterService {
     const turnoCap = this.capitalize(r.ventana.turno);
 
     const L: string[] = [];
+    // Header
     L.push(`🏭 INGENIO CLOUD`);
     L.push(`Reporte Turno ${this.esc(turnoCap)}`);
     L.push(`📅 ${fechaCorta} · ${horaInicio} → ${horaFin}`);
     L.push(`━━━━━━━━━━━━━━━━━━`);
     L.push('');
 
+    // PRODUCCIÓN
     L.push(`📊 PRODUCCIÓN`);
     L.push(this.colKv('🌱 Molienda', this.fmtNum(r.produccion.molienda_t, 1, 't')));
     L.push(this.colKv('🔥 Gas',      this.fmtNum(r.produccion.gas_m3, 0, 'm³')));
     L.push(this.colKv('🍬 Bolsas',   this.fmtNum(r.produccion.bolsas, 0, '')));
     L.push('');
 
+    // EFICIENCIAS
     L.push(`⚙️ EFICIENCIAS`);
     if (r.eficiencias.gas_por_t != null) {
       const ok = r.eficiencias.gas_por_t < 12;
@@ -61,6 +63,7 @@ export class ReportesFormatterService {
     }
     L.push('');
 
+    // CALIDAD
     const calLines: string[] = [];
     if (r.calidad.color_icumsa != null) calLines.push(`ICUMSA           ${this.fmtNum(r.calidad.color_icumsa, 0, 'UI')}`);
     if (r.calidad.bagazo_humedad != null) calLines.push(`Bagazo humedad  ${this.fmtNum(r.calidad.bagazo_humedad, 1, '%')}`);
@@ -72,6 +75,7 @@ export class ReportesFormatterService {
       L.push('');
     }
 
+    // PARADAS
     if (r.paradas.count === 0) {
       L.push(`✅ PARADAS · sin paradas registradas`);
     } else {
@@ -94,6 +98,7 @@ export class ReportesFormatterService {
       });
     }
 
+    // ALERTAS
     L.push(`🚨 ALERTAS`);
     if (r.alertas.length === 0) {
       L.push(`- Todo dentro de rango`);
@@ -102,20 +107,22 @@ export class ReportesFormatterService {
     }
     L.push('');
 
+    // Footer
     L.push(`━━━━━━━━━━━━━━━━━━`);
     L.push(`🤖 Ingenio Cloud · ${fechaCortaSinAnio} ${horaFin}`);
 
     return L.join('\n');
   }
 
+  /** Columna KV: etiqueta padded a 14 chars, valor a la derecha */
   private colKv(label: string, value: string): string {
     const padded = label.padEnd(14, ' ');
     return `${padded} ${value}`;
   }
 
-  /** Escape caracteres especiales Markdown legacy: _ * [ ` */
+  /** Escape HTML para Telegram parse_mode=HTML */
   private esc(s: string): string {
-    return s.replace(/([_*[`])/g, '\\$1');
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   private fmtNum(v: number | null, decimals: number, unit: string): string {
