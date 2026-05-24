@@ -2,12 +2,8 @@ import { Injectable } from '@nestjs/common';
 import type { ReporteCompleto, ReportePayload } from './reportes.types';
 
 /**
- * Formatea reporte completo en mensaje Telegram (parse_mode=HTML)
- * y arma el payload final del webhook.
- *
- * Telegram HTML soporta: <b> <i> <u> <s> <code> <pre> <a href="">
- * NO soporta tablas ni listas. Usa saltos de línea + emojis.
- * Límite mensaje: 4096 chars.
+ * Formatea reporte completo en mensaje Telegram (parse_mode=HTML).
+ * Estilo limpio sin negritas pesadas, alineado por columnas con espacios.
  */
 @Injectable()
 export class ReportesFormatterService {
@@ -36,62 +32,95 @@ export class ReportesFormatterService {
   private armarMensaje(r: ReporteCompleto): string {
     const horaInicio = r.ventana.inicio.slice(11, 16);
     const horaFin = r.ventana.fin.slice(11, 16);
-    const fechaFmt = this.fmtFecha(r.ventana.fecha_industrial);
+    const fechaCorta = this.fmtFechaCorta(r.ventana.fecha_industrial);
+    const fechaCortaSinAnio = fechaCorta.slice(0, 5);
+    const turnoCap = this.capitalize(r.ventana.turno);
 
     const L: string[] = [];
-    L.push(`🏭 <b>INGENIO CLOUD · REPORTE TURNO ${this.esc(r.ventana.turno)}</b>`);
-    L.push(`📅 ${this.esc(fechaFmt)} · ${horaInicio} → ${horaFin}`);
+    // Header
+    L.push(`🏭 INGENIO CLOUD`);
+    L.push(`Reporte Turno ${this.esc(turnoCap)}`);
+    L.push(`📅 ${fechaCorta} · ${horaInicio} → ${horaFin}`);
+    L.push(`━━━━━━━━━━━━━━━━━━`);
     L.push('');
-    L.push(`━━━ <b>PRODUCCIÓN</b> ━━━`);
-    L.push(`🌱 Molienda: <b>${this.fmtNum(r.produccion.molienda_t, 1, 't')}</b>${this.fmtDelta(r.comparacion.molienda_delta_pct)}`);
-    L.push(`🔥 Gas: <b>${this.fmtNum(r.produccion.gas_m3, 0, 'm³')}</b>${this.fmtDelta(r.comparacion.gas_delta_pct)}`);
-    L.push(`🍬 Bolsas: <b>${this.fmtNum(r.produccion.bolsas, 0, '')}</b>${this.fmtDelta(r.comparacion.bolsas_delta_pct)}`);
-    if (r.produccion.alcohol_gl_prom != null) {
-      L.push(`🧉 Alcohol prom: ${r.produccion.alcohol_gl_prom.toFixed(1)} °GL`);
-    }
+
+    // PRODUCCIÓN
+    L.push(`📊 PRODUCCIÓN`);
+    L.push(this.colKv('🌱 Molienda', this.fmtNum(r.produccion.molienda_t, 1, 't')));
+    L.push(this.colKv('🔥 Gas',      this.fmtNum(r.produccion.gas_m3, 0, 'm³')));
+    L.push(this.colKv('🍬 Bolsas',   this.fmtNum(r.produccion.bolsas, 0, '')));
     L.push('');
-    L.push(`━━━ <b>EFICIENCIAS</b> ━━━`);
+
+    // EFICIENCIAS
+    L.push(`⚙️ EFICIENCIAS`);
     if (r.eficiencias.gas_por_t != null) {
       const ok = r.eficiencias.gas_por_t < 12;
-      L.push(`⚡ Gas/Molienda: ${r.eficiencias.gas_por_t.toFixed(2)} m³/t · obj &lt;12 ${ok ? '✅' : '⚠'}`);
+      L.push(`${ok ? '✅' : '⚠️'} Gas/Molienda  ${this.fmtNum(r.eficiencias.gas_por_t, 2, 'm³/t')}  (obj <12)`);
     }
     if (r.eficiencias.ritmo_t_h != null) {
       const ok = r.eficiencias.ritmo_t_h >= r.eficiencias.ritmo_objetivo_t_h;
-      L.push(`⚙️ Ritmo: ${r.eficiencias.ritmo_t_h.toFixed(1)} t/h · obj ${r.eficiencias.ritmo_objetivo_t_h} ${ok ? '✅' : '⚠'}`);
+      L.push(`${ok ? '✅' : '⚠️'} Ritmo         ${this.fmtNum(r.eficiencias.ritmo_t_h, 1, 't/h')}   (obj ${r.eficiencias.ritmo_objetivo_t_h})`);
     }
     L.push('');
-    L.push(`━━━ <b>CALIDAD</b> ━━━`);
-    if (r.calidad.color_icumsa != null) L.push(`🎨 ICUMSA: ${r.calidad.color_icumsa.toFixed(0)} UI ${r.calidad.color_icumsa < 200 ? '✅' : '⚠'}`);
-    if (r.calidad.bagazo_humedad != null) L.push(`💧 Bagazo Hum: ${r.calidad.bagazo_humedad.toFixed(1)}%`);
-    if (r.calidad.bagazo_pol != null) L.push(`🌾 Bagazo Pol: ${r.calidad.bagazo_pol.toFixed(2)}% ${r.calidad.bagazo_pol < 2.5 ? '✅' : '⚠'}`);
-    L.push('');
-    L.push(`━━━ <b>PARADAS</b> ━━━`);
+
+    // CALIDAD
+    const calLines: string[] = [];
+    if (r.calidad.color_icumsa != null) calLines.push(`ICUMSA           ${this.fmtNum(r.calidad.color_icumsa, 0, 'UI')}`);
+    if (r.calidad.bagazo_humedad != null) calLines.push(`Bagazo humedad  ${this.fmtNum(r.calidad.bagazo_humedad, 1, '%')}`);
+    if (r.calidad.bagazo_pol != null) calLines.push(`Bagazo Pol      ${this.fmtNum(r.calidad.bagazo_pol, 2, '%')}`);
+    if (r.calidad.cachaza_pol != null) calLines.push(`Cachaza Pol     ${this.fmtNum(r.calidad.cachaza_pol, 2, '%')}`);
+    if (calLines.length > 0) {
+      L.push(`💧 CALIDAD`);
+      calLines.forEach((l) => L.push(l));
+      L.push('');
+    }
+
+    // PARADAS
     if (r.paradas.count === 0) {
-      L.push(`✅ Sin paradas registradas`);
+      L.push(`✅ PARADAS · sin paradas registradas`);
     } else {
-      L.push(`<b>${r.paradas.count} eventos · ${r.paradas.minutos_total} min</b>`);
-      r.paradas.detalle.slice(0, 5).forEach((p) => {
-        const rango = p.hasta ? `${p.desde}-${p.hasta}` : `${p.desde}-abierta`;
-        const maquina = p.maquina ? ` <i>(${this.esc(p.maquina)})</i>` : '';
-        L.push(`• <code>${rango}</code> ${this.esc(p.motivo)}${maquina}`);
+      const m = r.paradas.minutos_total;
+      const hs = Math.floor(m / 60);
+      const mins = m % 60;
+      const durTxt = hs > 0 ? `${hs}h ${mins}m` : `${mins}m`;
+      L.push(`⏸ PARADAS · ${r.paradas.count} eventos · ${m} min (${durTxt})`);
+      L.push('');
+      r.paradas.detalle.forEach((p) => {
+        const rango = p.hasta ? `${p.desde}–${p.hasta}` : `${p.desde}–abierta`;
+        const dur = p.minutos != null ? ` · ${p.minutos} min` : '';
+        L.push(`🔧 ${rango}${dur}`);
+        L.push(`   ${this.esc(p.motivo)}`);
+        if (p.maquina || p.origen) {
+          const tail = [p.maquina, p.origen].filter(Boolean).join(' · ');
+          L.push(`   └ ${this.esc(tail)}`);
+        }
+        L.push('');
       });
-      if (r.paradas.detalle.length > 5) L.push(`… +${r.paradas.detalle.length - 5} más`);
     }
-    L.push('');
-    L.push(`━━━ <b>ALERTAS</b> ━━━`);
+
+    // ALERTAS
+    L.push(`🚨 ALERTAS`);
     if (r.alertas.length === 0) {
-      L.push(`✅ Todo dentro de rango`);
+      L.push(`- Todo dentro de rango`);
     } else {
-      r.alertas.forEach((a) => L.push(`⚠ ${this.esc(a)}`));
+      r.alertas.forEach((a) => L.push(`- ${this.esc(a.replace(/-/g, '−'))}`));
     }
     L.push('');
+
+    // Footer
     L.push(`━━━━━━━━━━━━━━━━━━`);
-    L.push(`<i>🤖 Ingenio Cloud · ${this.esc(fechaFmt)} ${horaFin}</i>`);
+    L.push(`🤖 Ingenio Cloud · ${fechaCortaSinAnio} ${horaFin}`);
 
     return L.join('\n');
   }
 
-  /** Escape HTML para Telegram (solo &, <, > son reservados en parse_mode=HTML) */
+  /** Columna KV: etiqueta padded a 14 chars, valor a la derecha */
+  private colKv(label: string, value: string): string {
+    const padded = label.padEnd(14, ' ');
+    return `${padded} ${value}`;
+  }
+
+  /** Escape HTML para Telegram parse_mode=HTML */
   private esc(s: string): string {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
@@ -102,15 +131,13 @@ export class ReportesFormatterService {
     return unit ? `${n} ${unit}` : n;
   }
 
-  private fmtDelta(pct: number | null): string {
-    if (pct == null) return '';
-    const arrow = pct >= 0 ? '▲' : '▼';
-    return ` (${arrow} ${pct >= 0 ? '+' : ''}${pct.toFixed(1)}% vs ant.)`;
+  /** dd/mm/yyyy */
+  private fmtFechaCorta(d: string): string {
+    const [y, m, day] = d.split('-');
+    return `${day}/${m}/${y}`;
   }
 
-  private fmtFecha(d: string): string {
-    const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-    const [y, m, day] = d.split('-');
-    return `${parseInt(day)} ${meses[parseInt(m) - 1]} ${y}`;
+  private capitalize(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
   }
 }

@@ -11,7 +11,7 @@ import type {
 
 /**
  * Calcula ventanas de turno (05-13 MAÑANA, 13-21 TARDE, 21-05 NOCHE).
- * Trae datos hxh desde production.v_dia_industrial_hxh y agrega por turno.
+ * Trae datos hxh desde production.fn_hxh_rango (RPC parametrizable) y agrega por turno.
  * Verifica completitud estricta: solo datos reales (no estimados).
  */
 @Injectable()
@@ -149,18 +149,13 @@ export class ReportesDataService {
 
   private async fetchHxH(ventana: TurnoVentana): Promise<HxHRow[]> {
     const prod = this.supabase.schema('production');
-    const { data, error } = await prod
-      .from('v_dia_industrial_hxh')
-      .select(
-        'ts_cierre, molienda_kg, molienda_es_estimado, gas_consumo, gas_es_estimado, bolsas_azucar, ' +
-          'bagazo_humedad, bagazo_pol, color_azucar, alcohol_gl',
-      )
-      .gt('ts_cierre', ventana.inicio)
-      .lte('ts_cierre', ventana.fin)
-      .order('ts_cierre', { ascending: true });
+    const { data, error } = await prod.rpc('fn_hxh_rango', {
+      p_inicio: ventana.inicio,
+      p_fin: ventana.fin,
+    });
 
     if (error) {
-      this.logger.warn(`fetchHxH fail: ${error.message}`);
+      this.logger.warn(`fetchHxH rpc fail: ${error.message}`);
       return [];
     }
     return (data ?? []) as unknown as HxHRow[];
