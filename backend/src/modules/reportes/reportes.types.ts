@@ -75,7 +75,7 @@ export interface ReportePayload {
   turno_inicio: string;
   turno_fin: string;
   datos_completos: true;
-  parse_mode: 'HTML';
+  parse_mode: 'Markdown';
   mensaje_telegram: string;
   datos: {
     produccion: ProduccionTurno;
