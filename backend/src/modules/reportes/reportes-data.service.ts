@@ -148,8 +148,7 @@ export class ReportesDataService {
   // ───────── helpers ─────────
 
   private async fetchHxH(ventana: TurnoVentana): Promise<HxHRow[]> {
-    const prod = this.supabase.schema('production');
-    const { data, error } = await prod.rpc('fn_hxh_rango', {
+    const { data, error } = await this.supabase.sb.rpc('fn_reporte_turno_hxh', {
       p_inicio: ventana.inicio,
       p_fin: ventana.fin,
     });
