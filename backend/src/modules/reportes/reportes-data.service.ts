@@ -255,6 +255,7 @@ export class ReportesDataService {
       humedad_azucar: null, // no está en la vista hxh aún
       bagazo_humedad: this.round1(avg(rows.map((r) => r.bagazo_humedad))),
       bagazo_pol: this.round1(avg(rows.map((r) => r.bagazo_pol))),
+      cachaza_pol: this.round1(avg(rows.map((r) => r.cachaza_pol))),
     };
   }
 
@@ -301,6 +302,7 @@ interface HxHRow {
   bolsas_azucar: number | null;
   bagazo_humedad: number | null;
   bagazo_pol: number | null;
+  cachaza_pol: number | null;
   color_azucar: number | null;
   alcohol_gl: number | null;
 }

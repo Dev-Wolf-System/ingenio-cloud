@@ -25,6 +25,7 @@ export interface CalidadTurno {
   humedad_azucar: number | null;
   bagazo_humedad: number | null;
   bagazo_pol: number | null;
+  cachaza_pol: number | null;
 }
 
 export interface ParadaItem {
