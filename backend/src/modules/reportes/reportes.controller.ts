@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ReportesService } from './reportes.service';
 import { ReportesDataService } from './reportes-data.service';
 import type { TurnoNombre, TurnoVentana } from './reportes.types';
@@ -33,6 +33,12 @@ export class ReportesController {
    */
   @Post('turno/enviar')
   async enviar(@Body() body: EnviarBody) {
+    if (!body?.turno || !['MAÑANA', 'TARDE', 'NOCHE'].includes(body.turno)) {
+      throw new BadRequestException('Falta turno o valor inválido. Debe ser MAÑANA, TARDE o NOCHE.');
+    }
+    if (!body.fecha_industrial || !/^\d{4}-\d{2}-\d{2}$/.test(body.fecha_industrial)) {
+      throw new BadRequestException('Falta fecha_industrial o formato inválido (YYYY-MM-DD).');
+    }
     const ventana = this.armarVentanaManual(body.turno, body.fecha_industrial);
     return this.svc.procesarTurno(ventana, 1);
   }
