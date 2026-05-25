@@ -14,7 +14,7 @@ import {
 } from 'recharts';
 import {
   IconX,
-  IconScale,
+  IconFlame,
   IconTrendingUp,
   IconTrendingDown,
   IconMinus,
@@ -22,9 +22,13 @@ import {
 import { formatNumber } from '@/lib/utils/format';
 import { BloquesKpiStats } from './BloquesKpiStats';
 
+/**
+ * Reusa shape BloqueSerie del backend: campo `molienda_t` semánticamente
+ * representa m³ de gas en este contexto (mismo buildBloqueSerie del service).
+ */
 export interface BloquePunto {
   label: string;
-  molienda_t: number | null;
+  molienda_t: number | null; // = gas_m3 (mismo backend serializer)
   acumulado_t: number;
   tendencia_t: number | null;
 }
@@ -40,7 +44,7 @@ export interface BloqueSerie {
   };
 }
 
-export interface MoliendaBloquesPayload {
+export interface GasBloquesPayload {
   anio_zafra?: number | null;
   zafra?: BloqueSerie;
   dia_corriente?: BloqueSerie;
@@ -49,10 +53,10 @@ export interface MoliendaBloquesPayload {
   turno_anterior?: BloqueSerie;
 }
 
-export interface MoliendaEstadoModalProps {
+export interface GasEstadoModalProps {
   open: boolean;
   onClose: () => void;
-  data?: MoliendaBloquesPayload | null;
+  data?: GasBloquesPayload | null;
   loading?: boolean;
 }
 
@@ -61,7 +65,7 @@ const EMPTY: BloqueSerie = {
   stats: { acumulado_t: 0, max_t: 0, min_t: 0, promedio_t: 0, tendencia_pct: 0 },
 };
 
-export function MoliendaEstadoModal({ open, onClose, data, loading }: MoliendaEstadoModalProps) {
+export function GasEstadoModal({ open, onClose, data, loading }: GasEstadoModalProps) {
   const anio = data?.anio_zafra ?? new Date().getFullYear();
 
   return (
@@ -93,7 +97,7 @@ export function MoliendaEstadoModal({ open, onClose, data, loading }: MoliendaEs
             <div
               aria-hidden
               className="absolute top-0 left-0 right-0 h-[3px]"
-              style={{ background: 'linear-gradient(90deg, var(--primary), var(--accent))' }}
+              style={{ background: 'linear-gradient(90deg, var(--warn), var(--accent))' }}
             />
 
             <button
@@ -104,24 +108,23 @@ export function MoliendaEstadoModal({ open, onClose, data, loading }: MoliendaEs
               <IconX size={16} />
             </button>
 
-            {/* Header */}
             <div className="p-6 pb-3 shrink-0 flex items-center gap-3.5">
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border"
                 style={{
-                  background: 'var(--primary-soft)',
-                  borderColor: 'var(--primary)',
-                  color: 'var(--primary-light)',
+                  background: 'var(--warn-soft)',
+                  borderColor: 'var(--warn)',
+                  color: 'var(--warn)',
                 }}
               >
-                <IconScale size={22} />
+                <IconFlame size={22} />
               </div>
               <div>
                 <h2
                   className="text-xl sm:text-2xl font-bold tracking-tight leading-tight text-text-primary"
                   style={{ fontFamily: 'var(--font-display)' }}
                 >
-                  Estado de molienda
+                  Consumo de gas
                 </h2>
                 <p className="text-xs sm:text-sm text-text-secondary mt-0.5">
                   Zafra, día y turno · corriente y anterior
@@ -129,11 +132,10 @@ export function MoliendaEstadoModal({ open, onClose, data, loading }: MoliendaEs
               </div>
             </div>
 
-            {/* Body */}
             <div className="px-6 pb-6 overflow-y-auto flex-1 space-y-5">
               {loading ? (
                 <div className="py-16 text-center text-sm text-text-muted">
-                  Cargando datos de molienda…
+                  Cargando datos de gas…
                 </div>
               ) : (
                 <>
@@ -141,19 +143,19 @@ export function MoliendaEstadoModal({ open, onClose, data, loading }: MoliendaEs
                     zafra={data?.zafra}
                     turnoActual={data?.turno_actual}
                     diaCorriente={data?.dia_corriente}
-                    unidad="t"
-                    modo="best"
-                    accentVar="var(--primary-light)"
+                    unidad="m³"
+                    modo="worst"
+                    accentVar="var(--warn)"
                   />
                   <Seccion titulo={`Zafra ${anio}`}>
                     <BloqueChart
-                      subtitulo="Molienda por día"
+                      subtitulo="Gas por día"
                       serie={data?.zafra ?? EMPTY}
                       showTrend
                     />
                   </Seccion>
 
-                  <Seccion titulo="Molienda en curso">
+                  <Seccion titulo="Consumo en curso">
                     <BloqueChart
                       subtitulo="Día corriente · hora × hora"
                       serie={data?.dia_corriente ?? EMPTY}
@@ -166,15 +168,9 @@ export function MoliendaEstadoModal({ open, onClose, data, loading }: MoliendaEs
                     />
                   </Seccion>
 
-                  <Seccion titulo="Molienda anterior">
-                    <BloqueChart
-                      subtitulo="Día anterior"
-                      serie={data?.dia_anterior ?? EMPTY}
-                    />
-                    <BloqueChart
-                      subtitulo="Turno anterior"
-                      serie={data?.turno_anterior ?? EMPTY}
-                    />
+                  <Seccion titulo="Consumo anterior">
+                    <BloqueChart subtitulo="Día anterior" serie={data?.dia_anterior ?? EMPTY} />
+                    <BloqueChart subtitulo="Turno anterior" serie={data?.turno_anterior ?? EMPTY} />
                   </Seccion>
                 </>
               )}
@@ -192,7 +188,7 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
       <div className="flex items-center gap-2 mb-2">
         <span
           className="text-sm sm:text-base font-bold uppercase tracking-wider"
-          style={{ color: 'var(--primary-light)' }}
+          style={{ color: 'var(--warn)' }}
         >
           {titulo}
         </span>
@@ -215,11 +211,11 @@ function BloqueChart({
   const { puntos, stats } = serie;
   const conData = puntos.some((p) => p.molienda_t != null);
   const tend = stats.tendencia_pct;
-  const gradId = `mb-bar-${subtitulo.replace(/[^a-zA-Z0-9]/g, '')}`;
+  const gradId = `gb-bar-${subtitulo.replace(/[^a-zA-Z0-9]/g, '')}`;
 
   const trendIcon =
     tend > 2 ? <IconTrendingUp size={12} /> : tend < -2 ? <IconTrendingDown size={12} /> : <IconMinus size={12} />;
-  const trendColor = tend > 2 ? 'var(--ok)' : tend < -2 ? 'var(--danger)' : 'var(--text-muted)';
+  const trendColor = tend > 2 ? 'var(--danger)' : tend < -2 ? 'var(--ok)' : 'var(--text-muted)';
   const trendLabel = tend > 2 ? `+${tend}%` : tend < -2 ? `${tend}%` : 'estable';
 
   return (
@@ -229,10 +225,10 @@ function BloqueChart({
           {subtitulo}
         </div>
         <div className="flex items-center gap-2.5 text-sm sm:text-base mono text-text-muted">
-          <span>min <b className="text-warn">{formatNumber(stats.min_t, 0)}</b></span>
-          <span>prom <b className="text-primary-light">{formatNumber(stats.promedio_t, 0)}</b></span>
-          <span>max <b className="text-ok">{formatNumber(stats.max_t, 0)}</b></span>
-          <span>acum <b className="text-text-primary">{formatNumber(stats.acumulado_t, 0)} t</b></span>
+          <span>min <b className="text-ok">{formatNumber(stats.min_t, 0)}</b></span>
+          <span>prom <b style={{ color: 'var(--warn)' }}>{formatNumber(stats.promedio_t, 0)}</b></span>
+          <span>max <b className="text-danger">{formatNumber(stats.max_t, 0)}</b></span>
+          <span>acum <b className="text-text-primary">{formatNumber(stats.acumulado_t, 0)} m³</b></span>
           {showTrend && (
             <span
               className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded"
@@ -255,8 +251,8 @@ function BloqueChart({
             <ComposedChart data={puntos} margin={{ top: 8, right: 6, left: 0, bottom: 0 }}>
               <defs>
                 <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--primary-light)" stopOpacity={0.9} />
-                  <stop offset="100%" stopColor="var(--primary)" stopOpacity={0.5} />
+                  <stop offset="0%" stopColor="var(--warn)" stopOpacity={0.9} />
+                  <stop offset="100%" stopColor="var(--warn)" stopOpacity={0.4} />
                 </linearGradient>
               </defs>
               <XAxis
@@ -274,104 +270,49 @@ function BloqueChart({
                 tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
                 axisLine={false}
                 tickLine={false}
-                width={36}
-                unit=" t"
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tick={{ fontSize: 9, fill: 'var(--accent)' }}
-                axisLine={false}
-                tickLine={false}
                 width={42}
+                unit=" m³"
               />
               <Tooltip
                 cursor={{ fill: 'var(--bg-hover)', opacity: 0.4 }}
-                content={({ active, payload, label }) => {
-                  if (!active || !payload?.length) return null;
-                  const COLOR: Record<string, string> = {
-                    molienda_t:  'var(--primary-light)',
-                    acumulado_t: 'var(--accent)',
-                    tendencia_t: 'var(--primary-light)',
-                  };
-                  const LABEL: Record<string, string> = {
-                    molienda_t:  'Molienda',
-                    acumulado_t: 'Acumulado',
-                    tendencia_t: 'Tendencia',
-                  };
-                  return (
-                    <div style={{
-                      background: 'var(--bg-card)',
-                      border: '1px solid var(--border-strong)',
-                      borderRadius: 6,
-                      padding: '6px 10px',
-                      fontSize: 13,
-                    }}>
-                      <p style={{ color: 'var(--text-muted)', marginBottom: 4 }}>{label}</p>
-                      {payload.map((entry) => {
-                        const key = entry.dataKey as string;
-                        const color = COLOR[key] ?? (entry.stroke as string) ?? (entry.fill as string) ?? 'var(--text-primary)';
-                        const val = entry.value != null ? `${formatNumber(Number(entry.value), 1)} t` : '—';
-                        return (
-                          <p key={key} style={{ color, margin: '2px 0', display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
-                            <span style={{ color: 'var(--text-muted)' }}>{LABEL[key] ?? key}:</span>
-                            <span style={{ fontWeight: 600 }}>{val}</span>
-                          </p>
-                        );
-                      })}
-                    </div>
-                  );
+                contentStyle={{
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border-strong)',
+                  borderRadius: 6,
+                  fontSize: 12,
+                }}
+                labelStyle={{ color: 'var(--text-muted)' }}
+                formatter={(value, name) => {
+                  if (value == null) return ['—', name];
+                  const lbl = name === 'tendencia_t' ? 'Tendencia' : name === 'acumulado_t' ? 'Acumulado' : 'Gas';
+                  return [`${formatNumber(Number(value), 0)} m³`, lbl];
                 }}
               />
-              <ReferenceLine
-                yAxisId="left"
-                y={stats.promedio_t}
-                stroke="var(--accent)"
-                strokeDasharray="4 3"
-                strokeWidth={1}
-              />
-              <Bar
-                yAxisId="left"
-                dataKey="molienda_t"
-                fill={`url(#${gradId})`}
-                radius={[4, 4, 0, 0]}
-                isAnimationActive={false}
-              >
+              <ReferenceLine y={stats.promedio_t} yAxisId="left" stroke="var(--accent)" strokeDasharray="4 3" strokeWidth={1.2} />
+              <Bar yAxisId="left" dataKey="molienda_t" fill="var(--warn)" radius={[3, 3, 0, 0]} isAnimationActive={false}>
                 {puntos.map((p, i) => (
                   <Cell
                     key={i}
                     fill={
                       p.molienda_t == null
                         ? 'transparent'
-                        : p.molienda_t >= stats.max_t
+                        : p.molienda_t >= stats.max_t * 0.95
+                        ? 'var(--danger)'
+                        : p.molienda_t <= stats.min_t * 1.05 && p.molienda_t > 0
                         ? 'var(--ok)'
-                        : p.molienda_t <= stats.min_t
-                        ? 'var(--warn)'
                         : `url(#${gradId})`
                     }
                   />
                 ))}
               </Bar>
-              <Line
-                yAxisId="right"
-                type="monotone"
-                dataKey="acumulado_t"
-                stroke="var(--accent)"
-                strokeWidth={2}
-                dot={false}
-                isAnimationActive={false}
-              />
               {showTrend && (
                 <Line
                   yAxisId="left"
-                  type="linear"
+                  type="monotone"
                   dataKey="tendencia_t"
-                  stroke="var(--primary-light)"
+                  stroke="var(--accent)"
                   strokeWidth={2}
-                  strokeDasharray="6 4"
                   dot={false}
-                  connectNulls
                   isAnimationActive={false}
                 />
               )}

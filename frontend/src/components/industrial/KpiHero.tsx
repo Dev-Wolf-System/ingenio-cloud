@@ -18,7 +18,7 @@ import { PremiumTile, type TileAccent } from './PremiumTile';
 import { SortableGroup } from './SortableGroup';
 import { SortableTile } from './SortableTile';
 import { MoliendaEstadoModal, type MoliendaBloquesPayload } from './MoliendaEstadoModal';
-import { DesgloceModal } from './DesgloceModal';
+import { GasEstadoModal, type GasBloquesPayload } from './GasEstadoModal';
 
 async function fetchAlerts() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
@@ -60,6 +60,26 @@ async function fetchMoliendaActual() {
 async function fetchMoliendaBloques(): Promise<MoliendaBloquesPayload> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
   const res = await fetch(`${apiUrl}/guardia/molienda-bloques`);
+  if (!res.ok) return {};
+  return res.json();
+}
+
+async function fetchGasActual() {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+  const res = await fetch(`${apiUrl}/guardia/gas-actual`);
+  if (!res.ok) return { gas_m3: null, acumulado_turno_m3: null, acumulado_dia_m3: null, etiqueta: null };
+  return res.json() as Promise<{
+    gas_m3: number | null;
+    acumulado_turno_m3: number | null;
+    acumulado_dia_m3: number | null;
+    etiqueta: string | null;
+    hora: string | null;
+  }>;
+}
+
+async function fetchGasBloques(): Promise<GasBloquesPayload> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+  const res = await fetch(`${apiUrl}/guardia/gas-bloques`);
   if (!res.ok) return {};
   return res.json();
 }
@@ -129,6 +149,18 @@ export function KpiHero() {
     refetchInterval: moliendaModalOpen ? 30_000 : false,
     staleTime: 30_000,
   });
+  const gasActual = useQuery({
+    queryKey: ['guardia', 'gas-actual'],
+    queryFn: fetchGasActual,
+    refetchInterval: 60_000,
+  });
+  const gasBloques = useQuery({
+    queryKey: ['guardia', 'gas-bloques'],
+    queryFn: fetchGasBloques,
+    enabled: gasModalOpen,
+    refetchInterval: gasModalOpen ? 30_000 : false,
+    staleTime: 30_000,
+  });
   const { ordered, saveOrder } = useTileOrder('kpi-hero', [...HERO_KEYS]);
   const { locked } = useKanbanLock();
 
@@ -139,15 +171,6 @@ export function KpiHero() {
   const bolsasHoras = bolsas.data?.horas_cargadas ?? null;
   const bolsasUltima = bolsas.data?.ultima_hora ?? null;
   const gasTotal = sumKeysIncluding(energia, ['caudal_gas']);
-  // Gas individual por caldera (claves tipo Caudal_Gas_CaldX)
-  const gasRows = Array.from(energia.entries())
-    .filter(([k]) => /caudal_gas/i.test(k))
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, item]) => ({
-      label: k.replace(/_/g, ' '),
-      value: item.value,
-      unit: item.unit ?? 'm³/h',
-    }));
   const totalCamiones = canchon.data?.total_camiones ?? null;
   const colorIcumsa = colorCinta.data?.color_icumsa ?? null;
   const humedadCinta = colorCinta.data?.humedad ?? null;
@@ -203,20 +226,33 @@ export function KpiHero() {
             }
           />
         );
-      case 'gas':
+      case 'gas': {
+        const gasHora = gasActual.data?.gas_m3 ?? null;
+        const gasHoraEtiqueta = gasActual.data?.etiqueta ?? null;
+        const gasAcumTurno = gasActual.data?.acumulado_turno_m3 ?? null;
+        const gasAcumDia = gasActual.data?.acumulado_dia_m3 ?? null;
         return (
           <PremiumTile
             icon={<IconFlame size={14} />}
-            label="Consumo gas total"
+            label="Consumo gas"
             value={gasTotal ?? undefined}
             unit="m³/h"
             precision={1}
             accent="warn"
             size="hero"
             onClick={() => setGasModalOpen(true)}
-            hint={gasTotal != null ? 'Calderas 2+3+6 · ver detalle' : 'Sin caudales'}
+            hint={
+              gasHora != null
+                ? `${gasHora.toLocaleString('es-AR')} m³${gasHoraEtiqueta ? ` · ${gasHoraEtiqueta}` : ''}${
+                    gasAcumTurno != null ? ` · turno ${gasAcumTurno.toLocaleString('es-AR')} m³` : ''
+                  }${gasAcumDia != null ? ` · día ${gasAcumDia.toLocaleString('es-AR')} m³` : ''} · ver detalle`
+                : gasTotal != null
+                ? 'Calderas 2+3+6 · ver detalle'
+                : 'Sin caudales'
+            }
           />
         );
+      }
       case 'color':
         return (
           <PremiumTile
@@ -302,18 +338,11 @@ export function KpiHero() {
         data={moliendaBloques.data}
         loading={moliendaBloques.isLoading}
       />
-      <DesgloceModal
+      <GasEstadoModal
         open={gasModalOpen}
         onClose={() => setGasModalOpen(false)}
-        title="Consumo gas por caldera"
-        subtitle="Caudal en tiempo real"
-        icon={<IconFlame size={20} />}
-        accentVar="var(--warn)"
-        precision={1}
-        rows={gasRows}
-        totalLabel="Total"
-        total={gasTotal}
-        totalUnit="m³/h"
+        data={gasBloques.data}
+        loading={gasBloques.isLoading}
       />
     </>
   );

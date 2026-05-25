@@ -427,6 +427,109 @@ export class GuardiaService {
     return out;
   }
 
+  /** Último valor de gas cargado del turno corriente (lab_general proceso='Gas') */
+  async getGasActualUltima() {
+    try {
+      const production = this.supabase.schema('production');
+      const { data, error } = await production
+        .from('v_gas_bloques')
+        .select('etiqueta, gas_m3, acumulado_m3, hora')
+        .eq('bloque', 'turno_actual')
+        .order('hora', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) {
+        this.logger.warn(`gas-actual fail: ${error.message}`);
+        return { stale: true, gas_m3: null, acumulado_m3: null, etiqueta: null, hora: null };
+      }
+      const row = data as {
+        etiqueta?: string;
+        gas_m3?: number | string | null;
+        acumulado_m3?: number | string | null;
+        hora?: string;
+      } | null;
+      const toNum = (v: number | string | null | undefined): number | null => {
+        if (v == null) return null;
+        const n = typeof v === 'string' ? parseFloat(v) : v;
+        return Number.isFinite(n) ? n : null;
+      };
+
+      // Acum día corriente: última fila del bloque dia_corriente
+      const { data: diaData } = await production
+        .from('v_gas_bloques')
+        .select('acumulado_m3, hora')
+        .eq('bloque', 'dia_corriente')
+        .order('hora', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const diaAcum = toNum((diaData as { acumulado_m3?: number | string } | null)?.acumulado_m3);
+
+      return {
+        etiqueta: row?.etiqueta ?? null,
+        hora: row?.hora ?? null,
+        gas_m3: toNum(row?.gas_m3),
+        acumulado_turno_m3: toNum(row?.acumulado_m3),
+        acumulado_dia_m3: diaAcum,
+      };
+    } catch (err) {
+      this.logger.warn(`gas-actual exception: ${(err as Error).message}`);
+      return { stale: true, gas_m3: null, acumulado_m3: null, etiqueta: null, hora: null };
+    }
+  }
+
+  /** Estado de gas por bloques: zafra, día/turno corriente y anterior */
+  async getGasBloques() {
+    const num = (v: number | string | null | undefined): number | null => {
+      if (v == null) return null;
+      const n = typeof v === 'string' ? parseFloat(v) : v;
+      return Number.isFinite(n) ? n : null;
+    };
+    const empty = { puntos: [], stats: { acumulado_t: 0, max_t: 0, min_t: 0, promedio_t: 0, tendencia_pct: 0 } };
+    const out: Record<string, unknown> = {
+      anio_zafra: null,
+      zafra: empty,
+      dia_corriente: empty,
+      turno_actual: empty,
+      dia_anterior: empty,
+      turno_anterior: empty,
+    };
+
+    try {
+      const production = this.supabase.schema('production');
+      const { data, error } = await production
+        .from('v_gas_bloques')
+        .select('bloque, hora, anio_zafra, etiqueta, gas_m3, acumulado_m3')
+        .order('hora', { ascending: true });
+      if (error) {
+        this.logger.warn(`gas-bloques fail: ${error.message}`);
+      } else {
+        const rows = (data ?? []) as Array<{
+          bloque: string;
+          anio_zafra: number;
+          etiqueta: string;
+          gas_m3: number | string | null;
+          acumulado_m3: number | string | null;
+        }>;
+        out.anio_zafra = rows[0]?.anio_zafra ?? null;
+        for (const b of ['zafra', 'dia_corriente', 'turno_actual', 'dia_anterior']) {
+          const sub = rows.filter((r) => r.bloque === b);
+          // Reusar buildBloqueSerie tratando m3 como "kg" (mismas unidades de cálculo)
+          out[b] = this.buildBloqueSerie(
+            sub.map((r) => ({
+              label: r.etiqueta,
+              molienda_kg: num(r.gas_m3),
+              acumulado_kg: num(r.acumulado_m3),
+            })),
+          );
+        }
+      }
+    } catch (err) {
+      this.logger.warn(`gas-bloques exception: ${(err as Error).message}`);
+    }
+
+    return out;
+  }
+
   /** Molienda hora x hora del turno previo (production.v_turno_hora_x_hora) */
   async getMoliendaHoraPrevio() {
     try {

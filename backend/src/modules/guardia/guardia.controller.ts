@@ -65,6 +65,18 @@ export class GuardiaController {
     return this.svc.getMoliendaBloques();
   }
 
+  /** GET /api/guardia/gas-actual — último valor de gas cargado del turno corriente */
+  @Get('gas-actual')
+  gasActual() {
+    return this.svc.getGasActualUltima();
+  }
+
+  /** GET /api/guardia/gas-bloques — estado de gas por bloques (zafra, día/turno) */
+  @Get('gas-bloques')
+  gasBloques() {
+    return this.svc.getGasBloques();
+  }
+
   /** GET /api/guardia/molienda-hora — molienda hora x hora turno previo + stats */
   @Get('molienda-hora')
   moliendaHora() {
