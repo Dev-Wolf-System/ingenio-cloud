@@ -142,6 +142,7 @@ export function GasEstadoModal({ open, onClose, data, loading }: GasEstadoModalP
                   <BloquesKpiStats
                     zafra={data?.zafra}
                     turnoActual={data?.turno_actual}
+                    diaCorriente={data?.dia_corriente}
                     unidad="m³"
                     modo="worst"
                     accentVar="var(--warn)"

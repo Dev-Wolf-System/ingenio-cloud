@@ -23,6 +23,8 @@ interface SerieLike {
 export interface BloquesKpiStatsProps {
   zafra?: SerieLike;
   turnoActual?: SerieLike;
+  /** Pasalo si querés mostrar un 5to KPI con consumo/producción del día corriente */
+  diaCorriente?: SerieLike;
   /** 't' para molienda, 'm³' para gas */
   unidad: string;
   /** 'best'=verde el max (molienda); 'worst'=rojo el max (gas) */
@@ -34,6 +36,7 @@ export interface BloquesKpiStatsProps {
 export function BloquesKpiStats({
   zafra,
   turnoActual,
+  diaCorriente,
   unidad,
   modo,
   accentVar,
@@ -75,8 +78,15 @@ export function BloquesKpiStats({
     deltaSem > 2 ? <IconTrendingUp size={11} /> : deltaSem < -2 ? <IconTrendingDown size={11} /> : <IconMinus size={11} />;
   const trendLabel = Math.abs(deltaSem) > 2 ? `${deltaSem > 0 ? '+' : ''}${deltaSem.toFixed(1)}% sem` : 'estable';
 
+  // Día corriente (opcional)
+  const acumDia = diaCorriente?.stats.acumulado_t ?? 0;
+  const horasDia = diaCorriente?.puntos.filter((p) => p.molienda_t != null && p.molienda_t > 0).length ?? 0;
+  const ritmoDia = horasDia > 0 ? acumDia / horasDia : 0;
+
+  const cols = diaCorriente ? 'lg:grid-cols-5' : 'lg:grid-cols-4';
+
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 mb-5">
+    <div className={`grid grid-cols-2 ${cols} gap-2 sm:gap-3 lg:gap-4 mb-5`}>
       <KpiBox label="Acum. zafra" valor={formatNumber(acumZafra, 0)} unit={unidad} sub={`${diasZafra} días`} accentVar={accentVar} />
       <KpiBox
         label="Prom. diario"
@@ -96,6 +106,15 @@ export function BloquesKpiStats({
         sub={extremoFecha}
         accentVar={extremoColor}
       />
+      {diaCorriente && (
+        <KpiBox
+          label="Día actual"
+          valor={formatNumber(acumDia, 0)}
+          unit={unidad}
+          sub={`${formatNumber(ritmoDia, 0)} ${unidad}/h · ${horasDia}h cargadas`}
+          accentVar={accentVar}
+        />
+      )}
       <KpiBox
         label="Turno actual"
         valor={formatNumber(acumTurno, 0)}
