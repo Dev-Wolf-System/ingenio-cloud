@@ -358,15 +358,20 @@ body[data-mode='tv'] { overflow: hidden; }
     transform: scale(1.025);
   }
 }
-.kpi-alert-pulse {
+.kpi-alert-pulse,
+.kpi-alert-pulse-critical {
+  /* relative + z-index alto para que el glow se vea sobre tiles vecinos
+     en grids multi-columna (desktop xl:grid-cols-6) */
+  position: relative;
+  z-index: 5;
   border-radius: var(--radius-lg, 14px);
-  animation: kpiAlertPulse 1.6s ease-in-out infinite;
   will-change: transform, box-shadow;
 }
+.kpi-alert-pulse {
+  animation: kpiAlertPulse 1.6s ease-in-out infinite;
+}
 .kpi-alert-pulse-critical {
-  border-radius: var(--radius-lg, 14px);
   animation: kpiAlertPulseCritical 1s ease-in-out infinite;
-  will-change: transform, box-shadow;
 }
 @media (prefers-reduced-motion: reduce) {
   .kpi-alert-pulse, .kpi-alert-pulse-critical {
