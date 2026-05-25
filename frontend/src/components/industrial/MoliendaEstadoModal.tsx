@@ -140,6 +140,7 @@ export function MoliendaEstadoModal({ open, onClose, data, loading }: MoliendaEs
                   <BloquesKpiStats
                     zafra={data?.zafra}
                     turnoActual={data?.turno_actual}
+                    diaCorriente={data?.dia_corriente}
                     unidad="t"
                     modo="best"
                     accentVar="var(--primary-light)"
