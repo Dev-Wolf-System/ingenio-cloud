@@ -167,7 +167,13 @@ export function TrapichePanel() {
   const fibraBagazo = bagazoQ.data?.fibra_bagazo ?? null;
   const polCachaza = bagazoQ.data?.pol_cachaza ?? null;
   const humedadCachaza = bagazoQ.data?.humedad_cachaza ?? null;
-  const velRealtime = pickItem(data, ['rpm_primer_molino', 'rpm_1er_molino', 'vel_primer_molino']);
+  const velRealtime = pickItem(data, [
+    'Molino1_Velocidad',
+    'molino1_velocidad',
+    'rpm_primer_molino',
+    'rpm_1er_molino',
+    'vel_primer_molino',
+  ]);
   const velCachedPromedio =
     velMolinoQ.data?.stats?.promedio_rpm ?? velMolinoQ.data?.promedio ?? null;
   const velPromedio = velRealtime?.value ?? velCachedPromedio;
