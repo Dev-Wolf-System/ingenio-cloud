@@ -532,6 +532,27 @@ export class GuardiaService {
       this.logger.warn(`gas-bloques exception: ${(err as Error).message}`);
     }
 
+    // turno_anterior: viene de v_turno_hora_x_hora (mismo patrón que molienda)
+    try {
+      const production = this.supabase.schema('production');
+      const { data, error } = await production
+        .from('v_turno_hora_x_hora')
+        .select('periodo, gas_consumo, ts_cierre')
+        .eq('turno_rel', 'previo')
+        .order('ts_cierre', { ascending: true });
+      if (!error) {
+        const rows = (data ?? []) as Array<{ periodo: string; gas_consumo: number | string | null }>;
+        out.turno_anterior = this.buildBloqueSerie(
+          rows.map((r) => ({ label: r.periodo, molienda_kg: num(r.gas_consumo) })),
+          1,
+        );
+      } else {
+        this.logger.warn(`gas-bloques turno_anterior fail: ${error.message}`);
+      }
+    } catch (err) {
+      this.logger.warn(`gas-bloques turno_anterior exception: ${(err as Error).message}`);
+    }
+
     return out;
   }
 
