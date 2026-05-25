@@ -23,7 +23,6 @@ interface SerieLike {
 export interface BloquesKpiStatsProps {
   zafra?: SerieLike;
   turnoActual?: SerieLike;
-  diaCorriente?: SerieLike;
   /** 't' para molienda, 'm³' para gas */
   unidad: string;
   /** 'best'=verde el max (molienda); 'worst'=rojo el max (gas) */
@@ -35,7 +34,6 @@ export interface BloquesKpiStatsProps {
 export function BloquesKpiStats({
   zafra,
   turnoActual,
-  diaCorriente,
   unidad,
   modo,
   accentVar,
