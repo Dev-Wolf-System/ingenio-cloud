@@ -253,24 +253,33 @@ export function KpiHero() {
             }
           />
         );
-      case 'alertas':
+      case 'alertas': {
+        const pulseClass =
+          criticalCount > 0
+            ? 'kpi-alert-pulse-critical'
+            : activeCount > 0
+            ? 'kpi-alert-pulse'
+            : '';
         return (
-          <PremiumTile
-            icon={<IconAlertTriangle size={14} />}
-            label="Alertas activas"
-            value={activeCount}
-            precision={0}
-            accent={alertAccent}
-            size="hero"
-            hint={
-              criticalCount > 0
-                ? `${criticalCount} críticas`
-                : activeCount > 0
-                ? `${activeCount} pendientes`
-                : 'Operación normal'
-            }
-          />
+          <div className={pulseClass}>
+            <PremiumTile
+              icon={<IconAlertTriangle size={14} />}
+              label="Alertas activas"
+              value={activeCount}
+              precision={0}
+              accent={alertAccent}
+              size="hero"
+              hint={
+                criticalCount > 0
+                  ? `${criticalCount} críticas`
+                  : activeCount > 0
+                  ? `${activeCount} pendientes`
+                  : 'Operación normal'
+              }
+            />
+          </div>
         );
+      }
       default:
         return null;
     }

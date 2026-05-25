@@ -328,3 +328,48 @@ body[data-mode='tv'] { overflow: hidden; }
   background: var(--primary-soft);
   color: var(--text-primary);
 }
+
+/* Pulsación llamativa para KPI alertas activas */
+@keyframes kpiAlertPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--warn) 55%, transparent),
+      0 0 20px 2px color-mix(in srgb, var(--warn) 35%, transparent);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 8px color-mix(in srgb, var(--warn) 0%, transparent),
+      0 0 30px 6px color-mix(in srgb, var(--warn) 55%, transparent);
+    transform: scale(1.015);
+  }
+}
+@keyframes kpiAlertPulseCritical {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 color-mix(in srgb, var(--danger) 70%, transparent),
+      0 0 24px 4px color-mix(in srgb, var(--danger) 45%, transparent);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow:
+      0 0 0 10px color-mix(in srgb, var(--danger) 0%, transparent),
+      0 0 36px 8px color-mix(in srgb, var(--danger) 65%, transparent);
+    transform: scale(1.025);
+  }
+}
+.kpi-alert-pulse {
+  border-radius: var(--radius-lg, 14px);
+  animation: kpiAlertPulse 1.6s ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+.kpi-alert-pulse-critical {
+  border-radius: var(--radius-lg, 14px);
+  animation: kpiAlertPulseCritical 1s ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kpi-alert-pulse, .kpi-alert-pulse-critical {
+    animation: none;
+  }
+}
