@@ -299,13 +299,17 @@ export class GuardiaService {
     }
   }
 
-  /** Construye serie de un bloque: puntos en t + acumulado + recta de tendencia + stats */
+  /**
+   * Construye serie de un bloque: puntos + acumulado + recta de tendencia + stats.
+   * @param divisor 1000 para kg→t (molienda), 1 para valores ya en unidad final (gas m³)
+   */
   private buildBloqueSerie(
     raw: Array<{ label: string; molienda_kg: number | null; acumulado_kg?: number | null }>,
+    divisor = 1000,
   ) {
     const base = raw.map((r) => ({
       label: r.label,
-      molienda_t: r.molienda_kg != null ? Number((r.molienda_kg / 1000).toFixed(2)) : null,
+      molienda_t: r.molienda_kg != null ? Number((r.molienda_kg / divisor).toFixed(2)) : null,
     }));
     // acumulado: usar provisto por la vista, o running sum si falta
     let run = 0;
@@ -313,7 +317,7 @@ export class GuardiaService {
       const provided = raw[i].acumulado_kg;
       let acumulado_t: number;
       if (provided != null) {
-        acumulado_t = Number((provided / 1000).toFixed(2));
+        acumulado_t = Number((provided / divisor).toFixed(2));
       } else {
         if (p.molienda_t != null) run += p.molienda_t;
         acumulado_t = Number(run.toFixed(2));
@@ -513,13 +517,14 @@ export class GuardiaService {
         out.anio_zafra = rows[0]?.anio_zafra ?? null;
         for (const b of ['zafra', 'dia_corriente', 'turno_actual', 'dia_anterior']) {
           const sub = rows.filter((r) => r.bloque === b);
-          // Reusar buildBloqueSerie tratando m3 como "kg" (mismas unidades de cálculo)
+          // divisor=1 porque gas_m3 ya está en m³ (no requiere conversión kg→t)
           out[b] = this.buildBloqueSerie(
             sub.map((r) => ({
               label: r.etiqueta,
               molienda_kg: num(r.gas_m3),
               acumulado_kg: num(r.acumulado_m3),
             })),
+            1,
           );
         }
       }
