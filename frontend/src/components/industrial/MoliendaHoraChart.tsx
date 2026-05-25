@@ -149,7 +149,7 @@ export function MoliendaHoraChart({ data, className, height = 160 }: MoliendaHor
                 strokeWidth={1.2}
               />
               {/* Barras volumen — verde pico, ámbar valle */}
-              <Bar dataKey="molienda_t" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+              <Bar dataKey="molienda_t" fill="var(--primary-light)" radius={[4, 4, 0, 0]} isAnimationActive={false}>
                 {puntos.map((p, i) => (
                   <Cell
                     key={i}
