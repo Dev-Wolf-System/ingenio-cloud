@@ -7,13 +7,14 @@ import type { ReactNode } from 'react';
 interface SortableTileProps {
   id: string;
   children: ReactNode;
+  className?: string;
 }
 
 /**
  * Wrapper draggable para tiles dentro de un SortableContext.
  * El cursor cambia a grab/grabbing y el tile se ilumina al arrastrar.
  */
-export function SortableTile({ id, children }: SortableTileProps) {
+export function SortableTile({ id, children, className }: SortableTileProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id });
 
@@ -29,7 +30,7 @@ export function SortableTile({ id, children }: SortableTileProps) {
   } as React.CSSProperties;
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none">
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className={`touch-none ${className ?? ''}`}>
       {children}
     </div>
   );

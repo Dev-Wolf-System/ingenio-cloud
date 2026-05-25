@@ -289,33 +289,24 @@ export function KpiHero() {
             }
           />
         );
-      case 'alertas': {
-        const pulseClass =
-          criticalCount > 0
-            ? 'kpi-alert-pulse-critical'
-            : activeCount > 0
-            ? 'kpi-alert-pulse'
-            : '';
+      case 'alertas':
         return (
-          <div className={pulseClass}>
-            <PremiumTile
-              icon={<IconAlertTriangle size={14} />}
-              label="Alertas activas"
-              value={activeCount}
-              precision={0}
-              accent={alertAccent}
-              size="hero"
-              hint={
-                criticalCount > 0
-                  ? `${criticalCount} críticas`
-                  : activeCount > 0
-                  ? `${activeCount} pendientes`
-                  : 'Operación normal'
-              }
-            />
-          </div>
+          <PremiumTile
+            icon={<IconAlertTriangle size={14} />}
+            label="Alertas activas"
+            value={activeCount}
+            precision={0}
+            accent={alertAccent}
+            size="hero"
+            hint={
+              criticalCount > 0
+                ? `${criticalCount} críticas`
+                : activeCount > 0
+                ? `${activeCount} pendientes`
+                : 'Operación normal'
+            }
+          />
         );
-      }
       default:
         return null;
     }
@@ -325,11 +316,21 @@ export function KpiHero() {
     <>
       <SortableGroup items={ordered} onReorder={saveOrder} disabled={locked}>
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
-          {ordered.map((id) => (
-            <SortableTile key={id} id={id}>
-              {renderTile(id)}
-            </SortableTile>
-          ))}
+          {ordered.map((id) => {
+            const pulseClass =
+              id === 'alertas'
+                ? criticalCount > 0
+                  ? 'kpi-alert-pulse-critical'
+                  : activeCount > 0
+                  ? 'kpi-alert-pulse'
+                  : ''
+                : '';
+            return (
+              <SortableTile key={id} id={id} className={pulseClass}>
+                {renderTile(id)}
+              </SortableTile>
+            );
+          })}
         </div>
       </SortableGroup>
       <MoliendaEstadoModal
