@@ -75,7 +75,7 @@ export function BloquesKpiStats({
   const trendLabel = Math.abs(deltaSem) > 2 ? `${deltaSem > 0 ? '+' : ''}${deltaSem.toFixed(1)}% sem` : 'estable';
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-5">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 mb-5">
       <KpiBox label="Acum. zafra" valor={formatNumber(acumZafra, 0)} unit={unidad} sub={`${diasZafra} días`} accentVar={accentVar} />
       <KpiBox
         label="Prom. diario"
@@ -121,15 +121,20 @@ function KpiBox({
 }) {
   return (
     <div
-      className="rounded-xl border bg-bg-card px-3 py-2.5 flex flex-col gap-0.5"
+      className="rounded-xl border bg-bg-card px-3 py-2.5 lg:px-4 lg:py-3.5 flex flex-col gap-0.5 lg:gap-1"
       style={{ borderColor: 'var(--border-strong)' }}
     >
-      <div className="text-[10px] sm:text-xs uppercase tracking-wider text-text-muted font-semibold">{label}</div>
-      <div className="mono tabular-nums font-bold text-base sm:text-xl leading-tight" style={{ color: accentVar }}>
-        {valor}
-        <span className="text-xs sm:text-sm font-normal text-text-secondary ml-1">{unit}</span>
+      <div className="text-[10px] sm:text-xs lg:text-sm uppercase tracking-wider text-text-muted font-semibold">
+        {label}
       </div>
-      <div className="text-[10px] sm:text-xs text-text-muted">{sub}</div>
+      <div
+        className="mono tabular-nums font-bold text-base sm:text-xl lg:text-3xl leading-tight"
+        style={{ color: accentVar }}
+      >
+        {valor}
+        <span className="text-xs sm:text-sm lg:text-base font-normal text-text-secondary ml-1">{unit}</span>
+      </div>
+      <div className="text-[10px] sm:text-xs lg:text-sm text-text-muted">{sub}</div>
     </div>
   );
 }
