@@ -53,9 +53,10 @@ export function BloquesKpiStats({
   const avgPrev = prev7.length ? prev7.reduce((a, b) => a + (b.molienda_t ?? 0), 0) / prev7.length : 0;
   const deltaSem = avgPrev > 0 ? ((avgLast - avgPrev) / avgPrev) * 100 : 0;
 
-  // Mejor/Peor día de la zafra
+  // Mejor/Peor día de la zafra — siempre tomar MAX
+  // (mejor molienda = más producción · peor gas = más consumo)
   const ordenados = [...puntos].sort((a, b) => (b.molienda_t ?? 0) - (a.molienda_t ?? 0));
-  const extremo = modo === 'best' ? ordenados[0] : ordenados[ordenados.length - 1];
+  const extremo = ordenados[0];
   const extremoValor = extremo?.molienda_t ?? 0;
   const extremoFecha = extremo?.label ?? '—';
   const extremoTitulo = modo === 'best' ? 'Mejor día' : 'Peor día';
