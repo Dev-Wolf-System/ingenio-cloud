@@ -222,19 +222,19 @@ function BloqueChart({
   const trendLabel = tend > 2 ? `+${tend}%` : tend < -2 ? `${tend}%` : 'estable';
 
   return (
-    <div className="rounded-xl border border-border bg-bg-card p-3">
-      <div className="flex items-baseline justify-between mb-1.5 flex-wrap gap-2">
-        <div className="text-sm sm:text-base uppercase tracking-wide text-text-muted font-semibold">
+    <div className="rounded-xl border border-border bg-bg-card p-3 lg:p-4">
+      <div className="flex items-baseline justify-between mb-1.5 lg:mb-3 flex-wrap gap-2 lg:gap-3">
+        <div className="text-sm sm:text-base lg:text-lg uppercase tracking-wide text-text-muted font-semibold">
           {subtitulo}
         </div>
-        <div className="flex items-center gap-2.5 text-sm sm:text-base mono text-text-muted">
+        <div className="flex items-center gap-2.5 lg:gap-4 text-sm sm:text-base lg:text-lg mono text-text-muted">
           <span>min <b className="text-warn">{formatNumber(stats.min_t, 0)}</b></span>
           <span>prom <b className="text-primary-light">{formatNumber(stats.promedio_t, 0)}</b></span>
           <span>max <b className="text-ok">{formatNumber(stats.max_t, 0)}</b></span>
           <span>acum <b className="text-text-primary">{formatNumber(stats.acumulado_t, 0)} t</b></span>
           {showTrend && (
             <span
-              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded"
+              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 lg:px-2.5 lg:py-1 rounded"
               style={{ color: trendColor, background: 'var(--bg-hover)' }}
             >
               {trendIcon}
