@@ -171,8 +171,7 @@ export function KpiHero() {
   const gasHoraCurso = useQuery({
     queryKey: ['guardia', 'gas-hora-curso'],
     queryFn: fetchGasHoraEnCurso,
-    enabled: gasModalOpen,
-    refetchInterval: gasModalOpen ? 30_000 : false,
+    refetchInterval: 30_000,
     staleTime: 30_000,
   });
   const gasBloquesConCurso = useMemo(
@@ -249,6 +248,11 @@ export function KpiHero() {
         const gasHoraEtiqueta = gasActual.data?.etiqueta ?? null;
         const gasAcumTurno = gasActual.data?.acumulado_turno_m3 ?? null;
         const gasAcumDia = gasActual.data?.acumulado_dia_m3 ?? null;
+        // Suma parcial de la hora EN CURSO (estimado Influx) al acumulado mientras
+        // el lab no haya cargado esa hora. Se va actualizando cada 30s.
+        const enCursoParcial = gasHoraCurso.data?.m3_parcial ?? 0;
+        const gasAcumTurnoLive = gasAcumTurno != null ? gasAcumTurno + enCursoParcial : null;
+        const gasAcumDiaLive = gasAcumDia != null ? gasAcumDia + enCursoParcial : null;
         return (
           <PremiumTile
             icon={<IconFlame size={14} />}
@@ -262,8 +266,8 @@ export function KpiHero() {
             hint={
               gasHora != null
                 ? `${gasHora.toLocaleString('es-AR')} m³${gasHoraEtiqueta ? ` · ${gasHoraEtiqueta}` : ''}${
-                    gasAcumTurno != null ? ` · turno ${gasAcumTurno.toLocaleString('es-AR')} m³` : ''
-                  }${gasAcumDia != null ? ` · día ${gasAcumDia.toLocaleString('es-AR')} m³` : ''} · ver detalle`
+                    gasAcumTurnoLive != null ? ` · turno ${Math.round(gasAcumTurnoLive).toLocaleString('es-AR')} m³` : ''
+                  }${gasAcumDiaLive != null ? ` · día ${Math.round(gasAcumDiaLive).toLocaleString('es-AR')} m³` : ''} · ver detalle`
                 : gasTotal != null
                 ? 'Calderas 2+3+6 · ver detalle'
                 : 'Sin caudales'
