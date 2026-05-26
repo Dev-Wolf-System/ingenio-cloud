@@ -482,9 +482,182 @@ Logs y errores capturados automáticamente. Timeouts: default 10s, override con 
 
 ---
 
-## 13. Histórico exploraciones
+## 13. Caso uso integrado — Gas realtime con fallback
+
+### Arquitectura end-to-end
+
+```
+┌─────────────────┐    cron 1m     ┌──────────────────────┐
+│  InfluxDB 3     │ ────────────▶ │  InfluxGasService    │
+│  dashboard-     │   SQL avg      │  fetchGasPorHora()   │
+│  general-       │   por hora     │  - excluye bucket    │
+│  energia        │   (CERRADAS)   │    en curso          │
+└─────────────────┘                │  - parseInfluxUtc()  │
+                                   │  - utcToArt()        │
+                                   └──────────┬───────────┘
+                                              │ upsert
+                                              ▼
+                                   ┌──────────────────────┐
+                                   │  production.         │
+                                   │  gas_hora_estimado   │
+                                   └──────────┬───────────┘
+                                              │ COALESCE con lab
+                                              ▼
+┌─────────────────┐                ┌──────────────────────┐
+│  legacy.        │ ─────────────▶│  production.         │
+│  lab_general    │  prioridad     │  v_gas_bloques       │
+│  (Gas)          │                │  + columna origen    │
+└─────────────────┘                │  + filtro defensivo  │
+                                   │    ts_cierre <= now  │
+                                   └──────────┬───────────┘
+                                              │
+                  ┌───────────────────────────┴──────────┐
+                  │                                      │
+                  ▼                                      ▼
+       ┌────────────────────┐                ┌────────────────────┐
+       │  GET /gas-bloques  │                │  GET /gas-hora-    │
+       │  (lab + estimado)  │                │  curso (cache 30s) │
+       └─────────┬──────────┘                │  bucket EN CURSO   │
+                 │                           │  parcial parcial   │
+                 │                           └─────────┬──────────┘
+                 │                                     │
+                 └────────────┬────────────────────────┘
+                              ▼
+                 ┌────────────────────────┐
+                 │  Frontend KpiHero      │
+                 │  mergeGasHoraEnCurso() │
+                 │  → GasEstadoModal      │
+                 │     Bar Cell por       │
+                 │     origen (lab/est/   │
+                 │     en_curso)          │
+                 └────────────────────────┘
+```
+
+### Tabla `production.gas_hora_estimado`
+```
+ts_cierre    timestamp without time zone PRIMARY KEY  -- ART literal
+m3_estimado  double precision
+updated_at   timestamp with time zone
+```
+**Convención**: `ts_cierre` se almacena como literal SIN TZ con contenido en **hora local ART** (ej: `2026-05-26 14:00:00` = 14:00 ART cierre).
+
+### Vista `production.v_gas_bloques`
+Columnas:
+- `bloque` text (`zafra` | `dia_corriente` | `turno_actual` | `dia_anterior`)
+- `hora` timestamp (ts_cierre o dia_industrial)
+- `etiqueta` text (`HH:00` o `DD/MM/YYYY`)
+- `gas_m3` numeric
+- `origen` text (`lab` | `estimado` | `mixto`)
+- `acumulado_m3` numeric (window sum)
+- `anio_zafra` int
+
+**Lógica**:
+1. `gas_lab` = lecturas reales (`legacy.lab_general.proceso_codigo='Gas'`, `kilos > 0`)
+2. `gas_est` = Influx estimados (con filtro defensivo `ts_cierre <= now() ART`)
+3. `gas_union` = lab UNION ALL estimado (estimado solo si no hay lab para ese ts_cierre)
+4. Lab tiene prioridad por construcción.
+
+### Endpoints REST
+
+| Método | Path | Descripción | Cache |
+|--------|------|-------------|-------|
+| GET | `/api/health/influx` | Health Influx + tablas | — |
+| GET | `/api/guardia/gas-bloques` | Bloques con origen | (frontend 30s) |
+| GET | `/api/guardia/gas-hora-curso` | Estimación parcial bucket actual | 30s server |
+
+### Frontend
+
+- `GasEstadoModal.tsx`:
+  - Tipo `OrigenGas = 'lab' | 'estimado' | 'en_curso' | 'mixto'`
+  - `<Cell>` con `fillOpacity`/`strokeDasharray` distintos por origen
+  - Helper `mergeGasHoraEnCurso(payload, horaCurso)` agrega bar `origen='en_curso'` con label `HH:00*`
+  - Leyenda chips arriba del chart cuando hay no-lab
+- `KpiHero.tsx`:
+  - Query `gas-hora-curso` con poll 30s cuando modal abierto
+  - Merge antes de pasar al modal
+
+---
+
+## 14. Bugs resueltos — gas realtime (2026-05-26)
+
+### Bug 1 — Schema cambió a long format
+**Síntoma**: `InfluxGasService` rota, cron silenciosamente devolvía `[]`.
+**Causa**: Query usaba `AVG("caldera2.caldera2.cald2_gas_caudal")` tratando variable como columna. Influx 3 ahora usa long format: `variable` es tag, `value` el field.
+**Fix**: `WHERE variable IN (...) GROUP BY variable + AVG(value)`.
+
+### Bug 2 — TZ container ART + Influx string sin Z
+**Síntoma**: `gas_hora_estimado.ts_cierre` corrido +3h adelante.
+**Causa**: Influx 3 devuelve `"2026-05-26T17:00:00"` sin sufijo Z. Container backend con `TZ=America/Argentina/Buenos_Aires` hace que `new Date(s)` interprete el string como hora local ART → epoch desplazado.
+**Fix**: helper `parseInfluxUtc()` agrega `'Z'` si falta antes de `new Date()`.
+
+```ts
+function parseInfluxUtc(s: string): Date {
+  return new Date(s.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(s) ? s : s + 'Z');
+}
+```
+
+### Bug 3 — Cron escribía bucket en curso (futuro)
+**Síntoma**: Chart mostraba etiquetas de horas que aún no habían pasado.
+**Causa**: `date_bin('1h', now()) + INTERVAL '1 hour'` devolvía el cierre del bucket ACTUAL (en progreso). Esa hora aún no ocurrió pero el cron la upserteaba.
+**Fix**:
+1. SQL agrega `AND time < date_bin('1h', now(), ...)` → solo buckets cerrados.
+2. Vista defensiva `WHERE ge.ts_cierre <= now() AT TIME ZONE ART`.
+3. Hora en curso queda manejada por endpoint separado `/gas-hora-curso`.
+
+### Bug 4 — Tooltip Recharts color negro
+**Síntoma**: Al hover sobre barras gas, el cursor highlight aparecía en negro.
+**Causa**: Al cambiar a `<Cell>` dinámicas removí `fill="var(--warn)"` del `<Bar>` padre. Recharts usaba color default.
+**Fix**: Restaurar `fill="var(--warn)"` en `<Bar>`. Cells override individualmente.
+
+---
+
+## 15. Convenciones y gotchas críticos
+
+### Timestamps
+- **Lab `hora_lectura`** = hora de **cierre** del período (lectura tomada al final)
+- **Influx `date_bin('1h', time)`** = hora de **inicio** del bucket
+- Para alinear: `date_bin('1h', time) + INTERVAL '1 hour'` = cierre del bucket
+- **Almacenar en Supabase**: literal ART sin TZ (convención del sistema)
+
+### Conversión UTC → ART (backend)
+```ts
+const ART_OFFSET_MS = -3 * 60 * 60 * 1000;
+function utcToArt(d: Date): Date {
+  return new Date(d.getTime() + ART_OFFSET_MS);
+}
+// d.toISOString() luego devuelve la hora ART como si fuera UTC,
+// listo para almacenar en timestamp without time zone.
+```
+
+### Influx 3 quirks
+1. Long format: variable es tag, no column. Filtrar con `WHERE variable IN (...)`.
+2. Strings de tiempo SIN `Z` ni offset — siempre forzar parseo UTC.
+3. Algunas tablas (fabrica, molino1, electrica) NO tienen `alias`/`unit` columns.
+4. `date_bin` retorna timestamp WITHOUT timezone, así que `+ INTERVAL` no aplica TZ shift.
+5. `now()` Influx es UTC real (no afectado por container TZ).
+
+### Datos corruptos — limpieza
+Si `gas_hora_estimado` tiene data con shift incorrecto:
+```sql
+DELETE FROM production.gas_hora_estimado;
+```
+Cron repuebla en próximo ciclo (1 min). Validar:
+```sql
+SELECT ts_cierre, to_char(ts_cierre, 'HH24:00') AS literal,
+       (now() AT TIME ZONE 'America/Argentina/Buenos_Aires') AS ahora_art
+FROM production.gas_hora_estimado
+ORDER BY ts_cierre DESC LIMIT 5;
+```
+Literales `HH:00` deben ser ≤ hora ART actual.
+
+---
+
+## 16. Histórico exploraciones
 
 | Fecha | Hallazgo |
 |-------|----------|
 | 2026-05-26 | Descubrimiento inicial schema, listado completo variables vivas, confirmación versión v3. |
 | 2026-05-26 | Creado `InfluxQueryService` genérico + `InfluxHealthController` + refactor `InfluxGasService` para usar cliente compartido. |
+| 2026-05-26 | Fix schema long-format en query gas calderas. Migration `v_gas_bloques` con LEFT JOIN `gas_hora_estimado` + columna `origen`. Endpoint `/gas-hora-curso` con cache 30s. Frontend: chips leyenda + Cells con opacity/dashed + helper `mergeGasHoraEnCurso`. Commit `fa2d3b4`. |
+| 2026-05-26 | Bug fix TZ: `parseInfluxUtc()` agrega 'Z' si falta para evitar parseo como hora local. Restaurado `fill="var(--warn)"` en `<Bar>` (tooltip negro). Commit `1d7e490`. |
+| 2026-05-26 | Bug fix bucket en curso: SQL excluye `time >= date_bin('1h', now())`, vista filtra defensivamente `ts_cierre <= now() ART`. Commit `0a36a92`. |
