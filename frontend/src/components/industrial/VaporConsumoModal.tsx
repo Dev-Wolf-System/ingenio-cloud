@@ -368,7 +368,7 @@ export function VaporConsumoModal({
                                   borderRadius: 6,
                                   fontSize: 12,
                                 }}
-                                formatter={(v: number) => [`${formatNumber(v, 2)} Tn/H`, '']}
+                                formatter={(v) => [`${formatNumber(Number(v), 2)} Tn/H`, '']}
                               />
                               <Legend
                                 verticalAlign="middle"
@@ -416,14 +416,14 @@ export function VaporConsumoModal({
                                   borderRadius: 6,
                                   fontSize: 12,
                                 }}
-                                formatter={(v: number, name: string) => {
+                                formatter={(v, name) => {
                                   const lbl =
                                     name === 'consumo'
                                       ? 'Consumo'
                                       : name === 'produccion'
                                       ? 'Producción'
                                       : 'Diferencial';
-                                  return [`${formatNumber(v, 1)} Tn/H`, lbl];
+                                  return [`${formatNumber(Number(v), 1)} Tn/H`, lbl];
                                 }}
                               />
                               <Line
@@ -478,7 +478,7 @@ export function VaporConsumoModal({
                                   borderRadius: 6,
                                   fontSize: 12,
                                 }}
-                                formatter={(v: number) => [`${formatNumber(v, 1)} Tn/H`, 'Diferencial']}
+                                formatter={(v) => [`${formatNumber(Number(v), 1)} Tn/H`, 'Diferencial']}
                               />
                               <Bar dataKey="diferencial" radius={[2, 2, 0, 0]} isAnimationActive={false}>
                                 {serieComparativa.map((p, i) => (
