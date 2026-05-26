@@ -393,7 +393,7 @@ function BloqueChart({
                 }}
               />
               <ReferenceLine y={stats.promedio_t} yAxisId="left" stroke="var(--accent)" strokeDasharray="4 3" strokeWidth={1.2} />
-              <Bar yAxisId="left" dataKey="molienda_t" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+              <Bar yAxisId="left" dataKey="molienda_t" fill="var(--warn)" radius={[3, 3, 0, 0]} isAnimationActive={false}>
                 {puntos.map((p, i) => {
                   const baseColor =
                     p.molienda_t == null

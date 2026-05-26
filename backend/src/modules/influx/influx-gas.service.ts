@@ -10,6 +10,15 @@ interface InfluxQueryRow {
 // ART = UTC-3. Las ts_cierre en Supabase son timestamp sin TZ almacenadas en hora local ART.
 const ART_OFFSET_MS = -3 * 60 * 60 * 1000;
 
+/**
+ * Influx 3 devuelve strings sin sufijo Z (e.g. "2026-05-26T17:00:00").
+ * Si el container corre con TZ=ART, `new Date(s)` lo interpreta como local
+ * y queda corrido. Forzar parseo UTC agregando 'Z' cuando falta.
+ */
+function parseInfluxUtc(s: string): Date {
+  return new Date(s.endsWith('Z') || /[+-]\d{2}:?\d{2}$/.test(s) ? s : s + 'Z');
+}
+
 function utcToArt(utcDate: Date): Date {
   return new Date(utcDate.getTime() + ART_OFFSET_MS);
 }
@@ -67,7 +76,7 @@ export class InfluxGasService {
     return rows
       .filter((r) => r.gas_total_m3h != null && Number.isFinite(Number(r.gas_total_m3h)) && Number(r.gas_total_m3h) >= 0)
       .map((r) => ({
-        ts_cierre: utcToArt(new Date(r.ts_hora_utc)),
+        ts_cierre: utcToArt(parseInfluxUtc(r.ts_hora_utc)),
         m3_estimado: Number(r.gas_total_m3h),
       }));
   }
@@ -121,8 +130,8 @@ export class InfluxGasService {
     if (!Number.isFinite(m3h) || m3h < 0) return null;
 
     return {
-      ts_inicio_art: utcToArt(new Date(r.ts_inicio_utc)),
-      ts_now_art: utcToArt(new Date(r.ts_now_utc)),
+      ts_inicio_art: utcToArt(parseInfluxUtc(r.ts_inicio_utc)),
+      ts_now_art: utcToArt(parseInfluxUtc(r.ts_now_utc)),
       fraccion_hora: frac,
       m3h_promedio: m3h,
       m3_parcial: m3h * frac,
