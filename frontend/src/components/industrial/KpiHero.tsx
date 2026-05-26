@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   IconScale,
@@ -18,7 +18,7 @@ import { PremiumTile, type TileAccent } from './PremiumTile';
 import { SortableGroup } from './SortableGroup';
 import { SortableTile } from './SortableTile';
 import { MoliendaEstadoModal, type MoliendaBloquesPayload } from './MoliendaEstadoModal';
-import { GasEstadoModal, type GasBloquesPayload } from './GasEstadoModal';
+import { GasEstadoModal, type GasBloquesPayload, type GasHoraEnCurso, mergeGasHoraEnCurso } from './GasEstadoModal';
 
 async function fetchAlerts() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
@@ -81,6 +81,13 @@ async function fetchGasBloques(): Promise<GasBloquesPayload> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
   const res = await fetch(`${apiUrl}/guardia/gas-bloques`);
   if (!res.ok) return {};
+  return res.json();
+}
+
+async function fetchGasHoraEnCurso(): Promise<GasHoraEnCurso | null> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+  const res = await fetch(`${apiUrl}/guardia/gas-hora-curso`);
+  if (!res.ok) return null;
   return res.json();
 }
 
@@ -161,6 +168,17 @@ export function KpiHero() {
     refetchInterval: gasModalOpen ? 30_000 : false,
     staleTime: 30_000,
   });
+  const gasHoraCurso = useQuery({
+    queryKey: ['guardia', 'gas-hora-curso'],
+    queryFn: fetchGasHoraEnCurso,
+    enabled: gasModalOpen,
+    refetchInterval: gasModalOpen ? 30_000 : false,
+    staleTime: 30_000,
+  });
+  const gasBloquesConCurso = useMemo(
+    () => mergeGasHoraEnCurso(gasBloques.data, gasHoraCurso.data ?? null),
+    [gasBloques.data, gasHoraCurso.data],
+  );
   const { ordered, saveOrder } = useTileOrder('kpi-hero', [...HERO_KEYS]);
   const { locked } = useKanbanLock();
 
@@ -342,7 +360,7 @@ export function KpiHero() {
       <GasEstadoModal
         open={gasModalOpen}
         onClose={() => setGasModalOpen(false)}
-        data={gasBloques.data}
+        data={gasBloquesConCurso}
         loading={gasBloques.isLoading}
       />
     </>

@@ -4,6 +4,7 @@ import { createHash } from 'crypto';
 import axios from 'axios';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AiService } from '../ai/ai.service';
+import { InfluxGasService } from '../influx/influx-gas.service';
 import { getCurrentShift, getPreviousShift, shiftDateKey, type Shift } from '../../common/shift';
 
 export interface ResumenGuardia {
@@ -36,7 +37,37 @@ export class GuardiaService {
     private readonly supabase: SupabaseService,
     private readonly config: ConfigService,
     private readonly ai: AiService,
+    private readonly influxGas: InfluxGasService,
   ) {}
+
+  // Cache hora en curso (30s) — evita golpear Influx en cada request frontend
+  private gasHoraCursoCache: {
+    data: Awaited<ReturnType<InfluxGasService['fetchGasHoraEnCurso']>>;
+    ts: number;
+  } | null = null;
+  private readonly GAS_HORA_CURSO_TTL_MS = 30_000;
+
+  /**
+   * Consumo gas hora EN CURSO (parcial, estimado Influx en tiempo real).
+   * Cache 30s para no saturar Influx.
+   */
+  async getGasHoraEnCurso() {
+    const now = Date.now();
+    if (
+      this.gasHoraCursoCache &&
+      now - this.gasHoraCursoCache.ts < this.GAS_HORA_CURSO_TTL_MS
+    ) {
+      return this.gasHoraCursoCache.data;
+    }
+    try {
+      const data = await this.influxGas.fetchGasHoraEnCurso();
+      this.gasHoraCursoCache = { data, ts: now };
+      return data;
+    } catch (err) {
+      this.logger.warn(`gas-hora-curso fail: ${(err as Error).message}`);
+      return null;
+    }
+  }
 
   private async getCached(kpiId: string, shift: Shift) {
     const industrial = this.supabase.schema('industrial');
@@ -304,12 +335,13 @@ export class GuardiaService {
    * @param divisor 1000 para kg→t (molienda), 1 para valores ya en unidad final (gas m³)
    */
   private buildBloqueSerie(
-    raw: Array<{ label: string; molienda_kg: number | null; acumulado_kg?: number | null }>,
+    raw: Array<{ label: string; molienda_kg: number | null; acumulado_kg?: number | null; origen?: string | null }>,
     divisor = 1000,
   ) {
     const base = raw.map((r) => ({
       label: r.label,
       molienda_t: r.molienda_kg != null ? Number((r.molienda_kg / divisor).toFixed(2)) : null,
+      origen: r.origen ?? null,
     }));
     // acumulado: usar provisto por la vista, o running sum si falta
     let run = 0;
@@ -502,7 +534,7 @@ export class GuardiaService {
       const production = this.supabase.schema('production');
       const { data, error } = await production
         .from('v_gas_bloques')
-        .select('bloque, hora, anio_zafra, etiqueta, gas_m3, acumulado_m3')
+        .select('bloque, hora, anio_zafra, etiqueta, gas_m3, acumulado_m3, origen')
         .order('hora', { ascending: true });
       if (error) {
         this.logger.warn(`gas-bloques fail: ${error.message}`);
@@ -513,6 +545,7 @@ export class GuardiaService {
           etiqueta: string;
           gas_m3: number | string | null;
           acumulado_m3: number | string | null;
+          origen: string | null;
         }>;
         out.anio_zafra = rows[0]?.anio_zafra ?? null;
         for (const b of ['zafra', 'dia_corriente', 'turno_actual', 'dia_anterior']) {
@@ -523,6 +556,7 @@ export class GuardiaService {
               label: r.etiqueta,
               molienda_kg: num(r.gas_m3),
               acumulado_kg: num(r.acumulado_m3),
+              origen: r.origen,
             })),
             1,
           );

@@ -26,11 +26,14 @@ import { BloquesKpiStats } from './BloquesKpiStats';
  * Reusa shape BloqueSerie del backend: campo `molienda_t` semánticamente
  * representa m³ de gas en este contexto (mismo buildBloqueSerie del service).
  */
+export type OrigenGas = 'lab' | 'estimado' | 'en_curso' | 'mixto';
+
 export interface BloquePunto {
   label: string;
   molienda_t: number | null; // = gas_m3 (mismo backend serializer)
   acumulado_t: number;
   tendencia_t: number | null;
+  origen?: OrigenGas | null;
 }
 
 export interface BloqueSerie {
@@ -53,11 +56,69 @@ export interface GasBloquesPayload {
   turno_anterior?: BloqueSerie;
 }
 
+export interface GasHoraEnCurso {
+  ts_inicio_art: string;
+  ts_now_art: string;
+  fraccion_hora: number;
+  m3h_promedio: number;
+  m3_parcial: number;
+}
+
 export interface GasEstadoModalProps {
   open: boolean;
   onClose: () => void;
   data?: GasBloquesPayload | null;
   loading?: boolean;
+}
+
+/**
+ * Inyecta el punto "hora en curso" al final de dia_corriente y turno_actual.
+ * Recalcula stats acumulado/promedio incluyendo el parcial.
+ * No muta el input — devuelve nuevo payload.
+ */
+export function mergeGasHoraEnCurso(
+  payload: GasBloquesPayload | null | undefined,
+  horaCurso: GasHoraEnCurso | null | undefined,
+): GasBloquesPayload | null | undefined {
+  if (!payload || !horaCurso || !Number.isFinite(horaCurso.m3_parcial)) return payload;
+
+  const inicio = new Date(horaCurso.ts_inicio_art);
+  const label = `${String(inicio.getHours()).padStart(2, '0')}:00*`;
+  const value = Math.round(horaCurso.m3_parcial);
+
+  const inject = (serie: BloqueSerie | undefined): BloqueSerie | undefined => {
+    if (!serie) return serie;
+    // Evitar duplicar si la última hora ya tiene el mismo label
+    const last = serie.puntos[serie.puntos.length - 1];
+    if (last?.label === label) return serie;
+    const nuevoPunto: BloquePunto = {
+      label,
+      molienda_t: value,
+      acumulado_t: (last?.acumulado_t ?? 0) + value,
+      tendencia_t: null,
+      origen: 'en_curso',
+    };
+    const puntos = [...serie.puntos, nuevoPunto];
+    const vals = puntos.map((p) => p.molienda_t).filter((v): v is number => v != null);
+    const acumulado_t = nuevoPunto.acumulado_t;
+    const promedio_t = vals.length ? Number((vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2)) : 0;
+    return {
+      puntos,
+      stats: {
+        ...serie.stats,
+        acumulado_t,
+        promedio_t,
+        max_t: Math.max(serie.stats.max_t, value),
+        min_t: serie.stats.min_t === 0 ? value : Math.min(serie.stats.min_t, value),
+      },
+    };
+  };
+
+  return {
+    ...payload,
+    dia_corriente: inject(payload.dia_corriente),
+    turno_actual: inject(payload.turno_actual),
+  };
 }
 
 const EMPTY: BloqueSerie = {
@@ -221,8 +282,40 @@ function BloqueChart({
   return (
     <div className="rounded-xl border border-border bg-bg-card p-3 lg:p-4">
       <div className="flex items-baseline justify-between mb-1.5 lg:mb-3 flex-wrap gap-2 lg:gap-3">
-        <div className="text-sm sm:text-base lg:text-lg uppercase tracking-wide text-text-muted font-semibold">
-          {subtitulo}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="text-sm sm:text-base lg:text-lg uppercase tracking-wide text-text-muted font-semibold">
+            {subtitulo}
+          </div>
+          {puntos.some((p) => p.origen === 'estimado' || p.origen === 'en_curso') && (
+            <div className="flex items-center gap-2 text-[10px] lg:text-xs text-text-muted">
+              {puntos.some((p) => p.origen === 'estimado') && (
+                <span className="inline-flex items-center gap-1">
+                  <span
+                    className="inline-block w-3 h-3 rounded-sm"
+                    style={{
+                      background: 'var(--warn)',
+                      opacity: 0.5,
+                      border: '1px dashed var(--warn)',
+                    }}
+                  />
+                  estimado
+                </span>
+              )}
+              {puntos.some((p) => p.origen === 'en_curso') && (
+                <span className="inline-flex items-center gap-1">
+                  <span
+                    className="inline-block w-3 h-3 rounded-sm"
+                    style={{
+                      background: 'var(--warn)',
+                      opacity: 0.55,
+                      border: '1.5px dashed var(--accent)',
+                    }}
+                  />
+                  en curso
+                </span>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2.5 lg:gap-4 text-sm sm:text-base lg:text-lg mono text-text-muted">
           <span>min <b className="text-ok">{formatNumber(stats.min_t, 0)}</b></span>
@@ -282,28 +375,48 @@ function BloqueChart({
                   fontSize: 12,
                 }}
                 labelStyle={{ color: 'var(--text-muted)' }}
-                formatter={(value, name) => {
+                formatter={(value, name, item) => {
                   if (value == null) return ['—', name];
                   const lbl = name === 'tendencia_t' ? 'Tendencia' : name === 'acumulado_t' ? 'Acumulado' : 'Gas';
-                  return [`${formatNumber(Number(value), 0)} m³`, lbl];
+                  const origen = (item?.payload as BloquePunto | undefined)?.origen;
+                  const tag =
+                    name === 'molienda_t'
+                      ? origen === 'estimado'
+                        ? ' (estimado)'
+                        : origen === 'en_curso'
+                        ? ' (en curso)'
+                        : origen === 'lab'
+                        ? ' (real)'
+                        : ''
+                      : '';
+                  return [`${formatNumber(Number(value), 0)} m³${tag}`, lbl];
                 }}
               />
               <ReferenceLine y={stats.promedio_t} yAxisId="left" stroke="var(--accent)" strokeDasharray="4 3" strokeWidth={1.2} />
-              <Bar yAxisId="left" dataKey="molienda_t" fill="var(--warn)" radius={[3, 3, 0, 0]} isAnimationActive={false}>
-                {puntos.map((p, i) => (
-                  <Cell
-                    key={i}
-                    fill={
-                      p.molienda_t == null
-                        ? 'transparent'
-                        : p.molienda_t >= stats.max_t * 0.95
-                        ? 'var(--danger)'
-                        : p.molienda_t <= stats.min_t * 1.05 && p.molienda_t > 0
-                        ? 'var(--ok)'
-                        : `url(#${gradId})`
-                    }
-                  />
-                ))}
+              <Bar yAxisId="left" dataKey="molienda_t" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+                {puntos.map((p, i) => {
+                  const baseColor =
+                    p.molienda_t == null
+                      ? 'transparent'
+                      : p.molienda_t >= stats.max_t * 0.95
+                      ? 'var(--danger)'
+                      : p.molienda_t <= stats.min_t * 1.05 && p.molienda_t > 0
+                      ? 'var(--ok)'
+                      : `url(#${gradId})`;
+                  // Diferenciación visual por origen
+                  const isEstimado = p.origen === 'estimado';
+                  const isEnCurso = p.origen === 'en_curso';
+                  return (
+                    <Cell
+                      key={i}
+                      fill={baseColor}
+                      fillOpacity={isEnCurso ? 0.55 : isEstimado ? 0.5 : 1}
+                      stroke={isEnCurso ? 'var(--accent)' : isEstimado ? 'var(--warn)' : undefined}
+                      strokeDasharray={isEnCurso || isEstimado ? '3 2' : undefined}
+                      strokeWidth={isEnCurso ? 1.5 : isEstimado ? 1 : 0}
+                    />
+                  );
+                })}
               </Bar>
               {showTrend && (
                 <Line

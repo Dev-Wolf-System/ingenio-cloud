@@ -13,6 +13,7 @@ import { RealtimeModule } from './modules/realtime/realtime.module';
 import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { AiModule } from './modules/ai/ai.module';
 import { ReportesModule } from './modules/reportes/reportes.module';
+import { InfluxModule } from './modules/influx/influx.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { ReportesModule } from './modules/reportes/reportes.module';
     RealtimeModule,
     SchedulerModule,
     ReportesModule,
+    InfluxModule,
   ],
 })
 export class AppModule {}

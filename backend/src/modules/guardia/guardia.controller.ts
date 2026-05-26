@@ -71,6 +71,12 @@ export class GuardiaController {
     return this.svc.getGasActualUltima();
   }
 
+  /** GET /api/guardia/gas-hora-curso — consumo estimado hora EN CURSO (Influx, cache 30s) */
+  @Get('gas-hora-curso')
+  gasHoraCurso() {
+    return this.svc.getGasHoraEnCurso();
+  }
+
   /** GET /api/guardia/gas-bloques — estado de gas por bloques (zafra, día/turno) */
   @Get('gas-bloques')
   gasBloques() {
