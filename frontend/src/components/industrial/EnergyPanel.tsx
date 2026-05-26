@@ -118,8 +118,8 @@ export function EnergyPanel() {
   const vaporActual = useQuery({
     queryKey: ['guardia', 'vapor-actual'],
     queryFn: fetchVaporActual,
-    refetchInterval: 30_000,
-    staleTime: 30_000,
+    refetchInterval: 5_000,
+    staleTime: 5_000,
   });
   const vaporHxH = useQuery({
     queryKey: ['guardia', 'vapor-hxh', 24],

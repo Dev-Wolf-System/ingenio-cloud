@@ -86,7 +86,7 @@ export class InfluxVaporService {
     const sql = `
       SELECT variable, AVG(value) AS valor
       FROM "calderas"
-      WHERE time >= now() - INTERVAL '60 seconds'
+      WHERE time >= now() - INTERVAL '10 seconds'
         AND variable IN (${inList})
       GROUP BY variable
     `;
@@ -152,7 +152,7 @@ export class InfluxVaporService {
     const sql = `
       SELECT variable, AVG(value) AS valor
       FROM "dashboard-general-energia"
-      WHERE time >= now() - INTERVAL '60 seconds'
+      WHERE time >= now() - INTERVAL '10 seconds'
         AND variable IN (${inList})
       GROUP BY variable
     `;

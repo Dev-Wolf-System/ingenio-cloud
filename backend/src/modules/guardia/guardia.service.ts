@@ -49,9 +49,9 @@ export class GuardiaService {
   } | null = null;
   private readonly GAS_HORA_CURSO_TTL_MS = 30_000;
 
-  // Cache vapor actual (30s)
+  // Cache vapor actual (5s — near realtime)
   private vaporActualCache: { data: unknown; ts: number } | null = null;
-  private readonly VAPOR_ACTUAL_TTL_MS = 30_000;
+  private readonly VAPOR_ACTUAL_TTL_MS = 5_000;
   // Cache vapor hxh (60s — costoso, no cambia rápido)
   private vaporHxHCache: Map<string, { data: unknown; ts: number }> = new Map();
   private readonly VAPOR_HXH_TTL_MS = 60_000;
