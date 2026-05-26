@@ -5,6 +5,7 @@ import axios from 'axios';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AiService } from '../ai/ai.service';
 import { InfluxGasService } from '../influx/influx-gas.service';
+import { InfluxVaporService } from '../influx/influx-vapor.service';
 import { getCurrentShift, getPreviousShift, shiftDateKey, type Shift } from '../../common/shift';
 
 export interface ResumenGuardia {
@@ -38,6 +39,7 @@ export class GuardiaService {
     private readonly config: ConfigService,
     private readonly ai: AiService,
     private readonly influxGas: InfluxGasService,
+    private readonly influxVapor: InfluxVaporService,
   ) {}
 
   // Cache hora en curso (30s) — evita golpear Influx en cada request frontend
@@ -46,6 +48,45 @@ export class GuardiaService {
     ts: number;
   } | null = null;
   private readonly GAS_HORA_CURSO_TTL_MS = 30_000;
+
+  // Cache vapor actual (30s)
+  private vaporActualCache: { data: unknown; ts: number } | null = null;
+  private readonly VAPOR_ACTUAL_TTL_MS = 30_000;
+  // Cache vapor hxh (60s — costoso, no cambia rápido)
+  private vaporHxHCache: Map<string, { data: unknown; ts: number }> = new Map();
+  private readonly VAPOR_HXH_TTL_MS = 60_000;
+
+  async getVaporActual() {
+    const now = Date.now();
+    if (this.vaporActualCache && now - this.vaporActualCache.ts < this.VAPOR_ACTUAL_TTL_MS) {
+      return this.vaporActualCache.data;
+    }
+    try {
+      const data = await this.influxVapor.fetchVaporActual();
+      this.vaporActualCache = { data, ts: now };
+      return data;
+    } catch (err) {
+      this.logger.warn(`vapor-actual fail: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
+  async getVaporHorxHora(horas = 24) {
+    const key = `h${horas}`;
+    const now = Date.now();
+    const cached = this.vaporHxHCache.get(key);
+    if (cached && now - cached.ts < this.VAPOR_HXH_TTL_MS) {
+      return cached.data;
+    }
+    try {
+      const data = await this.influxVapor.fetchVaporHorxHora(horas);
+      this.vaporHxHCache.set(key, { data, ts: now });
+      return data;
+    } catch (err) {
+      this.logger.warn(`vapor-hxh fail: ${(err as Error).message}`);
+      return { consumo: [], produccion: [] };
+    }
+  }
 
   /**
    * Consumo gas hora EN CURSO (parcial, estimado Influx en tiempo real).

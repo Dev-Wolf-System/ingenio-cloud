@@ -1,4 +1,4 @@
-import { Controller, Get, Post } from '@nestjs/common';
+import { Controller, Get, Post, Query } from '@nestjs/common';
 import { GuardiaService } from './guardia.service';
 
 @Controller('guardia')
@@ -75,6 +75,19 @@ export class GuardiaController {
   @Get('gas-hora-curso')
   gasHoraCurso() {
     return this.svc.getGasHoraEnCurso();
+  }
+
+  /** GET /api/guardia/vapor-actual — consumo vapor compensado + producción + diferencial */
+  @Get('vapor-actual')
+  vaporActual() {
+    return this.svc.getVaporActual();
+  }
+
+  /** GET /api/guardia/vapor-hxh?horas=24 — serie horaria consumido vs producido */
+  @Get('vapor-hxh')
+  vaporHxH(@Query('horas') horas?: string) {
+    const h = horas ? parseInt(horas, 10) : 24;
+    return this.svc.getVaporHorxHora(Number.isFinite(h) ? h : 24);
   }
 
   /** GET /api/guardia/gas-bloques — estado de gas por bloques (zafra, día/turno) */

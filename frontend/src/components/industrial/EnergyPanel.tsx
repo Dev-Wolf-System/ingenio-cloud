@@ -9,7 +9,9 @@ import {
   IconChartBar,
   IconDroplet,
   IconActivity,
+  IconWind,
 } from '@tabler/icons-react';
+import { useQuery } from '@tanstack/react-query';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import { useThresholds, evaluateValue } from '@/lib/hooks/useThresholds';
 import { useTileOrder } from '@/lib/hooks/useTileOrder';
@@ -19,6 +21,7 @@ import { PremiumTile, type TileAccent } from './PremiumTile';
 import { SortableGroup } from './SortableGroup';
 import { SortableTile } from './SortableTile';
 import { DesgloceModal } from './DesgloceModal';
+import { VaporConsumoModal, type VaporActualResult, type VaporHxHResult } from './VaporConsumoModal';
 
 // Vapor alta + baja → un tile combinado (promedio)
 const VAPOR_ALTA_KEY = 'Presion_Vapor_Alta';
@@ -33,6 +36,23 @@ const CAUDAL_COMBO_ID = 'caudal_vapor_calderas';
 const POTENCIA_SIEMENS_KEY = 'Potencia_Activa_Siemens';
 const POTENCIA_WEG_KEY = 'Potencia_Activa_Weg';
 const POTENCIA_COMBO_ID = 'potencia_total';
+
+// Vapor consumo compensado (Influx) — tile dedicado
+const VAPOR_CONSUMO_ID = 'vapor_consumo_compensado';
+
+async function fetchVaporActual(): Promise<VaporActualResult | null> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+  const res = await fetch(`${apiUrl}/guardia/vapor-actual`);
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function fetchVaporHxH(horas = 24): Promise<VaporHxHResult> {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+  const res = await fetch(`${apiUrl}/guardia/vapor-hxh?horas=${horas}`);
+  if (!res.ok) return { consumo: [], produccion: [] };
+  return res.json();
+}
 
 function iconFor(key: string): React.ReactNode {
   const k = key.toLowerCase();
@@ -78,10 +98,12 @@ export function EnergyPanel() {
   const baseKeys = Array.from(data.keys())
     .filter((k) => !oculto.has(k) && !/caudal_gas/i.test(k))
     .sort();
+  // Orden default: Caudal Vapor Calderas → Vapor Consumo → Presión Vapor → resto
   const allKeys = [
-    ...(hasPotencia ? [POTENCIA_COMBO_ID] : []),
     ...(hasCaudal ? [CAUDAL_COMBO_ID] : []),
+    VAPOR_CONSUMO_ID,
     ...(hasVapor ? [VAPOR_COMBO_ID] : []),
+    ...(hasPotencia ? [POTENCIA_COMBO_ID] : []),
     ...baseKeys,
   ];
   const { ordered, saveOrder } = useTileOrder('energia', allKeys);
@@ -91,6 +113,21 @@ export function EnergyPanel() {
   const [caudalModalOpen, setCaudalModalOpen] = useState(false);
   const [vaporModalOpen, setVaporModalOpen] = useState(false);
   const [potenciaModalOpen, setPotenciaModalOpen] = useState(false);
+  const [vaporConsumoModalOpen, setVaporConsumoModalOpen] = useState(false);
+
+  const vaporActual = useQuery({
+    queryKey: ['guardia', 'vapor-actual'],
+    queryFn: fetchVaporActual,
+    refetchInterval: 30_000,
+    staleTime: 30_000,
+  });
+  const vaporHxH = useQuery({
+    queryKey: ['guardia', 'vapor-hxh', 24],
+    queryFn: () => fetchVaporHxH(24),
+    enabled: vaporConsumoModalOpen,
+    refetchInterval: vaporConsumoModalOpen ? 60_000 : false,
+    staleTime: 60_000,
+  });
 
   return (
     <>
@@ -155,6 +192,31 @@ export function EnergyPanel() {
                           `Baja ${b != null ? b.toFixed(2) : '—'} · ver detalle`
                         }
                         onClick={() => setVaporModalOpen(true)}
+                      />
+                    </SortableTile>
+                  );
+                }
+                if (key === VAPOR_CONSUMO_ID) {
+                  const va = vaporActual.data;
+                  const total = va?.total_tnh ?? null;
+                  const pAlta = va?.presion_alta ?? null;
+                  const pBaja = va?.presion_baja ?? null;
+                  const nValid = va?.por_caudal.filter((c) => c.compensado_tnh > 0).length ?? 0;
+                  return (
+                    <SortableTile key={key} id={key}>
+                      <PremiumTile
+                        icon={<IconWind size={14} />}
+                        label="Vapor Consumo"
+                        value={total ?? undefined}
+                        unit="Tn/H"
+                        precision={1}
+                        accent="accent"
+                        onClick={() => setVaporConsumoModalOpen(true)}
+                        hint={
+                          total != null
+                            ? `${nValid} caudales · alta ${pAlta?.toFixed(1) ?? '—'} / baja ${pBaja?.toFixed(1) ?? '—'} · ver detalle`
+                            : 'Sin datos · ver detalle'
+                        }
                       />
                     </SortableTile>
                   );
@@ -281,6 +343,15 @@ export function EnergyPanel() {
             : alta?.value ?? baja?.value ?? null
         }
         totalUnit={alta?.unit ?? baja?.unit ?? 'Kg/cm²'}
+      />
+
+      {/* Modal: Vapor Consumo (compensado por presión) */}
+      <VaporConsumoModal
+        open={vaporConsumoModalOpen}
+        onClose={() => setVaporConsumoModalOpen(false)}
+        actual={vaporActual.data ?? null}
+        hxh={vaporHxH.data ?? null}
+        loading={vaporActual.isLoading}
       />
     </>
   );
