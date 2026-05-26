@@ -44,6 +44,10 @@ export class InfluxGasService {
     // Schema long-format: variable es tag, valor en columna `value`.
     // Suma de las 3 calderas (2+3+6) promedio horario.
     // `ts_hora_utc` = cierre del bucket (date_bin abre el bucket + 1h).
+    //
+    // CRÍTICO: solo incluir HORAS CERRADAS (bucket completo). La hora en curso
+    // se maneja por separado vía `fetchGasHoraEnCurso()`. Esto evita escribir
+    // ts_cierre futuros (que aún no han ocurrido) en gas_hora_estimado.
     const sql = `
       WITH por_caldera AS (
         SELECT
@@ -52,6 +56,7 @@ export class InfluxGasService {
           AVG(value) AS m3h
         FROM "dashboard-general-energia"
         WHERE time >= now() - INTERVAL '20 hours'
+          AND time < date_bin(INTERVAL '1 hour', now(), TIMESTAMP '1970-01-01T00:00:00Z')
           AND variable IN (
             'caldera2.caldera2.cald2_gas_caudal',
             'caldera3.caldera3.cald3_gas_caudal',
