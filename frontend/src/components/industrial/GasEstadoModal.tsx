@@ -82,8 +82,13 @@ export function mergeGasHoraEnCurso(
 ): GasBloquesPayload | null | undefined {
   if (!payload || !horaCurso || !Number.isFinite(horaCurso.m3_parcial)) return payload;
 
+  // ts_inicio_art viene como ISO con Z pero contenido = literal ART
+  // (backend pre-shiftea con utcToArt). Usar getUTCHours() para leer el
+  // literal sin que el browser aplique otra conversión TZ.
+  // La etiqueta del bar es el CIERRE del bucket (open + 1h).
   const inicio = new Date(horaCurso.ts_inicio_art);
-  const label = `${String(inicio.getHours()).padStart(2, '0')}:00*`;
+  const horaCierre = (inicio.getUTCHours() + 1) % 24;
+  const label = `${String(horaCierre).padStart(2, '0')}:00*`;
   const value = Math.round(horaCurso.m3_parcial);
 
   const inject = (serie: BloqueSerie | undefined): BloqueSerie | undefined => {
