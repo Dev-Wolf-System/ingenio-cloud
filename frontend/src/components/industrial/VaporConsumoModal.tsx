@@ -124,7 +124,10 @@ export function VaporConsumoModal({
     if (!hxh) return [];
     const consumoMap = new Map(hxh.consumo.map((p) => [p.hora_utc, p.tnh]));
     const prodMap = new Map(hxh.produccion.map((p) => [p.hora_utc, p.tnh]));
-    const allHoras = new Set([...consumoMap.keys(), ...prodMap.keys()]);
+    const allHoras = new Set<string>([
+      ...Array.from(consumoMap.keys()),
+      ...Array.from(prodMap.keys()),
+    ]);
     return Array.from(allHoras)
       .sort()
       .map((hora) => {
