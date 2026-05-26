@@ -500,12 +500,26 @@ export class GuardiaService {
         .maybeSingle();
       const diaAcum = toNum((diaData as { acumulado_m3?: number | string } | null)?.acumulado_m3);
 
+      // Parcial bucket EN CURSO (Influx) — se suma a acumulados como "live"
+      // para que el KPI refleje el consumo creciente hasta el cierre de hora.
+      // Sin double-count: v_gas_bloques excluye estimados con ts_cierre > now ART.
+      const enCurso = await this.getGasHoraEnCurso();
+      const parcial = enCurso?.m3_parcial ?? 0;
+      const acumTurno = toNum(row?.acumulado_m3);
+      const acumDia = diaAcum;
+      const acumTurnoLive = acumTurno != null ? acumTurno + parcial : null;
+      const acumDiaLive = acumDia != null ? acumDia + parcial : null;
+
       return {
         etiqueta: row?.etiqueta ?? null,
         hora: row?.hora ?? null,
         gas_m3: toNum(row?.gas_m3),
-        acumulado_turno_m3: toNum(row?.acumulado_m3),
-        acumulado_dia_m3: diaAcum,
+        acumulado_turno_m3: acumTurno,
+        acumulado_dia_m3: acumDia,
+        // Live values (con parcial bucket en curso sumado) — para KPIs realtime
+        m3_parcial_en_curso: parcial,
+        acumulado_turno_live_m3: acumTurnoLive,
+        acumulado_dia_live_m3: acumDiaLive,
       };
     } catch (err) {
       this.logger.warn(`gas-actual exception: ${(err as Error).message}`);
