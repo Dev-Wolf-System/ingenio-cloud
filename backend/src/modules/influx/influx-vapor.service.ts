@@ -172,6 +172,7 @@ export class InfluxVaporService {
   async fetchVaporHorxHora(horas = 24): Promise<{
     consumo: Array<{ hora_utc: string; tnh: number }>;
     produccion: Array<{ hora_utc: string; tnh: number }>;
+    por_sector: Array<{ hora_utc: string } & Record<string, number | string>>;
   }> {
     const safeHoras = Math.max(1, Math.min(168, Math.floor(horas)));
     const caudalVars = VAPOR_CAUDAL_DEFS.map((d) => `'${d.variable}'`).join(',');
@@ -232,19 +233,31 @@ export class InfluxVaporService {
     }
 
     const consumo: Array<{ hora_utc: string; tnh: number }> = [];
+    const por_sector: Array<{ hora_utc: string } & Record<string, number | string>> = [];
+    const sectoresUnicos = Array.from(new Set(VAPOR_CAUDAL_DEFS.map((d) => d.sector)));
     for (const [hora, bucket] of consumoPorHora) {
       const fAlta = this.factor(bucket.pAlta ?? null);
       const fBaja = this.factor(bucket.pBaja ?? null);
       let total = 0;
+      const sectoresTotales: Record<string, number> = {};
+      for (const s of sectoresUnicos) sectoresTotales[s] = 0;
       for (const def of VAPOR_CAUDAL_DEFS) {
         const crudo = bucket.caudales.get(def.variable) ?? 0;
         const crudoClamp = crudo > 0 ? crudo : 0;
         const f = def.presion === 'alta' ? fAlta : fBaja;
-        total += f != null ? crudoClamp * f : 0;
+        const compensado = f != null ? crudoClamp * f : 0;
+        total += compensado;
+        sectoresTotales[def.sector] = (sectoresTotales[def.sector] ?? 0) + compensado;
       }
       consumo.push({ hora_utc: hora, tnh: Number(total.toFixed(2)) });
+      const sectorRow: { hora_utc: string } & Record<string, number | string> = { hora_utc: hora };
+      for (const s of sectoresUnicos) {
+        sectorRow[s] = Number((sectoresTotales[s] ?? 0).toFixed(2));
+      }
+      por_sector.push(sectorRow);
     }
     consumo.sort((a, b) => a.hora_utc.localeCompare(b.hora_utc));
+    por_sector.sort((a, b) => String(a.hora_utc).localeCompare(String(b.hora_utc)));
 
     // Producción: sumar las 3 calderas por bucket horario
     const prodMap = new Map<string, number>();
@@ -258,6 +271,6 @@ export class InfluxVaporService {
       .map(([hora_utc, tnh]) => ({ hora_utc, tnh: Number(tnh.toFixed(2)) }))
       .sort((a, b) => a.hora_utc.localeCompare(b.hora_utc));
 
-    return { consumo, produccion };
+    return { consumo, produccion, por_sector };
   }
 }

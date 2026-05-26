@@ -2,14 +2,16 @@
 
 import { AnimatePresence, m } from 'motion/react';
 import {
+  Area,
+  AreaChart,
   Bar,
   CartesianGrid,
   Cell,
   ComposedChart,
   Legend,
-  Line,
-  Pie,
-  PieChart,
+  PolarAngleAxis,
+  RadialBar,
+  RadialBarChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -52,9 +54,12 @@ export interface VaporHxHPunto {
   tnh: number;
 }
 
+export type VaporHxHPorSectorRow = { hora_utc: string } & Record<string, number | string>;
+
 export interface VaporHxHResult {
   consumo: VaporHxHPunto[];
   produccion: VaporHxHPunto[];
+  por_sector?: VaporHxHPorSectorRow[];
 }
 
 export interface VaporConsumoModalProps {
@@ -106,17 +111,14 @@ export function VaporConsumoModal({
     .filter((c) => c.compensado_tnh > 0)
     .sort((a, b) => b.compensado_tnh - a.compensado_tnh)[0];
 
-  // Agrupación por sector para donut
-  const porSector = new Map<string, number>();
-  actual?.por_caudal.forEach((c) => {
-    if (c.compensado_tnh > 0) {
-      porSector.set(c.sector, (porSector.get(c.sector) ?? 0) + c.compensado_tnh);
-    }
-  });
-  const sectorData = Array.from(porSector.entries()).map(([name, value]) => ({
-    name,
-    value: Number(value.toFixed(2)),
-    color: SECTOR_COLORS[name] ?? '#94A3B8',
+  // Sectores únicos para stacked area
+  const sectoresUnicos = Array.from(
+    new Set(actual?.por_caudal.map((c) => c.sector) ?? []),
+  );
+  // Serie stacked area por sector (datos backend)
+  const serieSector = (hxh?.por_sector ?? []).map((row) => ({
+    ...row,
+    hora: fmtHoraArt(String(row.hora_utc)),
   }));
 
   // Serie comparativa hxh
@@ -249,31 +251,31 @@ export function VaporConsumoModal({
                     </div>
 
                     {/* Chips inteligentes */}
-                    <div className="flex flex-wrap gap-2 mt-3">
+                    <div className="flex flex-wrap gap-2 lg:gap-3 mt-3 lg:mt-4">
                       {eficiencia != null && (
                         <Chip
-                          icon={<IconCheck size={12} />}
+                          icon={<IconCheck size={16} />}
                           label={`Eficiencia ${eficiencia.toFixed(1)}%`}
                           color={eficiencia > 85 ? 'var(--ok)' : eficiencia > 70 ? 'var(--warn)' : 'var(--danger)'}
                         />
                       )}
                       {sectorTop && (
                         <Chip
-                          icon={<IconTrendingUp size={12} />}
+                          icon={<IconTrendingUp size={16} />}
                           label={`${sectorTop.sector} concentra ${((sectorTop.compensado_tnh / consumo) * 100).toFixed(0)}%`}
                           color="var(--accent)"
                         />
                       )}
                       {alertaPresion && (
                         <Chip
-                          icon={<IconAlertTriangle size={12} />}
+                          icon={<IconAlertTriangle size={16} />}
                           label="Presión baja · compensación degradada"
                           color="var(--warn)"
                         />
                       )}
                       {dif != null && Math.abs(difPct ?? 0) > 15 && (
                         <Chip
-                          icon={<IconAlertTriangle size={12} />}
+                          icon={<IconAlertTriangle size={16} />}
                           label={`Diferencial ${Math.abs(difPct ?? 0).toFixed(0)}% · revisar`}
                           color="var(--danger)"
                         />
@@ -284,15 +286,13 @@ export function VaporConsumoModal({
                   {/* Sección 2: Desglose tabla */}
                   <Seccion titulo="Desglose por caudal">
                     <div className="rounded-xl border border-border bg-bg-card overflow-x-auto">
-                      <table className="w-full text-xs sm:text-sm">
-                        <thead className="text-text-muted uppercase tracking-wide text-[10px]">
-                          <tr className="border-b border-border">
-                            <th className="text-left p-2.5">Sector</th>
-                            <th className="text-right p-2.5">Crudo Tn/H</th>
-                            <th className="text-right p-2.5">Presión</th>
-                            <th className="text-right p-2.5">Factor</th>
-                            <th className="text-right p-2.5">Compensado</th>
-                            <th className="text-right p-2.5">%</th>
+                      <table className="w-full text-sm sm:text-base lg:text-lg">
+                        <thead className="text-text-muted uppercase tracking-wide text-xs lg:text-sm font-bold">
+                          <tr className="border-b-2 border-border">
+                            <th className="text-left p-3 lg:p-4">Sector</th>
+                            <th className="text-right p-3 lg:p-4">Línea</th>
+                            <th className="text-right p-3 lg:p-4">Caudal</th>
+                            <th className="text-right p-3 lg:p-4">%</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -301,171 +301,216 @@ export function VaporConsumoModal({
                             const isZero = c.compensado_tnh === 0;
                             return (
                               <tr key={c.variable} className="border-b border-border/40 hover:bg-bg-hover/40">
-                                <td className="p-2.5">
-                                  <div className="flex items-center gap-2">
+                                <td className="p-3 lg:p-4">
+                                  <div className="flex items-center gap-2.5">
                                     <span
-                                      className="inline-block w-2 h-2 rounded-full"
+                                      className="inline-block w-3 h-3 rounded-full shrink-0"
                                       style={{ background: SECTOR_COLORS[c.sector] ?? '#94A3B8' }}
                                     />
-                                    <span className="font-medium text-text-primary">{c.label}</span>
+                                    <span className="font-semibold text-text-primary">{c.label}</span>
                                     {isZero && (
-                                      <span className="text-[10px] text-text-muted bg-bg-hover px-1.5 py-0.5 rounded">
+                                      <span className="text-xs text-text-muted bg-bg-hover px-2 py-0.5 rounded">
                                         sin consumo
                                       </span>
                                     )}
                                   </div>
-                                  <div className="text-[10px] text-text-muted ml-4">{c.sector}</div>
+                                  <div className="text-xs lg:text-sm text-text-muted ml-5 lg:ml-6 mt-0.5">{c.sector}</div>
                                 </td>
-                                <td className="text-right p-2.5 mono tabular-nums">{formatNumber(c.crudo_tnh, 2)}</td>
-                                <td className="text-right p-2.5 mono text-text-muted">{c.presion}</td>
-                                <td className="text-right p-2.5 mono tabular-nums text-text-muted">
-                                  {c.factor != null ? c.factor.toFixed(4) : '—'}
+                                <td className="text-right p-3 lg:p-4 mono text-text-muted capitalize">{c.presion}</td>
+                                <td className="text-right p-3 lg:p-4 mono tabular-nums font-bold text-text-primary">
+                                  {formatNumber(c.compensado_tnh, 2)} <span className="text-xs lg:text-sm text-text-muted font-normal">Tn/H</span>
                                 </td>
-                                <td className="text-right p-2.5 mono tabular-nums font-semibold text-text-primary">
-                                  {formatNumber(c.compensado_tnh, 2)}
-                                </td>
-                                <td className="text-right p-2.5 mono tabular-nums text-text-muted">{pct.toFixed(1)}%</td>
+                                <td className="text-right p-3 lg:p-4 mono tabular-nums text-text-muted">{pct.toFixed(1)}%</td>
                               </tr>
                             );
                           })}
-                          <tr className="bg-bg-hover/30">
-                            <td className="p-2.5 font-bold">TOTAL</td>
-                            <td colSpan={3}></td>
-                            <td className="text-right p-2.5 mono tabular-nums font-bold" style={{ color: 'var(--accent)' }}>
-                              {formatNumber(consumo, 2)} Tn/H
+                          <tr className="bg-bg-hover/30 border-t-2 border-border">
+                            <td className="p-3 lg:p-4 font-bold text-base lg:text-xl" colSpan={2}>TOTAL</td>
+                            <td className="text-right p-3 lg:p-4 mono tabular-nums font-bold text-base lg:text-xl" style={{ color: 'var(--accent)' }}>
+                              {formatNumber(consumo, 2)} <span className="text-sm lg:text-base font-normal">Tn/H</span>
                             </td>
-                            <td className="text-right p-2.5 mono font-bold">100%</td>
+                            <td className="text-right p-3 lg:p-4 mono font-bold text-base lg:text-xl">100%</td>
                           </tr>
                         </tbody>
                       </table>
                     </div>
                   </Seccion>
 
-                  {/* Sección 3: Donut distribución */}
-                  {sectorData.length > 0 && (
-                    <Seccion titulo="Distribución por sector">
-                      <div className="rounded-xl border border-border bg-bg-card p-4">
-                        <div style={{ height: 220 }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={sectorData}
-                                dataKey="value"
-                                nameKey="name"
-                                innerRadius={50}
-                                outerRadius={85}
-                                paddingAngle={2}
-                                isAnimationActive={false}
+                  {/* Sección 3+4 combinada: Gauge Eficiencia + Stacked Area por sector */}
+                  <Seccion titulo="Eficiencia térmica y composición temporal">
+                    <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-4">
+                      {/* Gauge eficiencia grande */}
+                      <div
+                        className="rounded-xl border-2 p-4 lg:p-6 flex flex-col items-center justify-center relative overflow-hidden"
+                        style={{
+                          background:
+                            'radial-gradient(circle at 50% 0%, var(--accent-soft, rgba(99,102,241,0.18)), transparent 70%), var(--bg-card)',
+                          borderColor:
+                            eficiencia == null
+                              ? 'var(--border)'
+                              : eficiencia > 85
+                              ? 'var(--ok)'
+                              : eficiencia > 70
+                              ? 'var(--warn)'
+                              : 'var(--danger)',
+                          boxShadow: `0 0 40px ${
+                            eficiencia == null
+                              ? 'transparent'
+                              : eficiencia > 85
+                              ? 'var(--ok)33'
+                              : eficiencia > 70
+                              ? 'var(--warn)33'
+                              : 'var(--danger)33'
+                          }`,
+                        }}
+                      >
+                        <div className="text-xs lg:text-sm uppercase tracking-widest font-bold text-text-muted mb-1">
+                          Eficiencia
+                        </div>
+                        {eficiencia != null ? (
+                          <>
+                            <div style={{ width: '100%', height: 200 }}>
+                              <ResponsiveContainer>
+                                <RadialBarChart
+                                  innerRadius="65%"
+                                  outerRadius="100%"
+                                  data={[{ name: 'ef', value: eficiencia, fill:
+                                    eficiencia > 85 ? 'var(--ok)' : eficiencia > 70 ? 'var(--warn)' : 'var(--danger)'
+                                  }]}
+                                  startAngle={210}
+                                  endAngle={-30}
+                                >
+                                  <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                                  <RadialBar
+                                    background={{ fill: 'var(--bg-hover)' }}
+                                    dataKey="value"
+                                    cornerRadius={12}
+                                    isAnimationActive={false}
+                                  />
+                                </RadialBarChart>
+                              </ResponsiveContainer>
+                            </div>
+                            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-4">
+                              <span
+                                className="text-5xl lg:text-6xl font-bold mono tabular-nums"
+                                style={{
+                                  color:
+                                    eficiencia > 85 ? 'var(--ok)' : eficiencia > 70 ? 'var(--warn)' : 'var(--danger)',
+                                }}
                               >
-                                {sectorData.map((s, i) => (
-                                  <Cell key={i} fill={s.color} stroke="var(--bg-card)" strokeWidth={1.5} />
-                                ))}
-                              </Pie>
-                              <Tooltip
-                                contentStyle={{
-                                  background: 'var(--bg-card)',
-                                  border: '1px solid var(--border-strong)',
-                                  borderRadius: 6,
-                                  fontSize: 12,
-                                }}
-                                formatter={(v) => [`${formatNumber(Number(v), 2)} Tn/H`, '']}
-                              />
-                              <Legend
-                                verticalAlign="middle"
-                                align="right"
-                                layout="vertical"
-                                iconSize={10}
-                                wrapperStyle={{ fontSize: 12 }}
-                              />
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
+                                {eficiencia.toFixed(0)}
+                              </span>
+                              <span className="text-base lg:text-lg text-text-muted mt-1">%</span>
+                            </div>
+                            <div className="text-xs lg:text-sm text-text-muted mt-2 text-center">
+                              {eficiencia > 85
+                                ? 'Excelente — pérdidas mínimas'
+                                : eficiencia > 70
+                                ? 'Aceptable — revisar líneas'
+                                : 'Crítica — investigar fuga o medición'}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="text-text-muted py-12">Sin datos suficientes</div>
+                        )}
                       </div>
-                    </Seccion>
-                  )}
 
-                  {/* Sección 4: Serie temporal */}
-                  <Seccion titulo="Producido vs Consumido · últimas 24h">
-                    <div className="rounded-xl border border-border bg-bg-card p-3 lg:p-4">
-                      {serieComparativa.length === 0 ? (
-                        <div className="h-[180px] flex items-center justify-center text-xs text-text-muted">
-                          Cargando serie horaria…
+                      {/* Stacked area por sector */}
+                      <div className="rounded-xl border border-border bg-bg-card p-3 lg:p-4">
+                        <div className="flex items-center justify-between mb-2 lg:mb-3">
+                          <h4 className="text-sm lg:text-base font-bold text-text-primary uppercase tracking-wider">
+                            Composición por sector · últimas 24h
+                          </h4>
+                          <span className="text-xs lg:text-sm text-text-muted">
+                            Suma de caudales compensados Tn/H
+                          </span>
                         </div>
-                      ) : (
-                        <div style={{ height: 220 }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <ComposedChart data={serieComparativa} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
-                              <XAxis
-                                dataKey="hora"
-                                tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-                                axisLine={false}
-                                tickLine={false}
-                              />
-                              <YAxis
-                                tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
-                                axisLine={false}
-                                tickLine={false}
-                                unit=" Tn/H"
-                                width={56}
-                              />
-                              <Tooltip
-                                contentStyle={{
-                                  background: 'var(--bg-card)',
-                                  border: '1px solid var(--border-strong)',
-                                  borderRadius: 6,
-                                  fontSize: 12,
-                                }}
-                                formatter={(v, name) => {
-                                  const lbl =
-                                    name === 'consumo'
-                                      ? 'Consumo'
-                                      : name === 'produccion'
-                                      ? 'Producción'
-                                      : 'Diferencial';
-                                  return [`${formatNumber(Number(v), 1)} Tn/H`, lbl];
-                                }}
-                              />
-                              <Line
-                                type="monotone"
-                                dataKey="produccion"
-                                stroke="var(--warn)"
-                                strokeWidth={2}
-                                dot={false}
-                                isAnimationActive={false}
-                              />
-                              <Line
-                                type="monotone"
-                                dataKey="consumo"
-                                stroke="var(--accent)"
-                                strokeWidth={2}
-                                dot={false}
-                                isAnimationActive={false}
-                              />
-                              <Legend iconSize={10} wrapperStyle={{ fontSize: 11 }} />
-                            </ComposedChart>
-                          </ResponsiveContainer>
-                        </div>
-                      )}
+                        {serieSector.length === 0 ? (
+                          <div className="h-[260px] flex items-center justify-center text-sm text-text-muted">
+                            Cargando composición…
+                          </div>
+                        ) : (
+                          <div style={{ height: 260 }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                              <AreaChart data={serieSector} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                                <defs>
+                                  {sectoresUnicos.map((s) => (
+                                    <linearGradient key={s} id={`grad-${s}`} x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="0%" stopColor={SECTOR_COLORS[s] ?? '#94A3B8'} stopOpacity={0.85} />
+                                      <stop offset="100%" stopColor={SECTOR_COLORS[s] ?? '#94A3B8'} stopOpacity={0.35} />
+                                    </linearGradient>
+                                  ))}
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
+                                <XAxis
+                                  dataKey="hora"
+                                  tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                                  axisLine={false}
+                                  tickLine={false}
+                                />
+                                <YAxis
+                                  tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                                  axisLine={false}
+                                  tickLine={false}
+                                  unit=" Tn/H"
+                                  width={56}
+                                />
+                                <Tooltip
+                                  contentStyle={{
+                                    background: 'var(--bg-card)',
+                                    border: '1px solid var(--border-strong)',
+                                    borderRadius: 8,
+                                    fontSize: 12,
+                                  }}
+                                  formatter={(v, name) => [`${formatNumber(Number(v), 1)} Tn/H`, String(name)]}
+                                />
+                                {sectoresUnicos.map((s) => (
+                                  <Area
+                                    key={s}
+                                    type="monotone"
+                                    dataKey={s}
+                                    stackId="vapor"
+                                    stroke={SECTOR_COLORS[s] ?? '#94A3B8'}
+                                    fill={`url(#grad-${s})`}
+                                    strokeWidth={1.5}
+                                    isAnimationActive={false}
+                                  />
+                                ))}
+                                <Legend iconSize={12} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </Seccion>
 
                   {/* Sección 5: Diferencial barras */}
                   {serieComparativa.length > 0 && (
-                    <Seccion titulo="Diferencial horario (positivo = pérdidas líneas)">
-                      <div className="rounded-xl border border-border bg-bg-card p-3 lg:p-4">
-                        <div style={{ height: 180 }}>
+                    <Seccion titulo="Diferencial horario · pérdidas / exceso">
+                      <div className="rounded-xl border border-border bg-bg-card p-3 lg:p-5">
+                        <div className="flex items-center gap-4 mb-2 lg:mb-3 flex-wrap text-xs lg:text-sm">
+                          <span className="inline-flex items-center gap-1.5 text-text-muted">
+                            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: 'var(--ok)' }} />
+                            Pérdidas líneas (produc &gt; consumo)
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 text-text-muted">
+                            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: 'var(--danger)' }} />
+                            Exceso consumo (consumo &gt; produc → revisar medición)
+                          </span>
+                        </div>
+                        <div style={{ height: 220 }}>
                           <ResponsiveContainer width="100%" height="100%">
                             <ComposedChart data={serieComparativa} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" opacity={0.3} />
                               <XAxis
                                 dataKey="hora"
-                                tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                                tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
                                 axisLine={false}
                                 tickLine={false}
                               />
                               <YAxis
-                                tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
+                                tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
                                 axisLine={false}
                                 tickLine={false}
                                 unit=" Tn/H"
@@ -540,8 +585,8 @@ function KpiCard({
 function Chip({ icon, label, color }: { icon: React.ReactNode; label: string; color: string }) {
   return (
     <span
-      className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] mono font-medium"
-      style={{ color, background: `${color}15`, border: `1px solid ${color}40` }}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 lg:px-4 lg:py-2 rounded-lg text-sm lg:text-base mono font-semibold"
+      style={{ color, background: `${color}15`, border: `1.5px solid ${color}40` }}
     >
       {icon}
       {label}
