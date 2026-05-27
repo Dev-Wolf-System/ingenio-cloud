@@ -93,14 +93,14 @@ function ValueBar({ alert }: { alert: ActiveAlert }) {
   const outOfRange = value < (min_value ?? -Infinity) || value > (max_value ?? Infinity);
   return (
     <div className="mt-2">
-      <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+      <div className="flex justify-between text-xs text-gray-500 mb-1">
         <span>{min_value ?? '—'}{unit ? ` ${unit}` : ''}</span>
-        <span className={`font-semibold text-xs ${outOfRange ? 'text-red-400' : 'text-green-400'}`}>
+        <span className={`font-bold text-sm ${outOfRange ? 'text-red-400' : 'text-green-400'}`}>
           {value}{unit ? ` ${unit}` : ''}
         </span>
         <span>{max_value ?? '—'}{unit ? ` ${unit}` : ''}</span>
       </div>
-      <div className="h-1.5 rounded-full bg-white/5 relative overflow-hidden">
+      <div className="h-2 rounded-full bg-white/5 relative overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${outOfRange ? 'bg-red-500' : 'bg-green-500'}`}
           style={{ width: `${pct}%` }}
@@ -153,21 +153,21 @@ function AlertItem({ alert }: { alert: ActiveAlert }) {
           <div className="mt-0.5 lg:w-5 lg:h-5 flex-shrink-0">{sev.icon}</div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-[10px] lg:text-xs font-semibold uppercase tracking-wider px-1.5 lg:px-2 py-0.5 rounded-md ${sev.badge}`}>
+              <span className={`text-xs lg:text-sm font-semibold uppercase tracking-wider px-1.5 lg:px-2 py-0.5 rounded-md ${sev.badge}`}>
                 {alert.severity}
               </span>
-              <span className="text-[10px] lg:text-xs text-gray-500 uppercase tracking-wide">{alert.area}</span>
-              <span className="text-[10px] lg:text-xs text-gray-600 ml-auto">{relativeTime(alert.detected_at)}</span>
+              <span className="text-xs lg:text-sm text-gray-500 uppercase tracking-wide">{alert.area}</span>
+              <span className="text-xs lg:text-sm text-gray-600 ml-auto">{relativeTime(alert.detected_at)}</span>
             </div>
-            <p className="text-sm lg:text-base font-semibold text-white mt-1 leading-tight">{alert.title}</p>
-            <p className="text-xs lg:text-sm text-gray-400 mt-0.5 leading-snug">{alert.message}</p>
+            <p className="text-base lg:text-lg font-semibold text-white mt-1 leading-tight">{alert.title}</p>
+            <p className="text-sm lg:text-base text-gray-400 mt-0.5 leading-snug">{alert.message}</p>
             <ValueBar alert={alert} />
           </div>
         </div>
 
         <button
           onClick={toggle}
-          className="mt-2.5 lg:mt-3 w-full flex items-center justify-center gap-1.5 text-xs lg:text-sm text-gray-400 hover:text-blue-400 transition-colors py-1 lg:py-1.5 rounded-lg hover:bg-white/5"
+          className="mt-2.5 lg:mt-3 w-full flex items-center justify-center gap-1.5 text-sm lg:text-base text-gray-400 hover:text-blue-400 transition-colors py-1 lg:py-1.5 rounded-lg hover:bg-white/5"
         >
           <IconRobot size={12} />
           {expanded ? 'Ocultar análisis IA' : 'Analizar causa con IA'}
@@ -195,14 +195,14 @@ function AlertItem({ alert }: { alert: ActiveAlert }) {
                 <p className="text-xs text-red-400">No se pudo obtener el análisis. Intentá de nuevo.</p>
               )}
               {analisis && !loading && (
-                <div className="space-y-2.5 text-xs">
+                <div className="space-y-2.5 text-sm">
                   <div>
-                    <p className="text-[10px] font-semibold text-blue-400 uppercase tracking-wider mb-1">Causa probable</p>
+                    <p className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-1">Causa probable</p>
                     <p className="text-gray-300 leading-relaxed">{analisis.causa_probable}</p>
                   </div>
                   {analisis.factores_contribuyentes?.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-1">Factores</p>
+                      <p className="text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1">Factores</p>
                       <ul className="space-y-0.5">
                         {analisis.factores_contribuyentes.map((f, i) => (
                           <li key={i} className="text-gray-400 flex gap-1.5"><span className="text-amber-500/60">·</span>{f}</li>
@@ -212,7 +212,7 @@ function AlertItem({ alert }: { alert: ActiveAlert }) {
                   )}
                   {analisis.acciones_sugeridas?.length > 0 && (
                     <div>
-                      <p className="text-[10px] font-semibold text-green-400 uppercase tracking-wider mb-1">Acciones</p>
+                      <p className="text-xs font-semibold text-green-400 uppercase tracking-wider mb-1">Acciones</p>
                       <ul className="space-y-0.5">
                         {analisis.acciones_sugeridas.map((a, i) => (
                           <li key={i} className="text-gray-300 flex gap-1.5"><span className="text-green-500">→</span>{a}</li>
@@ -221,7 +221,7 @@ function AlertItem({ alert }: { alert: ActiveAlert }) {
                     </div>
                   )}
                   {analisis.cached && (
-                    <p className="text-[9px] text-gray-600 text-right">Análisis en caché · actualiza en 5 min</p>
+                    <p className="text-[10px] text-gray-600 text-right">Análisis en caché · actualiza en 5 min</p>
                   )}
                 </div>
               )}
@@ -360,10 +360,10 @@ export function AlertasModalAuto({ alerts }: Props) {
                     <span className={`w-2.5 lg:w-3.5 h-2.5 lg:h-3.5 rounded-full ${sev.dot}`} />
                   </div>
                   <div>
-                    <h2 className="text-sm lg:text-xl font-bold text-white leading-tight">
+                    <h2 className="text-base lg:text-2xl font-bold text-white leading-tight">
                       {alerts.length} {alerts.length === 1 ? 'alerta activa' : 'alertas activas'}
                     </h2>
-                    <p className="text-[10px] lg:text-sm text-gray-500">
+                    <p className="text-xs lg:text-base text-gray-500">
                       {alerts.filter(a => a.severity === 'critical').length > 0
                         ? `${alerts.filter(a => a.severity === 'critical').length} críticas · acción requerida`
                         : 'Revisión recomendada'}
