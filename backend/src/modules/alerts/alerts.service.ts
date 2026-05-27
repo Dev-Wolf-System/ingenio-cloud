@@ -157,7 +157,7 @@ export class AlertsService {
     const critCount = sorted.filter((a) => a.severity === 'critical').length;
     const capArea = (a: string) => a.charAt(0).toUpperCase() + a.slice(1).toLowerCase();
 
-    let text = 'Atención';
+    let text = 'Sistema de monitoreo industrial. Atención';
     if (critCount === 1) text += ', una alerta crítica';
     else if (critCount > 1) text += `, ${critCount} alertas críticas`;
     text += '.';
@@ -165,7 +165,7 @@ export class AlertsService {
     const toSpeak = sorted.slice(0, 3);
     for (const a of toSpeak) {
       const meta = (a.metadata ?? {}) as { value?: number; min_value?: number; max_value?: number; unit?: string };
-      text += ` ${sevLabel(a.severity)} en ${capArea(a.area)}: ${a.title}.`;
+      text += ` ${sevLabel(a.severity)} en ${capArea(a.area)}, ${a.title}.`;
       if (meta.value != null) {
         text += ` Valor actual ${meta.value}${meta.unit ? ' ' + meta.unit : ''}.`;
         if (meta.max_value != null && meta.value > meta.max_value) {

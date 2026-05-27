@@ -95,7 +95,7 @@ export function useAlertAudio(alerts: AudioAlert[]) {
       try {
         const names = resolved.slice(0, 2).map((a) => a.title ?? a.area ?? 'alerta').join(' y ');
         const extra = resolved.length > 2 ? ` y ${resolved.length - 2} más` : '';
-        const text = `Normalizado. ${names}${extra} volvió a rango normal.`;
+        const text = `Sistema de monitoreo industrial. Normalizado. ${names}${extra} volvió a rango normal.`;
         const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
         const res = await fetch(`${apiUrl}/alerts/voice-text`, {
           method: 'POST',

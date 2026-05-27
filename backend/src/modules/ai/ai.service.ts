@@ -184,10 +184,7 @@ Analizá el desempeño del turno considerando los motivos de paradas.`;
   async generarVozAlertas(text: string): Promise<Buffer | null> {
     if (!this.client) return null;
     try {
-      // Prefijo explícito en español para forzar detección de idioma en tts-1.
-      // Sin esto, si el texto contiene palabras en inglés (títulos de alertas)
-      // el modelo puede pronunciar en inglés.
-      const input = `Mensaje en español del sistema de monitoreo industrial. ${text}`;
+      const input = text;
       const response = await this.client.audio.speech.create({
         model: 'tts-1',
         voice: 'onyx',
