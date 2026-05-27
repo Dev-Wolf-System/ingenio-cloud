@@ -385,7 +385,7 @@ export default function AlertasConfigPage() {
             title="HISTORIAL DE ALERTAS"
             subtitle={`${historyTotal} eventos registrados · inicio → normalización`}
             icon={<IconHistory size={18} className="text-primary-light" />}
-            accent="default"
+            accent="neutral"
             headerRight={
               <button
                 onClick={reloadHistory}
