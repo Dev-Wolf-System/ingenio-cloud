@@ -27,6 +27,23 @@ export class AlertsController {
     return this.svc.getAnalisisCausa(id);
   }
 
+  /** POST /api/alerts/voice-text — genera audio TTS desde texto libre (normalización) */
+  @Post('voice-text')
+  @HttpCode(200)
+  async voiceText(
+    @Body() body: { text?: string },
+    @Res() res: Response,
+  ): Promise<void> {
+    const text = (body?.text ?? '').trim().slice(0, 300);
+    if (!text) { res.status(400).json({ error: 'text requerido' }); return; }
+    const audio = await this.svc.generarAudioTexto(text);
+    if (!audio) { res.status(503).json({ available: false }); return; }
+    res.set('Content-Type', 'audio/mpeg');
+    res.set('Content-Length', String(audio.byteLength));
+    res.set('Cache-Control', 'no-store');
+    res.send(audio);
+  }
+
   /** POST /api/alerts/voice — genera audio TTS con las alertas activas indicadas */
   @Post('voice')
   @HttpCode(200)

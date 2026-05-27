@@ -5,6 +5,8 @@ import { useCallback, useEffect, useRef } from 'react';
 export interface AudioAlert {
   id: string;
   severity: string;
+  area?: string;
+  title?: string;
 }
 
 const LS_BEEP = 'alert_beep_enabled';
@@ -18,6 +20,7 @@ function getLs(key: string, def: boolean): boolean {
 
 export function useAlertAudio(alerts: AudioAlert[]) {
   const prevIdsRef = useRef<Set<string>>(new Set());
+  const prevAlertsRef = useRef<Map<string, AudioAlert>>(new Map());
   const pendingUnlockRef = useRef(false);
   const pendingAudioRef = useRef<(() => void) | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -30,12 +33,12 @@ export function useAlertAudio(alerts: AudioAlert[]) {
     }
   }, []);
 
-  const playBeep = useCallback((): Promise<void> => {
+  const playSound = useCallback((src: string): Promise<void> => {
     return new Promise((resolve) => {
-      const audio = new Audio('/sounds/alert.mp3');
+      const audio = new Audio(src);
       currentAudioRef.current = audio;
       audio.onended = () => resolve();
-      audio.onerror = () => resolve(); // continuar aunque falle
+      audio.onerror = () => resolve();
       audio.play().catch(() => resolve());
     });
   }, []);
@@ -61,61 +64,96 @@ export function useAlertAudio(alerts: AudioAlert[]) {
     }
   }, [revokeVoiceUrl]);
 
-  const fireAudio = useCallback(async (newAlerts: AudioAlert[]) => {
+  const fireAlertAudio = useCallback(async (newAlerts: AudioAlert[]) => {
     const beepEnabled = getLs(LS_BEEP, true);
     const voiceEnabled = getLs(LS_VOICE, false);
     if (!beepEnabled && !voiceEnabled) return;
 
-    // Parar audio anterior
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
     }
 
-    const ids = newAlerts.map((a) => a.id);
+    if (beepEnabled) await playSound('/sounds/alert.mp3').catch(() => {});
+    if (voiceEnabled) await playVoice(newAlerts.map((a) => a.id));
+  }, [playSound, playVoice]);
 
-    if (beepEnabled) {
-      try {
-        await playBeep();
-      } catch {
-        // continuar
-      }
+  const fireNormalizeAudio = useCallback(async (resolved: AudioAlert[]) => {
+    const beepEnabled = getLs(LS_BEEP, true);
+    const voiceEnabled = getLs(LS_VOICE, false);
+    if (!beepEnabled && !voiceEnabled) return;
+
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
     }
+
+    if (beepEnabled) await playSound('/sounds/normalize.mp3').catch(() => {});
 
     if (voiceEnabled) {
-      await playVoice(ids);
+      // Voz de normalización — generada inline sin llamar al endpoint de alertas activas
+      try {
+        const names = resolved.slice(0, 2).map((a) => a.title ?? a.area ?? 'alerta').join(' y ');
+        const extra = resolved.length > 2 ? ` y ${resolved.length - 2} más` : '';
+        const text = `Normalizado. ${names}${extra} volvió a rango normal.`;
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
+        const res = await fetch(`${apiUrl}/alerts/voice-text`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text }),
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          revokeVoiceUrl();
+          const url = URL.createObjectURL(blob);
+          voiceBlobUrlRef.current = url;
+          const audio = new Audio(url);
+          currentAudioRef.current = audio;
+          await audio.play();
+        }
+      } catch {
+        // no crítico
+      }
     }
-  }, [playBeep, playVoice]);
+  }, [playSound, revokeVoiceUrl]);
 
-  // Detectar nuevas alertas y disparar audio
+  // Detectar nuevas alertas y alertas resueltas
   useEffect(() => {
     const currentIds = new Set(alerts.map((a) => a.id));
+    const currentMap = new Map(alerts.map((a) => [a.id, a]));
 
-    if (alerts.length === 0) {
-      prevIdsRef.current = currentIds;
-      return;
-    }
-
+    // Alertas nuevas (aparecieron)
     const newAlerts = alerts.filter((a) => !prevIdsRef.current.has(a.id));
+    // Alertas resueltas (desaparecieron) — solo si antes había al menos 1
+    const resolvedAlerts = prevIdsRef.current.size > 0
+      ? [...prevIdsRef.current]
+          .filter((id) => !currentIds.has(id))
+          .map((id) => prevAlertsRef.current.get(id))
+          .filter((a): a is AudioAlert => a != null)
+      : [];
+
     prevIdsRef.current = currentIds;
+    prevAlertsRef.current = currentMap;
 
-    if (newAlerts.length === 0) return;
-
-    // Intentar reproducir — si falla por autoplay policy, guardar para primer click
-    const trigger = () => fireAudio(newAlerts);
-
-    if (typeof document !== 'undefined') {
+    const tryPlay = (fn: () => void) => {
+      if (typeof document === 'undefined') return;
       const testAudio = new Audio();
       testAudio.play().then(() => {
         testAudio.pause();
-        trigger();
+        fn();
       }).catch(() => {
-        // Autoplay bloqueado — reproducir en primer click del usuario
         pendingUnlockRef.current = true;
-        pendingAudioRef.current = trigger;
+        pendingAudioRef.current = fn;
       });
+    };
+
+    if (newAlerts.length > 0) {
+      tryPlay(() => fireAlertAudio(newAlerts));
+    } else if (resolvedAlerts.length > 0) {
+      // Solo normalize si NO hay nuevas alertas simultáneas
+      tryPlay(() => fireNormalizeAudio(resolvedAlerts));
     }
-  }, [alerts, fireAudio]);
+  }, [alerts, fireAlertAudio, fireNormalizeAudio]);
 
   // Listener para desbloquear autoplay en primer click
   useEffect(() => {

@@ -116,6 +116,11 @@ export class AlertsService {
     return { ...result, cached: false };
   }
 
+  async generarAudioTexto(text: string): Promise<Buffer | null> {
+    if (!this.ai.isAvailable()) return null;
+    return this.ai.generarVozAlertas(text);
+  }
+
   async generarAudioAlertas(alertIds: string[]): Promise<Buffer | null> {
     if (!alertIds.length) return null;
 
