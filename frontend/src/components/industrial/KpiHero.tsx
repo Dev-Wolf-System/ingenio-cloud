@@ -19,6 +19,7 @@ import { SortableGroup } from './SortableGroup';
 import { SortableTile } from './SortableTile';
 import { MoliendaEstadoModal, type MoliendaBloquesPayload } from './MoliendaEstadoModal';
 import { GasEstadoModal, type GasBloquesPayload, type GasHoraEnCurso, mergeGasHoraEnCurso } from './GasEstadoModal';
+import { AlertasModalAuto, type ActiveAlert } from './AlertasModalAuto';
 
 async function fetchAlerts() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
@@ -367,6 +368,7 @@ export function KpiHero() {
         data={gasBloquesConCurso}
         loading={gasBloques.isLoading}
       />
+      <AlertasModalAuto alerts={alertsList as ActiveAlert[]} />
     </>
   );
 }

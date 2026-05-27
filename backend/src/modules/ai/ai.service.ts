@@ -180,4 +180,86 @@ Analizá el desempeño del turno considerando los motivos de paradas.`;
       return null;
     }
   }
+
+  async analizarAlertaCausa(alert: {
+    id: string;
+    severity: string;
+    area: string;
+    title: string;
+    message: string;
+    metadata: { value?: number; min_value?: number; max_value?: number; unit?: string; updated_at?: string };
+    detected_at: string;
+  }): Promise<{
+    causa_probable: string;
+    factores_contribuyentes: string[];
+    acciones_sugeridas: string[];
+  } | null> {
+    if (!this.client) return null;
+
+    const { area, title, message, metadata, severity, detected_at } = alert;
+    const valorStr = metadata?.value != null ? `${metadata.value}${metadata.unit ? ' ' + metadata.unit : ''}` : '—';
+    const rangoStr =
+      metadata?.min_value != null || metadata?.max_value != null
+        ? `rango normal [${metadata.min_value ?? '—'} – ${metadata.max_value ?? '—'}${metadata.unit ? ' ' + metadata.unit : ''}]`
+        : '';
+    const detectedAgo = detected_at
+      ? `detectada hace ${Math.round((Date.now() - new Date(detected_at).getTime()) / 60_000)} min`
+      : '';
+
+    const systemPrompt = `Sos un ingeniero senior experto en ingenios azucareros (Ingenio La Corona, Tucumán, Argentina).
+Analizás alertas operativas en tiempo real para dar contexto inmediato al jefe de turno.
+Tono: técnico, directo, en español rioplatense.
+Salida JSON estricto:
+- causa_probable (string, 1-2 oraciones)
+- factores_contribuyentes (array 2-4 strings cortos)
+- acciones_sugeridas (array 2-3 strings, acciones concretas)`;
+
+    const userPrompt = `ALERTA ${severity.toUpperCase()} — Área: ${area}
+Título: ${title}
+Detalle: ${message}
+Valor actual: ${valorStr}${rangoStr ? ` (${rangoStr})` : ''}
+${detectedAgo}
+
+Explicá la causa probable y qué debe hacer el operador ahora.`;
+
+    try {
+      const res = await this.client.chat.completions.create({
+        model: this.model,
+        response_format: { type: 'json_object' },
+        temperature: 0.3,
+        max_tokens: 400,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      });
+
+      const content = res.choices[0]?.message?.content ?? '';
+      if (!content.trim()) return null;
+
+      let cleaned = content.trim();
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+      }
+      const start = cleaned.indexOf('{');
+      const end = cleaned.lastIndexOf('}');
+      if (start === -1 || end === -1) return null;
+
+      const parsed = JSON.parse(cleaned.slice(start, end + 1)) as {
+        causa_probable?: string;
+        factores_contribuyentes?: string[];
+        acciones_sugeridas?: string[];
+      };
+
+      this.logger.log(`Alert causa análisis OK (id=${alert.id.slice(0, 8)}...)`);
+      return {
+        causa_probable: parsed.causa_probable ?? 'Sin análisis disponible.',
+        factores_contribuyentes: Array.isArray(parsed.factores_contribuyentes) ? parsed.factores_contribuyentes : [],
+        acciones_sugeridas: Array.isArray(parsed.acciones_sugeridas) ? parsed.acciones_sugeridas : [],
+      };
+    } catch (err) {
+      this.logger.error(`analizarAlertaCausa failed: ${(err as Error).message}`);
+      return null;
+    }
+  }
 }

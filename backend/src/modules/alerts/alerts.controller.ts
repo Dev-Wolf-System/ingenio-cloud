@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { AlertsService } from './alerts.service';
 
 @Controller('alerts')
@@ -9,5 +9,11 @@ export class AlertsController {
   @Get('active')
   active() {
     return this.svc.listActive();
+  }
+
+  /** GET /api/alerts/:id/analisis-causa — análisis IA de causa (cache 5min) */
+  @Get(':id/analisis-causa')
+  analisisCausa(@Param('id') id: string) {
+    return this.svc.getAnalisisCausa(id);
   }
 }
