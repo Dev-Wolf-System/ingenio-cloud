@@ -171,9 +171,9 @@ export class ReportesDataService {
       return { count: 0, minutos_total: 0, detalle: [] };
     }
 
-    const items: ParadaItem[] = (data ?? [])
-      .map((r) => this.armarParadaItem(r as ParadaRaw, ventana))
-      .filter((p): p is ParadaItem => p !== null);
+    const items: ParadaItem[] = ((data ?? []) as ParadaRaw[])
+      .map((r: ParadaRaw) => this.armarParadaItem(r, ventana))
+      .filter((p: ParadaItem | null): p is ParadaItem => p !== null);
 
     const minutosTotal = items.reduce((acc, p) => acc + (p.minutos ?? 0), 0);
     return { count: items.length, minutos_total: minutosTotal, detalle: items };
