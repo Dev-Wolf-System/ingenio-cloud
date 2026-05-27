@@ -53,6 +53,26 @@ export class AlertsService {
     }
   }
 
+  async listHistory(limit = 100, offset = 0) {
+    try {
+      const alertsSchema = this.supabase.schema('alerts');
+      const { data, error, count } = await alertsSchema
+        .from('active')
+        .select('id, severity, area, source, title, message, metadata, detected_at, resolved_at', { count: 'exact' })
+        .not('resolved_at', 'is', null)
+        .order('detected_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      if (error) {
+        this.logger.warn(`listHistory fail: ${error.message}`);
+        return { alerts: [], total: 0, stale: true };
+      }
+      return { alerts: data ?? [], total: count ?? 0 };
+    } catch (err) {
+      this.logger.warn(`listHistory exception: ${(err as Error).message}`);
+      return { alerts: [], total: 0, stale: true };
+    }
+  }
+
   async getAnalisisCausa(id: string) {
     // Buscar alerta
     const alertsSchema = this.supabase.schema('alerts');
