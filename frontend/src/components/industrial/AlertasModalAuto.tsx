@@ -349,7 +349,7 @@ export function AlertasModalAuto({ alerts }: Props) {
             className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none"
           >
             <div
-              className="pointer-events-auto w-full max-w-lg lg:max-w-2xl xl:max-w-3xl max-h-[85vh] flex flex-col rounded-2xl border border-white/10 bg-[#0F1623] overflow-hidden"
+              className="pointer-events-auto w-full max-w-xl lg:max-w-3xl xl:max-w-4xl 2xl:max-w-5xl max-h-[90vh] flex flex-col rounded-2xl border border-white/10 bg-[#0F1623] overflow-hidden"
               style={{ boxShadow: `0 24px 64px rgba(0,0,0,0.5), ${sev.glow}` }}
             >
               {/* Header */}
