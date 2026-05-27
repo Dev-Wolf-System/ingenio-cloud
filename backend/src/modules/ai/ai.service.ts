@@ -184,15 +184,18 @@ Analizá el desempeño del turno considerando los motivos de paradas.`;
   async generarVozAlertas(text: string): Promise<Buffer | null> {
     if (!this.client) return null;
     try {
-      const input = text;
-      const response = await this.client.audio.speech.create({
-        model: 'tts-1-hd',
-        voice: 'nova',
-        input,
+      const response = await (this.client.audio.speech.create as (params: Record<string, unknown>) => Promise<{ arrayBuffer(): Promise<ArrayBuffer> }>)({
+        model: 'gpt-4o-mini-tts',
+        voice: 'coral',
+        input: text,
         response_format: 'mp3',
+        instructions:
+          'Hablá en español latinoamericano neutro, sin ningún acento extranjero. ' +
+          'Pronunciá todos los números, unidades y palabras técnicas en español. ' +
+          'Tono profesional, claro y directo, como un sistema de monitoreo industrial.',
       });
       const arrayBuffer = await response.arrayBuffer();
-      this.logger.log(`TTS generado (${input.length} chars, ${arrayBuffer.byteLength} bytes)`);
+      this.logger.log(`TTS generado (${text.length} chars, ${arrayBuffer.byteLength} bytes)`);
       return Buffer.from(arrayBuffer);
     } catch (err) {
       this.logger.error(`TTS failed: ${(err as Error).message}`);
