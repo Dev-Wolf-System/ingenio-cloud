@@ -1,7 +1,7 @@
 # DEVLOG — Ingenio Cloud v2.0
 
 > Registro de features implementados, bugs corregidos y tareas pendientes.
-> Actualizado: 2026-05-27
+> Actualizado: 2026-05-27 (sesión 2)
 
 ---
 
@@ -41,23 +41,33 @@
 #### Audio de alertas (beep + voz OpenAI TTS)
 - **Hook:** `frontend/src/lib/hooks/useAlertAudio.ts`
 - **Endpoints:** `POST /api/alerts/voice` + `POST /api/alerts/voice-text`
-- Beep inmediato (`/sounds/alert.mp3`) + voz natural después (`tts-1`, voz `onyx`)
+- Beep inmediato (`/sounds/alert.mp3`) + voz natural después (`tts-1-hd`, voz `nova`)
+- **Repetición automática cada 5 min** si la alerta persiste sin resolver (igual que modal)
+- Timer se resetea al llegar nueva alerta, se cancela al resolverse todas
 - 2 toggles independientes: Beep y Voz
 - Cuando Voz OFF → no llama OpenAI → **cero costo**
 - Cache de audio 5 min por combinación de alertIds
 - Maneja autoplay policy del browser (guarda audio pendiente hasta primer click)
-- Texto generado: severidad, área, título, valor actual, mínimo/máximo
-- Máx 3 alertas en el audio + "y N más"
+- Texto natural: *"Atención, hay 2 alertas críticas en el sistema. En el área de Energía, alerta crítica: título. El valor actual es 95 grados. Está por encima del máximo permitido de 80 grados."*
+- Máx 3 alertas en el audio + "Además hay N alertas más pendientes."
 - Archivos: `frontend/public/sounds/alert.mp3` + `normalize.mp3`
-- Costo estimado: ~$0.003 USD/alerta generada, <$1/mes en operación normal
+- Costo estimado: ~$0.006 USD/alerta generada (tts-1-hd), <$2/mes en operación normal
 
 #### Sonido de normalización al resolverse una alerta ✅
 - Detecta alertas que desaparecen del array activo (`prevIdsRef` → diff)
 - Reproduce `normalize.mp3` (tono suave diferente al de alerta)
-- Si voz ON → llama `POST /api/alerts/voice-text` con texto libre:
-  *"Normalizado. [título] volvió a rango normal."*
+- Si voz ON → llama `POST /api/alerts/voice-text` con texto:
+  *"Normalizado. [título] volvió al rango normal."* (pluralizado si son varias)
 - Si hay nuevas alertas Y resueltas simultáneas → prioriza audio de alerta nueva
 - **Backend:** `POST /api/alerts/voice-text` + `alerts.service.generarAudioTexto(text)`
+
+#### Fuentes del modal de alertas ampliadas (2026-05-27 sesión 2)
+- Header: `text-sm lg:text-xl` → `text-base lg:text-2xl`
+- Subtítulo header: `text-[10px] lg:text-sm` → `text-xs lg:text-base`
+- Badge/área/tiempo: `text-[10px] lg:text-xs` → `text-xs lg:text-sm`
+- Título alerta: `text-sm lg:text-base` → `text-base lg:text-lg`
+- Mensaje: `text-xs lg:text-sm` → `text-sm lg:text-base`
+- Análisis IA body: `text-xs` → `text-sm`, labels `text-[10px]` → `text-xs`
 
 #### Protección por contraseña
 - **Hook:** `frontend/src/lib/hooks/usePasswordSession.ts`
@@ -154,6 +164,12 @@ if (alerts.length > 0 && getLs(LS_MODAL, true)) openModal();
 | 6 | Indicador visual "audio pendiente" (autoplay bloqueado) | AlertasModalAuto | Bajo |
 | 7 | Botón "Probar sonido" en panel de config de avisos | /alertas page | Bajo |
 | 8 | Git push a remote (credenciales pendientes) | DevOps | Bajo |
+
+### Decisiones técnicas TTS (referencia futura)
+- **Modelo:** `tts-1-hd` (no `tts-1`) — diferencia de calidad notable en español
+- **Voz:** `nova` — mejor pronunciación español latinoamericano vs `onyx` (grave, robótica en ES)
+- **Idioma:** no usar prefijo separado; integrar "Atención, hay..." al inicio del texto → TTS detecta español por contexto
+- **Repetición audio:** `scheduleRepeat()` en `useAlertAudio.ts` — setTimeout auto-recurrente cada 5min, usa `alertsRef` para evitar stale closure
 
 ---
 
