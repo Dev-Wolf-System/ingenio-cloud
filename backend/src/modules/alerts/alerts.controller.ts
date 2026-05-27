@@ -1,4 +1,5 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query, Res } from '@nestjs/common';
+import type { Response } from 'express';
 import { AlertsService } from './alerts.service';
 
 @Controller('alerts')
@@ -24,5 +25,28 @@ export class AlertsController {
   @Get(':id/analisis-causa')
   analisisCausa(@Param('id') id: string) {
     return this.svc.getAnalisisCausa(id);
+  }
+
+  /** POST /api/alerts/voice — genera audio TTS con las alertas activas indicadas */
+  @Post('voice')
+  @HttpCode(200)
+  async voice(
+    @Body() body: { alertIds?: string[] },
+    @Res() res: Response,
+  ): Promise<void> {
+    const ids = body?.alertIds ?? [];
+    if (!ids.length) {
+      res.status(400).json({ error: 'alertIds requerido' });
+      return;
+    }
+    const audio = await this.svc.generarAudioAlertas(ids);
+    if (!audio) {
+      res.status(503).json({ available: false });
+      return;
+    }
+    res.set('Content-Type', 'audio/mpeg');
+    res.set('Content-Length', String(audio.byteLength));
+    res.set('Cache-Control', 'no-store');
+    res.send(audio);
   }
 }

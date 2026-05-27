@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   IconArrowLeft,
@@ -13,9 +13,18 @@ import {
   IconRefresh,
   IconHistory,
   IconClockFilled,
+  IconBell,
+  IconBellOff,
+  IconVolume,
+  IconVolumeOff,
+  IconWindowMaximize,
+  IconWindowMinimize,
+  IconSettings,
 } from '@tabler/icons-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { PremiumPanel } from '@/components/industrial/PremiumPanel';
+import { PasswordGate } from '@/components/ui/PasswordGate';
+import { usePasswordSession } from '@/lib/hooks/usePasswordSession';
 
 type Area = 'energia' | 'produccion' | 'trapiche';
 type Severity = 'info' | 'warn' | 'critical';
@@ -62,6 +71,22 @@ const SEVERITY_STYLE: Record<Severity, { color: string; bg: string; label: strin
 };
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? '/api';
+
+const LS_MODAL = 'alert_modal_enabled';
+const LS_BEEP  = 'alert_beep_enabled';
+const LS_VOICE = 'alert_voice_enabled';
+
+function getLs(key: string, def: boolean): boolean {
+  if (typeof window === 'undefined') return def;
+  const v = localStorage.getItem(key);
+  return v === null ? def : v === 'true';
+}
+
+function setLs(key: string, val: boolean): void {
+  localStorage.setItem(key, String(val));
+  // Notificar a otras pestañas/componentes
+  window.dispatchEvent(new StorageEvent('storage', { key, newValue: String(val) }));
+}
 
 async function fetchSensors(): Promise<SensorKey[]> {
   // Snapshot SIN filtro de area = devuelve TODAS las áreas en una sola request
@@ -125,6 +150,39 @@ export default function AlertasConfigPage() {
   const [historyTotal, setHistoryTotal] = useState(0);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Password session
+  const { unlocked, unlock } = usePasswordSession();
+  const [pwdGateOpen, setPwdGateOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  // Audio & modal toggles (sincronizados con localStorage)
+  const [modalEnabled, setModalEnabled] = useState(true);
+  const [beepEnabled, setBeepEnabled] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
+
+  useEffect(() => {
+    setModalEnabled(getLs(LS_MODAL, true));
+    setBeepEnabled(getLs(LS_BEEP, true));
+    setVoiceEnabled(getLs(LS_VOICE, false));
+  }, []);
+
+  const runProtected = useCallback((fn: () => void) => {
+    if (unlocked) {
+      fn();
+    } else {
+      setPendingAction(() => fn);
+      setPwdGateOpen(true);
+    }
+  }, [unlocked]);
+
+  const handlePwdSuccess = useCallback(() => {
+    setPwdGateOpen(false);
+    if (pendingAction) {
+      pendingAction();
+      setPendingAction(null);
+    }
+  }, [pendingAction]);
+
   const reload = async () => {
     setLoading(true);
     const [s, t] = await Promise.all([fetchSensors(), fetchThresholds()]);
@@ -179,7 +237,7 @@ export default function AlertasConfigPage() {
       .sort((a, b) => a.area.localeCompare(b.area) || a.key.localeCompare(b.key));
   }, [sensors, areaFilter, search]);
 
-  const onSave = async () => {
+  const doSave = async () => {
     setSaving(true);
     setSaveOk(false);
     try {
@@ -193,6 +251,26 @@ export default function AlertasConfigPage() {
       setSaving(false);
     }
   };
+
+  const onSave = () => runProtected(doSave);
+
+  const toggleModal = () => runProtected(() => {
+    const next = !modalEnabled;
+    setModalEnabled(next);
+    setLs(LS_MODAL, next);
+  });
+
+  const toggleBeep = () => runProtected(() => {
+    const next = !beepEnabled;
+    setBeepEnabled(next);
+    setLs(LS_BEEP, next);
+  });
+
+  const toggleVoice = () => runProtected(() => {
+    const next = !voiceEnabled;
+    setVoiceEnabled(next);
+    setLs(LS_VOICE, next);
+  });
 
   const stats = useMemo(() => {
     const enabled = Array.from(thresholds.values()).filter((t) => t.enabled).length;
@@ -259,6 +337,64 @@ export default function AlertasConfigPage() {
               </button>
             </div>
           </header>
+
+          {/* Panel de configuración de avisos */}
+          <PremiumPanel
+            title="CONFIGURACIÓN DE AVISOS"
+            subtitle="Modal automático · Beep · Voz IA · requieren contraseña para modificar"
+            icon={<IconSettings size={18} className="text-primary-light" />}
+            accent="primary"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 py-1">
+              {/* Toggle: Modal automático */}
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-white/6 bg-white/[0.03] px-4 py-3">
+                <div className="flex items-center gap-2.5">
+                  {modalEnabled
+                    ? <IconWindowMaximize size={17} className="text-primary-light flex-shrink-0" />
+                    : <IconWindowMinimize size={17} className="text-gray-600 flex-shrink-0" />}
+                  <div>
+                    <p className="text-sm font-medium text-white">Modal automático</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider">
+                      {modalEnabled ? 'Activo — se abre al detectar alerta' : 'Desactivado'}
+                    </p>
+                  </div>
+                </div>
+                <Toggle enabled={modalEnabled} onChange={toggleModal} />
+              </div>
+
+              {/* Toggle: Beep */}
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-white/6 bg-white/[0.03] px-4 py-3">
+                <div className="flex items-center gap-2.5">
+                  {beepEnabled
+                    ? <IconBell size={17} className="text-warn flex-shrink-0" />
+                    : <IconBellOff size={17} className="text-gray-600 flex-shrink-0" />}
+                  <div>
+                    <p className="text-sm font-medium text-white">Beep de alerta</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider">
+                      {beepEnabled ? 'Activo — suena al detectar' : 'Desactivado'}
+                    </p>
+                  </div>
+                </div>
+                <Toggle enabled={beepEnabled} onChange={toggleBeep} />
+              </div>
+
+              {/* Toggle: Voz */}
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-white/6 bg-white/[0.03] px-4 py-3">
+                <div className="flex items-center gap-2.5">
+                  {voiceEnabled
+                    ? <IconVolume size={17} className="text-ok flex-shrink-0" />
+                    : <IconVolumeOff size={17} className="text-gray-600 flex-shrink-0" />}
+                  <div>
+                    <p className="text-sm font-medium text-white">Voz IA (OpenAI TTS)</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-wider">
+                      {voiceEnabled ? 'Activa — genera audio por alerta' : 'Desactivada · sin costo API'}
+                    </p>
+                  </div>
+                </div>
+                <Toggle enabled={voiceEnabled} onChange={toggleVoice} />
+              </div>
+            </div>
+          </PremiumPanel>
 
           <PremiumPanel
             title="UMBRALES DE ALERTAS"
@@ -479,6 +615,16 @@ export default function AlertasConfigPage() {
           </PremiumPanel>
         </main>
       </div>
+
+      {/* Password gate */}
+      <PasswordGate
+        isOpen={pwdGateOpen}
+        onSuccess={handlePwdSuccess}
+        onClose={() => { setPwdGateOpen(false); setPendingAction(null); }}
+        unlock={unlock}
+        title="Configuración protegida"
+        description="Ingresá la contraseña para modificar esta configuración."
+      />
     </div>
   );
 }

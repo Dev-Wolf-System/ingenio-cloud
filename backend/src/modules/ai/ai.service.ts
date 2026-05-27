@@ -181,6 +181,24 @@ Analizá el desempeño del turno considerando los motivos de paradas.`;
     }
   }
 
+  async generarVozAlertas(text: string): Promise<Buffer | null> {
+    if (!this.client) return null;
+    try {
+      const response = await this.client.audio.speech.create({
+        model: 'tts-1',
+        voice: 'onyx',
+        input: text,
+        response_format: 'mp3',
+      });
+      const arrayBuffer = await response.arrayBuffer();
+      this.logger.log(`TTS generado (${text.length} chars, ${arrayBuffer.byteLength} bytes)`);
+      return Buffer.from(arrayBuffer);
+    } catch (err) {
+      this.logger.error(`TTS failed: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
   async analizarAlertaCausa(alert: {
     id: string;
     severity: string;

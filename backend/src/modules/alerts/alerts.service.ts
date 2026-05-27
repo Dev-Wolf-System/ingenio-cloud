@@ -22,12 +22,19 @@ interface CausaCache {
   metaKey: string; // metadata.value+updated_at para invalidar si cambia
 }
 
+interface VoiceCache {
+  audio: Buffer;
+  ts: number;
+}
+
 const CAUSA_TTL_MS = 5 * 60_000; // 5 min
+const VOICE_TTL_MS = 5 * 60_000; // 5 min
 
 @Injectable()
 export class AlertsService {
   private readonly logger = new Logger(AlertsService.name);
   private readonly causaCache = new Map<string, CausaCache>();
+  private readonly voiceCache = new Map<string, VoiceCache>();
 
   constructor(
     private readonly supabase: SupabaseService,
@@ -107,5 +114,73 @@ export class AlertsService {
 
     this.causaCache.set(id, { result, ts: Date.now(), metaKey });
     return { ...result, cached: false };
+  }
+
+  async generarAudioAlertas(alertIds: string[]): Promise<Buffer | null> {
+    if (!alertIds.length) return null;
+
+    // Cache key: sorted ids joined
+    const cacheKey = [...alertIds].sort().join(',');
+    const cached = this.voiceCache.get(cacheKey);
+    if (cached && Date.now() - cached.ts < VOICE_TTL_MS) {
+      this.logger.debug(`voice cache HIT (${alertIds.length} alerts)`);
+      return cached.audio;
+    }
+
+    // Buscar alertas activas
+    const alertsSchema = this.supabase.schema('alerts');
+    const { data, error } = await alertsSchema
+      .from('active')
+      .select('id, severity, area, title, metadata')
+      .in('id', alertIds)
+      .is('resolved_at', null);
+
+    if (error || !data?.length) {
+      this.logger.warn(`generarAudioAlertas: no se encontraron alertas (${error?.message ?? 'empty'})`);
+      return null;
+    }
+
+    // Ordenar critical → warning → info
+    const ORDER: Record<string, number> = { critical: 0, warning: 1, info: 2 };
+    const sorted = [...data].sort(
+      (a, b) => (ORDER[a.severity] ?? 9) - (ORDER[b.severity] ?? 9),
+    );
+
+    const sevLabel = (s: string) =>
+      s === 'critical' ? 'Crítica' : s === 'warning' ? 'Advertencia' : 'Aviso';
+
+    const critCount = sorted.filter((a) => a.severity === 'critical').length;
+    const capArea = (a: string) => a.charAt(0).toUpperCase() + a.slice(1).toLowerCase();
+
+    let text = 'Atención';
+    if (critCount === 1) text += ', una alerta crítica';
+    else if (critCount > 1) text += `, ${critCount} alertas críticas`;
+    text += '.';
+
+    const toSpeak = sorted.slice(0, 3);
+    for (const a of toSpeak) {
+      const meta = (a.metadata ?? {}) as { value?: number; min_value?: number; max_value?: number; unit?: string };
+      text += ` ${sevLabel(a.severity)} en ${capArea(a.area)}: ${a.title}.`;
+      if (meta.value != null) {
+        text += ` Valor actual ${meta.value}${meta.unit ? ' ' + meta.unit : ''}.`;
+        if (meta.max_value != null && meta.value > meta.max_value) {
+          text += ` Máximo permitido ${meta.max_value}.`;
+        } else if (meta.min_value != null && meta.value < meta.min_value) {
+          text += ` Mínimo permitido ${meta.min_value}.`;
+        }
+      }
+    }
+    if (sorted.length > 3) {
+      text += ` Y ${sorted.length - 3} alerta${sorted.length - 3 === 1 ? '' : 's'} más.`;
+    }
+
+    if (!this.ai.isAvailable()) return null;
+
+    const audio = await this.ai.generarVozAlertas(text);
+    if (!audio) return null;
+
+    this.voiceCache.set(cacheKey, { audio, ts: Date.now() });
+    this.logger.log(`TTS generado y cacheado (${alertIds.length} alertas, ${text.length} chars)`);
+    return audio;
   }
 }

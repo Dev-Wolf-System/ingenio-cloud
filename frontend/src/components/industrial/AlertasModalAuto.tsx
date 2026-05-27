@@ -11,9 +11,14 @@ import {
   IconChevronDown,
   IconChevronUp,
   IconExternalLink,
+  IconBell,
+  IconBellOff,
+  IconVolume,
+  IconVolumeOff,
 } from '@tabler/icons-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useAlertAudio } from '@/lib/hooks/useAlertAudio';
 
 const REDISPLAY_MS = 5 * 60_000; // 5 min
 
@@ -228,11 +233,42 @@ function AlertItem({ alert }: { alert: ActiveAlert }) {
   );
 }
 
+const LS_MODAL = 'alert_modal_enabled';
+const LS_BEEP = 'alert_beep_enabled';
+const LS_VOICE = 'alert_voice_enabled';
+
+function getLs(key: string, def: boolean): boolean {
+  if (typeof window === 'undefined') return def;
+  const v = localStorage.getItem(key);
+  return v === null ? def : v === 'true';
+}
+
 export function AlertasModalAuto({ alerts }: Props) {
   const [isOpen, setIsOpen] = useState(false);
+  const [beepOn, setBeepOn] = useState(true);
+  const [voiceOn, setVoiceOn] = useState(false);
   const prevIdsRef = useRef<Set<string>>(new Set());
   const dismissedAtRef = useRef<number | null>(null);
   const redisplayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Hook de audio
+  useAlertAudio(alerts);
+
+  // Leer estado de toggles al montar
+  useEffect(() => {
+    setBeepOn(getLs(LS_BEEP, true));
+    setVoiceOn(getLs(LS_VOICE, false));
+  }, []);
+
+  // Escuchar cambios de localStorage desde la página de config
+  useEffect(() => {
+    const handler = () => {
+      setBeepOn(getLs(LS_BEEP, true));
+      setVoiceOn(getLs(LS_VOICE, false));
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
 
   const sorted = [...alerts].sort(
     (a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9),
@@ -271,7 +307,10 @@ export function AlertasModalAuto({ alerts }: Props) {
 
     const nuevas = alerts.filter((a) => !prevIdsRef.current.has(a.id));
     if (nuevas.length > 0 && dismissedAtRef.current === null) {
-      openModal();
+      // Solo abrir modal si el toggle modal está ON
+      if (getLs(LS_MODAL, true)) {
+        openModal();
+      }
     }
 
     prevIdsRef.current = currentIds;
@@ -282,7 +321,7 @@ export function AlertasModalAuto({ alerts }: Props) {
     return () => {
       if (redisplayTimerRef.current) clearTimeout(redisplayTimerRef.current);
     };
-  }, []);
+  }, [];
 
   if (alerts.length === 0) return null;
 
@@ -348,7 +387,27 @@ export function AlertasModalAuto({ alerts }: Props) {
 
               {/* Footer */}
               <div className="flex items-center justify-between px-4 lg:px-6 py-2.5 lg:py-3.5 border-t border-white/8 flex-shrink-0 bg-white/[0.02]">
-                <p className="text-[10px] lg:text-xs text-gray-600">Se reabre en 5 min si la alerta persiste</p>
+                {/* Indicadores de audio */}
+                <div className="flex items-center gap-2">
+                  <span title={beepOn ? 'Beep activo' : 'Beep desactivado'}>
+                    {beepOn
+                      ? <IconBell size={13} className="text-gray-500" />
+                      : <IconBellOff size={13} className="text-gray-700" />}
+                  </span>
+                  <span title={voiceOn ? 'Voz activa' : 'Voz desactivada'}>
+                    {voiceOn
+                      ? <IconVolume size={13} className="text-gray-500" />
+                      : <IconVolumeOff size={13} className="text-gray-700" />}
+                  </span>
+                  <Link
+                    href="/alertas"
+                    className="text-[10px] lg:text-[11px] text-gray-700 hover:text-gray-500 transition-colors"
+                    onClick={closeModal}
+                    title="Configurar audio"
+                  >
+                    Configurar
+                  </Link>
+                </div>
                 <Link
                   href="/alertas"
                   className="flex items-center gap-1 text-[11px] lg:text-sm text-blue-400 hover:text-blue-300 transition-colors"
