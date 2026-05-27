@@ -186,8 +186,8 @@ Analizá el desempeño del turno considerando los motivos de paradas.`;
     try {
       const input = text;
       const response = await this.client.audio.speech.create({
-        model: 'tts-1',
-        voice: 'onyx',
+        model: 'tts-1-hd',
+        voice: 'nova',
         input,
         response_format: 'mp3',
       });

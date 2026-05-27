@@ -152,31 +152,38 @@ export class AlertsService {
     );
 
     const sevLabel = (s: string) =>
-      s === 'critical' ? 'Crítica' : s === 'warning' ? 'Advertencia' : 'Aviso';
+      s === 'critical' ? 'crítica' : s === 'warning' ? 'de advertencia' : 'informativa';
 
     const critCount = sorted.filter((a) => a.severity === 'critical').length;
+    const warnCount = sorted.filter((a) => a.severity === 'warning').length;
     const capArea = (a: string) => a.charAt(0).toUpperCase() + a.slice(1).toLowerCase();
 
-    let text = 'Sistema de monitoreo industrial. Atención';
-    if (critCount === 1) text += ', una alerta crítica';
-    else if (critCount > 1) text += `, ${critCount} alertas críticas`;
-    text += '.';
+    // Encabezado natural
+    const parts: string[] = [];
+    if (critCount > 0) parts.push(`${critCount} alerta${critCount > 1 ? 's' : ''} crítica${critCount > 1 ? 's' : ''}`);
+    if (warnCount > 0) parts.push(`${warnCount} advertencia${warnCount > 1 ? 's' : ''}`);
+    const resto = sorted.length - critCount - warnCount;
+    if (resto > 0) parts.push(`${resto} aviso${resto > 1 ? 's' : ''}`);
+
+    let text = `Atención, hay ${parts.join(' y ')} en el sistema.`;
 
     const toSpeak = sorted.slice(0, 3);
     for (const a of toSpeak) {
       const meta = (a.metadata ?? {}) as { value?: number; min_value?: number; max_value?: number; unit?: string };
-      text += ` ${sevLabel(a.severity)} en ${capArea(a.area)}, ${a.title}.`;
+      const unitStr = meta.unit ? ` ${meta.unit}` : '';
+      text += ` En el área de ${capArea(a.area)}, alerta ${sevLabel(a.severity)}: ${a.title}.`;
       if (meta.value != null) {
-        text += ` Valor actual ${meta.value}${meta.unit ? ' ' + meta.unit : ''}.`;
+        text += ` El valor actual es ${meta.value}${unitStr}.`;
         if (meta.max_value != null && meta.value > meta.max_value) {
-          text += ` Máximo permitido ${meta.max_value}.`;
+          text += ` Está por encima del máximo permitido de ${meta.max_value}${unitStr}.`;
         } else if (meta.min_value != null && meta.value < meta.min_value) {
-          text += ` Mínimo permitido ${meta.min_value}.`;
+          text += ` Está por debajo del mínimo permitido de ${meta.min_value}${unitStr}.`;
         }
       }
     }
     if (sorted.length > 3) {
-      text += ` Y ${sorted.length - 3} alerta${sorted.length - 3 === 1 ? '' : 's'} más.`;
+      const extra = sorted.length - 3;
+      text += ` Además hay ${extra} alerta${extra > 1 ? 's' : ''} más pendiente${extra > 1 ? 's' : ''}.`;
     }
 
     if (!this.ai.isAvailable()) return null;
