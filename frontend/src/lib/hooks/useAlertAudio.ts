@@ -126,7 +126,7 @@ export function useAlertAudio(alerts: AudioAlert[]) {
     const newAlerts = alerts.filter((a) => !prevIdsRef.current.has(a.id));
     // Alertas resueltas (desaparecieron) — solo si antes había al menos 1
     const resolvedAlerts = prevIdsRef.current.size > 0
-      ? [...prevIdsRef.current]
+      ? Array.from(prevIdsRef.current)
           .filter((id) => !currentIds.has(id))
           .map((id) => prevAlertsRef.current.get(id))
           .filter((a): a is AudioAlert => a != null)
