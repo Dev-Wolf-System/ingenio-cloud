@@ -143,26 +143,26 @@ function AlertItem({ alert }: { alert: ActiveAlert }) {
 
   return (
     <div className="rounded-xl border border-white/5 bg-white/[0.03] hover:bg-white/[0.05] transition-colors overflow-hidden">
-      <div className="p-3">
-        <div className="flex items-start gap-2.5">
-          {sev.icon}
+      <div className="p-3 lg:p-4">
+        <div className="flex items-start gap-2.5 lg:gap-3">
+          <div className="mt-0.5 lg:w-5 lg:h-5 flex-shrink-0">{sev.icon}</div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded-md ${sev.badge}`}>
+              <span className={`text-[10px] lg:text-xs font-semibold uppercase tracking-wider px-1.5 lg:px-2 py-0.5 rounded-md ${sev.badge}`}>
                 {alert.severity}
               </span>
-              <span className="text-[10px] text-gray-500 uppercase tracking-wide">{alert.area}</span>
-              <span className="text-[10px] text-gray-600 ml-auto">{relativeTime(alert.detected_at)}</span>
+              <span className="text-[10px] lg:text-xs text-gray-500 uppercase tracking-wide">{alert.area}</span>
+              <span className="text-[10px] lg:text-xs text-gray-600 ml-auto">{relativeTime(alert.detected_at)}</span>
             </div>
-            <p className="text-sm font-semibold text-white mt-1 leading-tight">{alert.title}</p>
-            <p className="text-xs text-gray-400 mt-0.5 leading-snug">{alert.message}</p>
+            <p className="text-sm lg:text-base font-semibold text-white mt-1 leading-tight">{alert.title}</p>
+            <p className="text-xs lg:text-sm text-gray-400 mt-0.5 leading-snug">{alert.message}</p>
             <ValueBar alert={alert} />
           </div>
         </div>
 
         <button
           onClick={toggle}
-          className="mt-2.5 w-full flex items-center justify-center gap-1.5 text-xs text-gray-400 hover:text-blue-400 transition-colors py-1 rounded-lg hover:bg-white/5"
+          className="mt-2.5 lg:mt-3 w-full flex items-center justify-center gap-1.5 text-xs lg:text-sm text-gray-400 hover:text-blue-400 transition-colors py-1 lg:py-1.5 rounded-lg hover:bg-white/5"
         >
           <IconRobot size={12} />
           {expanded ? 'Ocultar análisis IA' : 'Analizar causa con IA'}
@@ -310,21 +310,21 @@ export function AlertasModalAuto({ alerts }: Props) {
             className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none"
           >
             <div
-              className="pointer-events-auto w-full max-w-lg max-h-[85vh] flex flex-col rounded-2xl border border-white/10 bg-[#0F1623] overflow-hidden"
+              className="pointer-events-auto w-full max-w-lg lg:max-w-2xl xl:max-w-3xl max-h-[85vh] flex flex-col rounded-2xl border border-white/10 bg-[#0F1623] overflow-hidden"
               style={{ boxShadow: `0 24px 64px rgba(0,0,0,0.5), ${sev.glow}` }}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-white/8 flex-shrink-0">
-                <div className="flex items-center gap-2.5">
+              <div className="flex items-center justify-between px-4 lg:px-6 py-3 lg:py-4 border-b border-white/8 flex-shrink-0">
+                <div className="flex items-center gap-2.5 lg:gap-3">
                   <div className="relative flex items-center justify-center">
-                    <span className={`absolute w-5 h-5 rounded-full ${sev.dot} opacity-30 animate-ping`} />
-                    <span className={`w-2.5 h-2.5 rounded-full ${sev.dot}`} />
+                    <span className={`absolute w-5 lg:w-7 h-5 lg:h-7 rounded-full ${sev.dot} opacity-30 animate-ping`} />
+                    <span className={`w-2.5 lg:w-3.5 h-2.5 lg:h-3.5 rounded-full ${sev.dot}`} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold text-white leading-tight">
+                    <h2 className="text-sm lg:text-xl font-bold text-white leading-tight">
                       {alerts.length} {alerts.length === 1 ? 'alerta activa' : 'alertas activas'}
                     </h2>
-                    <p className="text-[10px] text-gray-500">
+                    <p className="text-[10px] lg:text-sm text-gray-500">
                       {alerts.filter(a => a.severity === 'critical').length > 0
                         ? `${alerts.filter(a => a.severity === 'critical').length} críticas · acción requerida`
                         : 'Revisión recomendada'}
@@ -333,28 +333,28 @@ export function AlertasModalAuto({ alerts }: Props) {
                 </div>
                 <button
                   onClick={closeModal}
-                  className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/8 transition-colors"
+                  className="p-1.5 lg:p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/8 transition-colors"
                 >
-                  <IconX size={16} />
+                  <IconX size={16} className="lg:w-5 lg:h-5" />
                 </button>
               </div>
 
               {/* Alert list */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-white/10">
+              <div className="flex-1 overflow-y-auto p-3 lg:p-5 space-y-2 lg:space-y-3 scrollbar-thin scrollbar-thumb-white/10">
                 {sorted.map((alert) => (
                   <AlertItem key={alert.id} alert={alert} />
                 ))}
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/8 flex-shrink-0 bg-white/[0.02]">
-                <p className="text-[10px] text-gray-600">Se reabre en 5 min si la alerta persiste</p>
+              <div className="flex items-center justify-between px-4 lg:px-6 py-2.5 lg:py-3.5 border-t border-white/8 flex-shrink-0 bg-white/[0.02]">
+                <p className="text-[10px] lg:text-xs text-gray-600">Se reabre en 5 min si la alerta persiste</p>
                 <Link
                   href="/alertas"
-                  className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
+                  className="flex items-center gap-1 text-[11px] lg:text-sm text-blue-400 hover:text-blue-300 transition-colors"
                   onClick={closeModal}
                 >
-                  Ver historial <IconExternalLink size={11} />
+                  Ver historial <IconExternalLink size={11} className="lg:w-3.5 lg:h-3.5" />
                 </Link>
               </div>
             </div>

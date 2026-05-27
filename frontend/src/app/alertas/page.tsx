@@ -186,9 +186,9 @@ export default function AlertasConfigPage() {
           <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-xs text-text-muted hover:text-primary-light transition-colors px-3 py-1.5 rounded-md hover:bg-bg-hover border border-transparent hover:border-border"
+              className="inline-flex items-center gap-2 text-xs lg:text-sm text-text-muted hover:text-primary-light transition-colors px-3 lg:px-4 py-1.5 lg:py-2.5 rounded-md hover:bg-bg-hover border border-transparent hover:border-border"
             >
-              <IconArrowLeft size={14} />
+              <IconArrowLeft size={14} className="lg:w-5 lg:h-5" />
               Volver al dashboard
             </Link>
 
@@ -267,14 +267,14 @@ export default function AlertasConfigPage() {
               <div className="overflow-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-left text-[10px] uppercase tracking-wider text-text-muted border-b border-border">
-                      <th className="px-3 py-2 font-medium">Área</th>
-                      <th className="px-3 py-2 font-medium">Sensor</th>
-                      <th className="px-3 py-2 font-medium text-center">Valor actual</th>
-                      <th className="px-3 py-2 font-medium">Mínimo</th>
-                      <th className="px-3 py-2 font-medium">Máximo</th>
-                      <th className="px-3 py-2 font-medium">Severidad</th>
-                      <th className="px-3 py-2 font-medium text-center">Activa</th>
+                    <tr className="text-left text-[10px] lg:text-xs uppercase tracking-wider text-text-muted border-b border-border">
+                      <th className="px-3 lg:px-4 py-2 lg:py-3 font-medium">Área</th>
+                      <th className="px-3 lg:px-4 py-2 lg:py-3 font-medium">Sensor</th>
+                      <th className="px-3 lg:px-4 py-2 lg:py-3 font-medium text-center">Valor actual</th>
+                      <th className="px-3 lg:px-4 py-2 lg:py-3 font-medium">Mínimo</th>
+                      <th className="px-3 lg:px-4 py-2 lg:py-3 font-medium">Máximo</th>
+                      <th className="px-3 lg:px-4 py-2 lg:py-3 font-medium">Severidad</th>
+                      <th className="px-3 lg:px-4 py-2 lg:py-3 font-medium text-center">Activa</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -289,9 +289,9 @@ export default function AlertasConfigPage() {
                           key={`${s.area}::${s.key}`}
                           className="border-b border-border/30 hover:bg-bg-hover/40 transition-colors"
                         >
-                          <td className="px-3 py-2">
+                          <td className="px-3 lg:px-4 py-2 lg:py-3">
                             <span
-                              className="text-[10px] font-semibold uppercase tracking-wider mono px-2 py-0.5 rounded"
+                              className="text-[10px] lg:text-xs font-semibold uppercase tracking-wider mono px-2 lg:px-2.5 py-0.5 lg:py-1 rounded"
                               style={{
                                 color: areaConf.color,
                                 background: `${areaConf.color}1A`,
@@ -301,38 +301,38 @@ export default function AlertasConfigPage() {
                               {areaConf.label}
                             </span>
                           </td>
-                          <td className="px-3 py-2">
-                            <div className="font-medium text-text-primary text-xs">
+                          <td className="px-3 lg:px-4 py-2 lg:py-3">
+                            <div className="font-medium text-text-primary text-xs lg:text-sm">
                               {s.key.replaceAll('_', ' ')}
                             </div>
-                            <div className="text-2xs text-text-disabled mono">{s.unit ?? '—'}</div>
+                            <div className="text-2xs lg:text-xs text-text-disabled mono">{s.unit ?? '—'}</div>
                           </td>
-                          <td className="px-3 py-2 text-center">
+                          <td className="px-3 lg:px-4 py-2 lg:py-3 text-center">
                             <span
-                              className={`mono tabular-nums text-sm font-semibold ${outOfRange && t.enabled ? 'text-danger' : 'text-text-primary'}`}
+                              className={`mono tabular-nums text-sm lg:text-base font-semibold ${outOfRange && t.enabled ? 'text-danger' : 'text-text-primary'}`}
                             >
                               {Number.isFinite(s.value) ? s.value.toFixed(2) : '—'}
                             </span>
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-3 lg:px-4 py-2 lg:py-3">
                             <NumberInput
                               value={t.min_value}
                               onChange={(v) => update(s.area, s.key, { min_value: v })}
                             />
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-3 lg:px-4 py-2 lg:py-3">
                             <NumberInput
                               value={t.max_value}
                               onChange={(v) => update(s.area, s.key, { max_value: v })}
                             />
                           </td>
-                          <td className="px-3 py-2">
+                          <td className="px-3 lg:px-4 py-2 lg:py-3">
                             <SeveritySelect
                               value={t.severity}
                               onChange={(v) => update(s.area, s.key, { severity: v })}
                             />
                           </td>
-                          <td className="px-3 py-2 text-center">
+                          <td className="px-3 lg:px-4 py-2 lg:py-3 text-center">
                             <Toggle
                               enabled={t.enabled}
                               onChange={(v) => update(s.area, s.key, { enabled: v })}

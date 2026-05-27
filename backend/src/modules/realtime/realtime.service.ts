@@ -95,6 +95,43 @@ export class RealtimeService {
       this.logger.warn(`Empty payload for area ${area}`);
       return { ingested: 0 };
     }
+
+    // Agregar KPIs derivados para energía
+    if (area === 'energia') {
+      const get = (key: string) => rows.find((r) => r.key === key)?.value ?? 0;
+      const now = new Date().toISOString();
+      const derived: typeof rows = [
+        {
+          area: 'energia',
+          key: 'Gas_Total',
+          value: +(get('Caudal_Gas_Cald2') + get('Caudal_Gas_Cald3') + get('Caudal_Gas_Cald6')).toFixed(1),
+          display: null,
+          unit: 'm³/h',
+          raw: null,
+          updated_at: now,
+        },
+        {
+          area: 'energia',
+          key: 'Vapor_Total_Calderas',
+          value: +(get('Caudal_Vapor_Cald2') + get('Caudal_Vapor_Cald3') + get('Caudal_Vapor_Cald6')).toFixed(1),
+          display: null,
+          unit: 'Tn/H',
+          raw: null,
+          updated_at: now,
+        },
+        {
+          area: 'energia',
+          key: 'Potencia_Total',
+          value: +((get('Potencia_Activa_Weg') + get('Potencia_Activa_Siemens')) / 1000).toFixed(2),
+          display: null,
+          unit: 'MW',
+          raw: null,
+          updated_at: now,
+        },
+      ];
+      rows.push(...derived);
+    }
+
     const industrial = this.supabase.schema('industrial');
     const { error } = await industrial
       .from('dashboard_data')
