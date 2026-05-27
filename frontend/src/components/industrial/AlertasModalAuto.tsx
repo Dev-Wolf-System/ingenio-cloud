@@ -321,7 +321,7 @@ export function AlertasModalAuto({ alerts }: Props) {
     return () => {
       if (redisplayTimerRef.current) clearTimeout(redisplayTimerRef.current);
     };
-  }, [];
+  }, []);
 
   if (alerts.length === 0) return null;
 
