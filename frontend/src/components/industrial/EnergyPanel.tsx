@@ -133,7 +133,7 @@ export function EnergyPanel() {
     <>
       <PremiumPanel
         title="ENERGÍA"
-        subtitle={`Caldera · Vapor · Termodinámica · ${count} señal${count === 1 ? '' : 'es'}`}
+        subtitle={`Calderas · Vapor · Potencia eléctrica · ${count} señal${count === 1 ? '' : 'es'} activa${count === 1 ? '' : 's'}`}
         icon={<IconBolt size={18} className="text-warn" />}
         accent="warn"
         headerRight={

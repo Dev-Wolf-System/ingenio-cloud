@@ -92,8 +92,8 @@ export function ShiftSummaryPanel() {
   const horaInicio = formatHoraAR(tp?.turno_inicio);
   const horaFin = formatHoraAR(tp?.turno_fin);
   const subtitle = tp?.turno
-    ? `${tp.turno} · ${horaInicio} → ${horaFin}`
-    : 'Turno anterior · datos consolidados';
+    ? `Turno ${tp.turno} · ${horaInicio} → ${horaFin} · KPIs consolidados`
+    : 'Turno anterior · aguardando datos del cierre de guardia';
 
   return (
     <PremiumPanel

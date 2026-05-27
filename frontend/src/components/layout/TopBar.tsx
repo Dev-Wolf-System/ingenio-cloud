@@ -64,7 +64,7 @@ export function TopBar({ plant = 'Sala de Monitoreo' }: { plant?: string }) {
           <span className="text-base font-semibold text-text-primary tracking-tight">
             Ingenio <span className="text-primary-light">Cloud</span>
           </span>
-          <span className="text-[10px] uppercase tracking-[0.14em] text-text-muted font-medium">
+          <span className="text-[11px] uppercase tracking-[0.12em] text-text-secondary font-medium">
             {plant} · Ingenio La Corona
           </span>
         </div>

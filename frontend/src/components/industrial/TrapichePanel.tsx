@@ -361,8 +361,8 @@ export function TrapichePanel() {
     <PremiumPanel
       title="TRAPICHE"
       subtitle={hasAny
-        ? `Línea de molienda · ${present}/${expected} KPIs activos`
-        : 'Línea de molienda · esperando datos'}
+        ? `Molinos · Extracción de jugo · ${present}/${expected} sensores en línea`
+        : 'Molinos · Extracción de jugo · esperando señal de Node-RED'}
       icon={<IconBolt size={18} className="text-primary-light" />}
       accent="primary"
     >

@@ -77,7 +77,7 @@ export function ProductionPanel() {
   return (
     <PremiumPanel
       title="PRODUCCIÓN"
-      subtitle={`Clarificación · Tachos · Destilería · Azúcar · ${count} señal${count === 1 ? '' : 'es'}`}
+      subtitle={`Fábrica · Clarificación · Tachos · Destilería · ${count} señal${count === 1 ? '' : 'es'} activa${count === 1 ? '' : 's'}`}
       icon={<IconChartLine size={18} className="text-ok" />}
       accent="accent"
       headerRight={

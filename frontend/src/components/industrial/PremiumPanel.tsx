@@ -104,7 +104,7 @@ export function PremiumPanel({
               {title}
             </h2>
             {subtitle && (
-              <p className="text-[10px] uppercase tracking-[0.16em] text-text-muted font-medium mt-0.5 truncate">
+              <p className="text-[11px] uppercase tracking-[0.14em] text-text-secondary font-medium mt-0.5 truncate">
                 {subtitle}
               </p>
             )}
