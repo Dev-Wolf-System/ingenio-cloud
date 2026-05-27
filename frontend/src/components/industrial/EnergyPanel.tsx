@@ -94,6 +94,9 @@ export function EnergyPanel() {
     VAPOR_ALTA_KEY, VAPOR_BAJA_KEY,
     ...CAUDAL_KEYS,
     POTENCIA_SIEMENS_KEY, POTENCIA_WEG_KEY,
+    // KPIs derivados en backend — ya tienen tile combo dedicado en frontend
+    'Vapor_Total_Calderas',
+    'Potencia_Total',
   ]);
   const baseKeys = Array.from(data.keys())
     .filter((k) => !oculto.has(k) && !/caudal_gas/i.test(k))
