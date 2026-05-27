@@ -161,17 +161,10 @@ export class ReportesDataService {
   }
 
   private async fetchParadas(ventana: TurnoVentana) {
-    const lg = this.supabase.schema('legacy');
-    const fechaInicio = ventana.inicio.slice(0, 10);
-    const fechaFin = ventana.fin.slice(0, 10);
-    const { data, error } = await lg
-      .from('lab_general')
-      .select('fecha_industrial, desde_hora, hasta_hora, motivo, maquina, origen_descripcion')
-      .eq('proceso_codigo', 'Paradas')
-      .not('motivo', 'is', null)
-      .not('desde_hora', 'is', null)
-      .gte('fecha_industrial', fechaInicio)
-      .lte('fecha_industrial', fechaFin);
+    const { data, error } = await this.supabase.sb.rpc('fn_paradas_turno', {
+      ts_inicio: ventana.inicio,
+      ts_fin: ventana.fin,
+    });
 
     if (error) {
       this.logger.warn(`fetchParadas fail: ${error.message}`);
