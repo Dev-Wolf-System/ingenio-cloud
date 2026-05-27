@@ -184,14 +184,18 @@ Analizá el desempeño del turno considerando los motivos de paradas.`;
   async generarVozAlertas(text: string): Promise<Buffer | null> {
     if (!this.client) return null;
     try {
+      // Prefijo explícito en español para forzar detección de idioma en tts-1.
+      // Sin esto, si el texto contiene palabras en inglés (títulos de alertas)
+      // el modelo puede pronunciar en inglés.
+      const input = `Mensaje en español del sistema de monitoreo industrial. ${text}`;
       const response = await this.client.audio.speech.create({
         model: 'tts-1',
         voice: 'onyx',
-        input: text,
+        input,
         response_format: 'mp3',
       });
       const arrayBuffer = await response.arrayBuffer();
-      this.logger.log(`TTS generado (${text.length} chars, ${arrayBuffer.byteLength} bytes)`);
+      this.logger.log(`TTS generado (${input.length} chars, ${arrayBuffer.byteLength} bytes)`);
       return Buffer.from(arrayBuffer);
     } catch (err) {
       this.logger.error(`TTS failed: ${(err as Error).message}`);
