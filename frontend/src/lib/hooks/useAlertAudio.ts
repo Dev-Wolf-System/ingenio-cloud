@@ -11,6 +11,7 @@ export interface AudioAlert {
 
 const LS_BEEP = 'alert_beep_enabled';
 const LS_VOICE = 'alert_voice_enabled';
+const REPEAT_AUDIO_MS = 5 * 60_000; // 5 min — igual que redisplay del modal
 
 function getLs(key: string, def: boolean): boolean {
   if (typeof window === 'undefined') return def;
@@ -25,6 +26,14 @@ export function useAlertAudio(alerts: AudioAlert[]) {
   const pendingAudioRef = useRef<(() => void) | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const voiceBlobUrlRef = useRef<string | null>(null);
+  const repeatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Siempre apunta a las alertas actuales sin re-crear callbacks
+  const alertsRef = useRef<AudioAlert[]>(alerts);
+
+  // Mantener alertsRef sincronizado
+  useEffect(() => {
+    alertsRef.current = alerts;
+  }, [alerts]);
 
   const revokeVoiceUrl = useCallback(() => {
     if (voiceBlobUrlRef.current) {
@@ -64,7 +73,7 @@ export function useAlertAudio(alerts: AudioAlert[]) {
     }
   }, [revokeVoiceUrl]);
 
-  const fireAlertAudio = useCallback(async (newAlerts: AudioAlert[]) => {
+  const fireAlertAudio = useCallback(async (alertsToPlay: AudioAlert[]) => {
     const beepEnabled = getLs(LS_BEEP, true);
     const voiceEnabled = getLs(LS_VOICE, false);
     if (!beepEnabled && !voiceEnabled) return;
@@ -75,7 +84,7 @@ export function useAlertAudio(alerts: AudioAlert[]) {
     }
 
     if (beepEnabled) await playSound('/sounds/alert.mp3').catch(() => {});
-    if (voiceEnabled) await playVoice(newAlerts.map((a) => a.id));
+    if (voiceEnabled) await playVoice(alertsToPlay.map((a) => a.id));
   }, [playSound, playVoice]);
 
   const fireNormalizeAudio = useCallback(async (resolved: AudioAlert[]) => {
@@ -91,7 +100,6 @@ export function useAlertAudio(alerts: AudioAlert[]) {
     if (beepEnabled) await playSound('/sounds/normalize.mp3').catch(() => {});
 
     if (voiceEnabled) {
-      // Voz de normalización — generada inline sin llamar al endpoint de alertas activas
       try {
         const names = resolved.slice(0, 2).map((a) => a.title ?? a.area ?? 'alerta').join(' y ');
         const extra = resolved.length > 2 ? ` y ${resolved.length - 2} más` : '';
@@ -116,6 +124,28 @@ export function useAlertAudio(alerts: AudioAlert[]) {
       }
     }
   }, [playSound, revokeVoiceUrl]);
+
+  // Repetición periódica: si quedan alertas activas, re-dispara audio cada 5 min
+  const scheduleRepeat = useCallback(() => {
+    if (repeatTimerRef.current) clearTimeout(repeatTimerRef.current);
+    repeatTimerRef.current = setTimeout(() => {
+      const current = alertsRef.current;
+      if (current.length === 0) return; // se resolvieron solas — no repetir
+      const beepEnabled = getLs(LS_BEEP, true);
+      const voiceEnabled = getLs(LS_VOICE, false);
+      if (beepEnabled || voiceEnabled) {
+        fireAlertAudio(current).catch(() => {});
+      }
+      scheduleRepeat(); // re-agendar próxima repetición
+    }, REPEAT_AUDIO_MS);
+  }, [fireAlertAudio]);
+
+  const cancelRepeat = useCallback(() => {
+    if (repeatTimerRef.current) {
+      clearTimeout(repeatTimerRef.current);
+      repeatTimerRef.current = null;
+    }
+  }, []);
 
   // Detectar nuevas alertas y alertas resueltas
   useEffect(() => {
@@ -148,12 +178,20 @@ export function useAlertAudio(alerts: AudioAlert[]) {
     };
 
     if (newAlerts.length > 0) {
+      // Nueva alerta: reproducir + (re)iniciar timer de repetición
       tryPlay(() => fireAlertAudio(newAlerts));
+      scheduleRepeat();
     } else if (resolvedAlerts.length > 0) {
-      // Solo normalize si NO hay nuevas alertas simultáneas
-      tryPlay(() => fireNormalizeAudio(resolvedAlerts));
+      if (alerts.length === 0) {
+        // Todas resueltas: cancelar repetición + sonido de normalización
+        cancelRepeat();
+        tryPlay(() => fireNormalizeAudio(resolvedAlerts));
+      } else {
+        // Algunas resueltas pero quedan activas: solo normalización, repetición sigue
+        tryPlay(() => fireNormalizeAudio(resolvedAlerts));
+      }
     }
-  }, [alerts, fireAlertAudio, fireNormalizeAudio]);
+  }, [alerts, fireAlertAudio, fireNormalizeAudio, scheduleRepeat, cancelRepeat]);
 
   // Listener para desbloquear autoplay en primer click
   useEffect(() => {
@@ -172,10 +210,11 @@ export function useAlertAudio(alerts: AudioAlert[]) {
   // Cleanup al desmontar
   useEffect(() => {
     return () => {
+      cancelRepeat();
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
       }
       revokeVoiceUrl();
     };
-  }, [revokeVoiceUrl]);
+  }, [cancelRepeat, revokeVoiceUrl]);
 }
