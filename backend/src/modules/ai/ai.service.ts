@@ -184,7 +184,7 @@ Analizá el desempeño del turno considerando los motivos de paradas.`;
   async generarVozAlertas(text: string): Promise<Buffer | null> {
     if (!this.client) return null;
     try {
-      const response = await (this.client.audio.speech.create as (params: Record<string, unknown>) => Promise<{ arrayBuffer(): Promise<ArrayBuffer> }>)({
+      const response = await (this.client.audio.speech.create as unknown as (params: Record<string, unknown>) => Promise<{ arrayBuffer(): Promise<ArrayBuffer> }>)({
         model: 'gpt-4o-mini-tts',
         voice: 'coral',
         input: text,
