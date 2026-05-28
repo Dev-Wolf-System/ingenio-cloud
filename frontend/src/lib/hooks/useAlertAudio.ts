@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface AudioAlert {
   id: string;
@@ -19,37 +19,115 @@ function getLs(key: string, def: boolean): boolean {
   return v === null ? def : v === 'true';
 }
 
+// ── WebAudio singleton ────────────────────────────────────────────────────────
+// Un único AudioContext desbloqueado en el primer gesto de la sesión. Una vez en
+// estado 'running' queda habilitado para toda la sesión y NO vuelve a estar sujeto
+// al chequeo de autoplay por elemento (que es lo que causaba que "hay que tocar el
+// modal" para que sonara). Beep y voz se reproducen vía buffer sources.
+
+let sharedCtx: AudioContext | null = null;
+const bufferCache = new Map<string, AudioBuffer>();
+
+function getCtx(): AudioContext | null {
+  if (typeof window === 'undefined') return null;
+  if (sharedCtx) return sharedCtx;
+  const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  if (!Ctor) return null;
+  sharedCtx = new Ctor();
+  return sharedCtx;
+}
+
+async function ensureRunning(): Promise<boolean> {
+  const ctx = getCtx();
+  if (!ctx) return false;
+  if (ctx.state === 'suspended') {
+    try { await ctx.resume(); } catch { /* gesto requerido */ }
+  }
+  return ctx.state === 'running';
+}
+
+async function loadBuffer(url: string): Promise<AudioBuffer | null> {
+  const ctx = getCtx();
+  if (!ctx) return null;
+  const cached = bufferCache.get(url);
+  if (cached) return cached;
+  try {
+    const res = await fetch(url);
+    const arr = await res.arrayBuffer();
+    const buf = await ctx.decodeAudioData(arr);
+    bufferCache.set(url, buf);
+    return buf;
+  } catch {
+    return null;
+  }
+}
+
+/** Reproduce un AudioBuffer y resuelve al terminar. */
+function playBuffer(buf: AudioBuffer): Promise<void> {
+  return new Promise((resolve) => {
+    const ctx = getCtx();
+    if (!ctx) return resolve();
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.onended = () => resolve();
+    try { src.start(0); } catch { resolve(); }
+  });
+}
+
 export function useAlertAudio(alerts: AudioAlert[]) {
   const prevIdsRef = useRef<Set<string>>(new Set());
   const prevAlertsRef = useRef<Map<string, AudioAlert>>(new Map());
-  const pendingUnlockRef = useRef(false);
-  const pendingAudioRef = useRef<(() => void) | null>(null);
-  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
-  const voiceBlobUrlRef = useRef<string | null>(null);
   const repeatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Siempre apunta a las alertas actuales sin re-crear callbacks
   const alertsRef = useRef<AudioAlert[]>(alerts);
+  const [audioBlocked, setAudioBlocked] = useState(false);
 
-  // Mantener alertsRef sincronizado
   useEffect(() => {
     alertsRef.current = alerts;
   }, [alerts]);
 
-  const revokeVoiceUrl = useCallback(() => {
-    if (voiceBlobUrlRef.current) {
-      URL.revokeObjectURL(voiceBlobUrlRef.current);
-      voiceBlobUrlRef.current = null;
-    }
+  // ── Desbloqueo de audio en el primer gesto del usuario ──────────────────────
+  const enableAudio = useCallback(async () => {
+    const ok = await ensureRunning();
+    setAudioBlocked(!ok);
+    // Pre-cargar buffers de beep para que el primer disparo no tenga latencia
+    void loadBuffer('/sounds/alert.mp3');
+    void loadBuffer('/sounds/normalize.mp3');
   }, []);
 
-  const playSound = useCallback((src: string): Promise<void> => {
-    return new Promise((resolve) => {
-      const audio = new Audio(src);
-      currentAudioRef.current = audio;
-      audio.onended = () => resolve();
-      audio.onerror = () => resolve();
-      audio.play().catch(() => resolve());
-    });
+  useEffect(() => {
+    // Reflejar estado inicial
+    const ctx = getCtx();
+    setAudioBlocked(!ctx || ctx.state !== 'running');
+
+    const onGesture = () => { void enableAudio(); };
+    const opts = { capture: true, passive: true } as AddEventListenerOptions;
+    window.addEventListener('pointerdown', onGesture, opts);
+    window.addEventListener('keydown', onGesture, opts);
+    window.addEventListener('touchstart', onGesture, opts);
+    return () => {
+      window.removeEventListener('pointerdown', onGesture, opts);
+      window.removeEventListener('keydown', onGesture, opts);
+      window.removeEventListener('touchstart', onGesture, opts);
+    };
+  }, [enableAudio]);
+
+  const playBeep = useCallback(async (url: string) => {
+    if (!(await ensureRunning())) { setAudioBlocked(true); return; }
+    const buf = await loadBuffer(url);
+    if (buf) await playBuffer(buf);
+  }, []);
+
+  const playVoiceFromBlob = useCallback(async (blob: Blob) => {
+    const ctx = getCtx();
+    if (!ctx || !(await ensureRunning())) { setAudioBlocked(true); return; }
+    try {
+      const arr = await blob.arrayBuffer();
+      const buf = await ctx.decodeAudioData(arr);
+      await playBuffer(buf);
+    } catch {
+      // no crítico
+    }
   }, []);
 
   const playVoice = useCallback(async (alertIds: string[]): Promise<void> => {
@@ -61,43 +139,25 @@ export function useAlertAudio(alerts: AudioAlert[]) {
         body: JSON.stringify({ alertIds }),
       });
       if (!res.ok) return;
-      const blob = await res.blob();
-      revokeVoiceUrl();
-      const url = URL.createObjectURL(blob);
-      voiceBlobUrlRef.current = url;
-      const audio = new Audio(url);
-      currentAudioRef.current = audio;
-      await audio.play();
+      await playVoiceFromBlob(await res.blob());
     } catch {
       // silenciar errores — no es crítico
     }
-  }, [revokeVoiceUrl]);
+  }, [playVoiceFromBlob]);
 
   const fireAlertAudio = useCallback(async (alertsToPlay: AudioAlert[]) => {
     const beepEnabled = getLs(LS_BEEP, true);
     const voiceEnabled = getLs(LS_VOICE, false);
     if (!beepEnabled && !voiceEnabled) return;
-
-    if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current = null;
-    }
-
-    if (beepEnabled) await playSound('/sounds/alert.mp3').catch(() => {});
+    if (beepEnabled) await playBeep('/sounds/alert.mp3');
     if (voiceEnabled) await playVoice(alertsToPlay.map((a) => a.id));
-  }, [playSound, playVoice]);
+  }, [playBeep, playVoice]);
 
   const fireNormalizeAudio = useCallback(async (resolved: AudioAlert[]) => {
     const beepEnabled = getLs(LS_BEEP, true);
     const voiceEnabled = getLs(LS_VOICE, false);
     if (!beepEnabled && !voiceEnabled) return;
-
-    if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current = null;
-    }
-
-    if (beepEnabled) await playSound('/sounds/normalize.mp3').catch(() => {});
+    if (beepEnabled) await playBeep('/sounds/normalize.mp3');
 
     if (voiceEnabled) {
       try {
@@ -111,33 +171,21 @@ export function useAlertAudio(alerts: AudioAlert[]) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text }),
         });
-        if (res.ok) {
-          const blob = await res.blob();
-          revokeVoiceUrl();
-          const url = URL.createObjectURL(blob);
-          voiceBlobUrlRef.current = url;
-          const audio = new Audio(url);
-          currentAudioRef.current = audio;
-          await audio.play();
-        }
+        if (res.ok) await playVoiceFromBlob(await res.blob());
       } catch {
         // no crítico
       }
     }
-  }, [playSound, revokeVoiceUrl]);
+  }, [playBeep, playVoiceFromBlob]);
 
   // Repetición periódica: si quedan alertas activas, re-dispara audio cada 5 min
   const scheduleRepeat = useCallback(() => {
     if (repeatTimerRef.current) clearTimeout(repeatTimerRef.current);
     repeatTimerRef.current = setTimeout(() => {
       const current = alertsRef.current;
-      if (current.length === 0) return; // se resolvieron solas — no repetir
-      const beepEnabled = getLs(LS_BEEP, true);
-      const voiceEnabled = getLs(LS_VOICE, false);
-      if (beepEnabled || voiceEnabled) {
-        fireAlertAudio(current).catch(() => {});
-      }
-      scheduleRepeat(); // re-agendar próxima repetición
+      if (current.length === 0) return;
+      fireAlertAudio(current).catch(() => {});
+      scheduleRepeat();
     }, REPEAT_AUDIO_MS);
   }, [fireAlertAudio]);
 
@@ -153,9 +201,7 @@ export function useAlertAudio(alerts: AudioAlert[]) {
     const currentIds = new Set(alerts.map((a) => a.id));
     const currentMap = new Map(alerts.map((a) => [a.id, a]));
 
-    // Alertas nuevas (aparecieron)
     const newAlerts = alerts.filter((a) => !prevIdsRef.current.has(a.id));
-    // Alertas resueltas (desaparecieron) — solo si antes había al menos 1
     const resolvedAlerts = prevIdsRef.current.size > 0
       ? Array.from(prevIdsRef.current)
           .filter((id) => !currentIds.has(id))
@@ -166,56 +212,19 @@ export function useAlertAudio(alerts: AudioAlert[]) {
     prevIdsRef.current = currentIds;
     prevAlertsRef.current = currentMap;
 
-    const tryPlay = (fn: () => void) => {
-      if (typeof document === 'undefined') return;
-      const testAudio = new Audio();
-      testAudio.play().then(() => {
-        testAudio.pause();
-        fn();
-      }).catch(() => {
-        pendingUnlockRef.current = true;
-        pendingAudioRef.current = fn;
-      });
-    };
-
     if (newAlerts.length > 0) {
-      // Nueva alerta: reproducir + (re)iniciar timer de repetición
-      tryPlay(() => fireAlertAudio(newAlerts));
+      fireAlertAudio(newAlerts).catch(() => {});
       scheduleRepeat();
     } else if (resolvedAlerts.length > 0) {
-      if (alerts.length === 0) {
-        // Todas resueltas: cancelar repetición + sonido de normalización
-        cancelRepeat();
-        tryPlay(() => fireNormalizeAudio(resolvedAlerts));
-      } else {
-        // Algunas resueltas pero quedan activas: solo normalización, repetición sigue
-        tryPlay(() => fireNormalizeAudio(resolvedAlerts));
-      }
+      if (alerts.length === 0) cancelRepeat();
+      fireNormalizeAudio(resolvedAlerts).catch(() => {});
     }
   }, [alerts, fireAlertAudio, fireNormalizeAudio, scheduleRepeat, cancelRepeat]);
 
-  // Listener para desbloquear autoplay en primer click
-  useEffect(() => {
-    const handleClick = () => {
-      if (pendingUnlockRef.current && pendingAudioRef.current) {
-        pendingUnlockRef.current = false;
-        const fn = pendingAudioRef.current;
-        pendingAudioRef.current = null;
-        fn();
-      }
-    };
-    document.addEventListener('click', handleClick, { once: false });
-    return () => document.removeEventListener('click', handleClick);
-  }, []);
-
   // Cleanup al desmontar
   useEffect(() => {
-    return () => {
-      cancelRepeat();
-      if (currentAudioRef.current) {
-        currentAudioRef.current.pause();
-      }
-      revokeVoiceUrl();
-    };
-  }, [cancelRepeat, revokeVoiceUrl]);
+    return () => cancelRepeat();
+  }, [cancelRepeat]);
+
+  return { audioBlocked, enableAudio };
 }

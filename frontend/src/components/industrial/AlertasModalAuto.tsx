@@ -252,7 +252,7 @@ export function AlertasModalAuto({ alerts }: Props) {
   const redisplayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Hook de audio
-  useAlertAudio(alerts);
+  const { audioBlocked, enableAudio } = useAlertAudio(alerts);
 
   // Leer estado de toggles al montar
   useEffect(() => {
@@ -389,6 +389,16 @@ export function AlertasModalAuto({ alerts }: Props) {
               <div className="flex items-center justify-between px-4 lg:px-6 py-2.5 lg:py-3.5 border-t border-white/8 flex-shrink-0 bg-white/[0.02]">
                 {/* Indicadores de audio */}
                 <div className="flex items-center gap-2">
+                  {audioBlocked && (beepOn || voiceOn) && (
+                    <button
+                      onClick={() => { void enableAudio(); }}
+                      className="flex items-center gap-1.5 text-[11px] lg:text-sm font-semibold px-2.5 py-1 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-colors animate-pulse"
+                      title="El navegador bloqueó el audio. Tocá una vez para habilitarlo toda la sesión."
+                    >
+                      <IconVolume size={13} />
+                      Activar sonido
+                    </button>
+                  )}
                   <span title={beepOn ? 'Beep activo' : 'Beep desactivado'}>
                     {beepOn
                       ? <IconBell size={13} className="text-gray-500" />
