@@ -26,6 +26,9 @@ export default function AlertasConfigPage() {
     history,
     historyTotal,
     historyLoading,
+    historyPage,
+    setHistoryPage,
+    historyPageCount,
     modalEnabled,
     beepEnabled,
     voiceEnabled,
@@ -131,6 +134,9 @@ export default function AlertasConfigPage() {
             historyTotal={historyTotal}
             historyLoading={historyLoading}
             reloadHistory={reloadHistory}
+            historyPage={historyPage}
+            setHistoryPage={setHistoryPage}
+            historyPageCount={historyPageCount}
           />
         </main>
       </div>

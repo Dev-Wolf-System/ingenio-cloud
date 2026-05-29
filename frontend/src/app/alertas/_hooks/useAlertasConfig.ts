@@ -46,8 +46,8 @@ async function fetchSensors(): Promise<SensorKey[]> {
   return out;
 }
 
-async function fetchHistory(limit = 100): Promise<{ alerts: HistoryAlert[]; total: number }> {
-  const res = await fetch(`${apiUrl}/alerts/history?limit=${limit}`);
+async function fetchHistory(limit: number, offset = 0): Promise<{ alerts: HistoryAlert[]; total: number }> {
+  const res = await fetch(`${apiUrl}/alerts/history?limit=${limit}&offset=${offset}`);
   if (!res.ok) return { alerts: [], total: 0 };
   return res.json();
 }
@@ -69,6 +69,10 @@ async function saveThresholds(thresholds: Threshold[]) {
   return res.json();
 }
 
+// ── constants ────────────────────────────────────────────────────────────────
+
+export const PAGE_SIZE = 25;
+
 // ── hook ─────────────────────────────────────────────────────────────────────
 
 export function useAlertasConfig() {
@@ -82,6 +86,7 @@ export function useAlertasConfig() {
   const [history, setHistory] = useState<HistoryAlert[]>([]);
   const [historyTotal, setHistoryTotal] = useState(0);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyPage, setHistoryPage] = useState(0);
 
   // Password session
   const { unlocked, unlock } = usePasswordSession();
@@ -126,19 +131,25 @@ export function useAlertasConfig() {
     setLoading(false);
   };
 
-  const reloadHistory = async () => {
+  const reloadHistory = useCallback(async (page = historyPage) => {
     setHistoryLoading(true);
-    const h = await fetchHistory(200);
+    const h = await fetchHistory(PAGE_SIZE, page * PAGE_SIZE);
     setHistory(h.alerts);
     setHistoryTotal(h.total);
     setHistoryLoading(false);
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyPage]);
 
   useEffect(() => {
     reload();
-    reloadHistory();
+    reloadHistory(0);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    reloadHistory(historyPage);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [historyPage]);
 
   const getThreshold = (area: Area, key: string): Threshold => {
     const k = `${area}::${key}`;
@@ -209,6 +220,11 @@ export function useAlertasConfig() {
     setLs(LS_VOICE, next);
   });
 
+  const historyPageCount = useMemo(
+    () => Math.max(1, Math.ceil(historyTotal / PAGE_SIZE)),
+    [historyTotal],
+  );
+
   const stats = useMemo(() => {
     const enabled = Array.from(thresholds.values()).filter((t) => t.enabled).length;
     const total = sensors.length;
@@ -229,6 +245,10 @@ export function useAlertasConfig() {
     history,
     historyTotal,
     historyLoading,
+    historyPage,
+    setHistoryPage,
+    historyPageCount,
+    PAGE_SIZE,
     // toggles
     modalEnabled,
     beepEnabled,
