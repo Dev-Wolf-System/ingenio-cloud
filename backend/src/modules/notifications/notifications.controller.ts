@@ -1,4 +1,4 @@
-import { Body, Controller, Post, HttpCode } from '@nestjs/common';
+import { Body, Controller, Post, HttpCode, BadRequestException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 
 @Controller('notifications')
@@ -7,7 +7,7 @@ export class NotificationsController {
   @Post('subscribe')
   @HttpCode(200)
   async subscribe(@Body() body: { endpoint: string; keys: Record<string, string>; role?: string }) {
-    if (!body?.endpoint || !body?.keys) return { ok: false };
+    if (!body?.endpoint || !body?.keys) throw new BadRequestException('endpoint y keys requeridos');
     await this.supabase.schema('industrial').from('push_subscriptions')
       .upsert({ endpoint: body.endpoint, keys: body.keys, role: body.role ?? null }, { onConflict: 'endpoint' });
     return { ok: true };

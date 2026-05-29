@@ -18,7 +18,8 @@ export class WebPushDriver {
   }
   async send(payload: PushPayload): Promise<void> {
     if (!this.ready) return;
-    const { data } = await this.supabase.schema('industrial').from('push_subscriptions').select('endpoint, keys');
+    const { data, error } = await this.supabase.schema('industrial').from('push_subscriptions').select('endpoint, keys');
+    if (error) { this.logger.error(`push_subscriptions load failed: ${error.message}`); return; }
     for (const sub of data ?? []) {
       try {
         await webpush.sendNotification(
