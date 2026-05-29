@@ -43,8 +43,8 @@ export class ThresholdEvaluatorService {
     private readonly notif: NotificationsService,
   ) {}
 
-  /** Tiempo mínimo en rango antes de resolver (debounce de normalización). */
-  private static readonly NORMALIZE_AFTER_MS = 5 * 60_000;
+  /** Tiempo mínimo en rango antes de resolver (debounce de normalización): 30 s. */
+  private static readonly NORMALIZE_AFTER_MS = 30_000;
 
   /** Cron cada 30s — evalúa thresholds vs dashboard_data y maneja alerts.active */
   @Cron(CronExpression.EVERY_30_SECONDS, {

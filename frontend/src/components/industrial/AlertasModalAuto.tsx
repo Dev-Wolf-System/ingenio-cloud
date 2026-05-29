@@ -29,6 +29,7 @@ interface AlertMeta {
   max_value?: number;
   unit?: string;
   updated_at?: string;
+  normal_since?: string;
   triage?: {
     severidad?: 'info' | 'warn' | 'critical';
     grupo?: string;
@@ -291,11 +292,16 @@ export function AlertasModalAuto({ alerts }: Props) {
   const [beepOn, setBeepOn] = useState(true);
   const [voiceOn, setVoiceOn] = useState(false);
 
-  // Hook de audio
+  // Hook de audio — lista COMPLETA (incl. normalizándose) para que el beep/voz de
+  // normalización dispare cuando la alerta se resuelve a los 30s.
   const { audioBlocked, enableAudio } = useAlertAudio(alerts);
 
+  // El modal solo muestra alertas alarmando: las que volvieron a rango (normal_since)
+  // salen del modal al instante (modal se va si era la única crítica).
+  const displayAlerts = alerts.filter((a) => !a.metadata?.normal_since);
+
   // Hook de comportamiento del modal
-  const { isOpen, close, dominant } = useAlertModalBehavior(alerts);
+  const { isOpen, close, dominant } = useAlertModalBehavior(displayAlerts);
 
   const sev = severityStyles[dominant] ?? severityStyles.info;
 
@@ -315,8 +321,10 @@ export function AlertasModalAuto({ alerts }: Props) {
     return () => window.removeEventListener('storage', handler);
   }, []);
 
-  const groups = buildGroups(alerts);
+  const groups = buildGroups(displayAlerts);
 
+  // Mantener montado mientras haya alertas (incl. normalizándose) para no cortar el
+  // audio de normalización; el modal se oculta vía isOpen cuando no quedan alarmando.
   if (alerts.length === 0) return null;
 
   return (
@@ -355,11 +363,11 @@ export function AlertasModalAuto({ alerts }: Props) {
                   </div>
                   <div>
                     <h2 className="text-base lg:text-2xl font-bold text-white leading-tight">
-                      {alerts.length} {alerts.length === 1 ? 'alerta activa' : 'alertas activas'}
+                      {displayAlerts.length} {displayAlerts.length === 1 ? 'alerta activa' : 'alertas activas'}
                     </h2>
                     <p className="text-xs lg:text-base text-gray-500">
-                      {alerts.filter(a => effectiveSeverity(a) === 'critical').length > 0
-                        ? `${alerts.filter(a => effectiveSeverity(a) === 'critical').length} críticas · acción requerida`
+                      {displayAlerts.filter(a => effectiveSeverity(a) === 'critical').length > 0
+                        ? `${displayAlerts.filter(a => effectiveSeverity(a) === 'critical').length} críticas · acción requerida`
                         : 'Revisión recomendada'}
                     </p>
                   </div>
