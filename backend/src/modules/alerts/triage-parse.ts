@@ -32,6 +32,7 @@ export function parseTriage(raw: string): Record<string, TriageEntry> {
   return out;
 }
 
+/** Hash estable del set (id+value); cambios solo en umbrales NO disparan re-triage. */
 export function alertsHash(alerts: Array<{ id: string; value?: number | null }>): string {
   return alerts
     .map((a) => `${a.id}:${a.value ?? ''}`)

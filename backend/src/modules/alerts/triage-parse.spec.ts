@@ -13,6 +13,10 @@ describe('triage-parse', () => {
   it('devuelve {} ante JSON inválido', () => {
     expect(parseTriage('no json')).toEqual({});
   });
+  it('ignora entradas sin id', () => {
+    const raw = JSON.stringify({ alerts: [{ severidad_recalibrada: 'critical' }] });
+    expect(parseTriage(raw)).toEqual({});
+  });
   it('hash estable ante mismo set, distinto ante cambio', () => {
     const a = [{ id: '1', value: 10 }, { id: '2', value: 20 }];
     const b = [{ id: '2', value: 20 }, { id: '1', value: 10 }];
