@@ -14,6 +14,7 @@ import { SchedulerModule } from './modules/scheduler/scheduler.module';
 import { AiModule } from './modules/ai/ai.module';
 import { ReportesModule } from './modules/reportes/reportes.module';
 import { InfluxModule } from './modules/influx/influx.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { InfluxModule } from './modules/influx/influx.module';
     SchedulerModule,
     ReportesModule,
     InfluxModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}
