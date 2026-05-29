@@ -257,7 +257,10 @@ export class ThresholdEvaluatorService {
     if (toMarkNormal.length > 0) this.logger.log(`marked normal_since on ${toMarkNormal.length} alerts`);
 
     // 9. Limpiar normal_since en alertas que salieron de rango durante el cooldown
+    // Saltear ids que ya fueron procesados en el paso 7 (escalación escribe metadata sin normal_since)
+    const escalatedIds = new Set(toEscalate.map((e) => e.id));
     for (const m of toClearNormalSince) {
+      if (escalatedIds.has(m.id)) continue; // ya cubierto por el update de escalación (que omite normal_since)
       const { normal_since: _ns, ...rest } = m.metadata ?? {};
       const { error } = await alerts
         .from('active')
