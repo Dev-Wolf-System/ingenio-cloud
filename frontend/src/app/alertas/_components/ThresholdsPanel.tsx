@@ -276,7 +276,31 @@ export function ThresholdsPanel({
 
                             {/* Escalation overrides */}
                             <td className="px-3 lg:px-4 py-2 lg:py-3">
-                              <div className="flex items-center gap-1">
+                              {/* Escalar a crítica toggle */}
+                              <div className="flex items-center gap-1.5 mb-1">
+                                <button
+                                  type="button"
+                                  role="switch"
+                                  aria-checked={t.escalate_enabled !== false}
+                                  onClick={() => update(s.area, s.key, { escalate_enabled: t.escalate_enabled === false ? true : false })}
+                                  className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border transition-colors duration-200 focus:outline-none ${
+                                    t.escalate_enabled !== false
+                                      ? 'bg-primary/80 border-primary/60'
+                                      : 'bg-bg-card border-border'
+                                  }`}
+                                >
+                                  <span
+                                    className={`pointer-events-none inline-block h-3 w-3 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                                      t.escalate_enabled !== false ? 'translate-x-3.5' : 'translate-x-0.5'
+                                    } mt-0.5`}
+                                  />
+                                </button>
+                                <span className={`text-[9px] whitespace-nowrap ${t.escalate_enabled !== false ? 'text-text-muted' : 'text-text-disabled'}`}>
+                                  Escalar a crítica
+                                </span>
+                              </div>
+                              {/* Overrides — dimmed when escalation is disabled */}
+                              <div className={`flex items-center gap-1 transition-opacity ${t.escalate_enabled === false ? 'opacity-30 pointer-events-none' : ''}`}>
                                 <SmallNumberInput
                                   value={t.escalate_after_min}
                                   onChange={(v) => update(s.area, s.key, { escalate_after_min: v })}
@@ -289,7 +313,7 @@ export function ThresholdsPanel({
                                   placeholder="%"
                                 />
                               </div>
-                              <div className="text-[9px] text-text-disabled mt-0.5 whitespace-nowrap">tiempo / deriva</div>
+                              <div className={`text-[9px] mt-0.5 whitespace-nowrap transition-opacity ${t.escalate_enabled === false ? 'opacity-30' : 'text-text-disabled'}`}>tiempo / deriva</div>
                             </td>
 
                             {/* Notes */}

@@ -102,3 +102,25 @@ git checkout main && git merge feat/alertas-inteligentes && git push
 git tag estable-pre-alertas main
 ```
 Nombre fijo del último estado bueno, por si se necesita además del branch.
+
+---
+
+## Migración — `escalate_enabled` por umbral (REQUERIDA antes de deploy)
+
+Esta migración es **obligatoria** antes de deployar el commit que agrega la opción
+"no escalar" por umbral. El evaluador hace `.select('... escalate_enabled')` y fallará
+con un error de Postgres si la columna no existe. El default `true` mantiene
+compatibilidad con todos los umbrales existentes (sin cambio de comportamiento).
+
+Correr en Supabase Studio / psql **como owner**:
+```sql
+ALTER TABLE industrial.alert_thresholds
+  ADD COLUMN IF NOT EXISTS escalate_enabled boolean NOT NULL DEFAULT true;
+```
+
+> **Caveat**: hasta que esta columna exista en producción, el servicio
+> `ThresholdEvaluatorService` lanzará un error en cada ciclo de evaluación y no
+> procesará alertas. **No deployar este cambio sin correr la migración primero.**
+>
+> La migración es aditiva: si hay que hacer rollback a la versión anterior, la columna
+> extra es ignorada — no requiere rollback de DB.

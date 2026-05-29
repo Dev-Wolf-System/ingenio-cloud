@@ -134,6 +134,7 @@ export function useAlertasConfig() {
         notes: null,
         escalate_after_min: null,
         escalate_drift_pct: null,
+        escalate_enabled: true,
       }
     );
   };

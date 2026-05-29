@@ -14,6 +14,7 @@ export interface Threshold {
   notes?: string | null;
   escalate_after_min?: number | null;
   escalate_drift_pct?: number | null;
+  escalate_enabled?: boolean | null;
 }
 
 export interface SensorKey {

@@ -9,6 +9,7 @@ export interface EscalateInput {
   max: number | null;
   afterMin: number | null;
   driftPct: number | null;
+  enabled: boolean;
 }
 
 export type EscalateResult =
@@ -16,6 +17,7 @@ export type EscalateResult =
   | { escalate: false; reason: null };
 
 export function shouldEscalate(i: EscalateInput): EscalateResult {
+  if (!i.enabled) return { escalate: false, reason: null };
   if (i.severity === 'critical') return { escalate: false, reason: null };
 
   const afterMin = i.afterMin ?? ESCALATE_AFTER_MIN;

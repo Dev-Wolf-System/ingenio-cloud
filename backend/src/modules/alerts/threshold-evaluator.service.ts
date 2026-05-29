@@ -16,6 +16,7 @@ interface Threshold {
   notes: string | null;
   escalate_after_min: number | null;
   escalate_drift_pct: number | null;
+  escalate_enabled: boolean | null;
 }
 
 interface DashboardRow {
@@ -57,7 +58,7 @@ export class ThresholdEvaluatorService {
     // 1. Cargar thresholds activos
     const { data: thresholds, error: tErr } = await industrial
       .from('alert_thresholds')
-      .select('id, area, key, min_value, max_value, enabled, severity, notes, escalate_after_min, escalate_drift_pct')
+      .select('id, area, key, min_value, max_value, enabled, severity, notes, escalate_after_min, escalate_drift_pct, escalate_enabled')
       .eq('enabled', true);
     if (tErr) {
       this.logger.warn(`thresholds load failed: ${tErr.message}`);
@@ -173,6 +174,7 @@ export class ThresholdEvaluatorService {
           max: rule.max_value,
           afterMin: rule.escalate_after_min ?? null,
           driftPct: rule.escalate_drift_pct ?? null,
+          enabled: rule.escalate_enabled !== false,
         });
         if (res.escalate) {
           // Spread metadata sin normal_since para evitar conflicto con toClearNormalSince
