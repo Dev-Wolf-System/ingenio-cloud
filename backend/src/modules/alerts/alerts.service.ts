@@ -244,23 +244,76 @@ export class AlertsService {
 
     let text = `Atención, hay ${parts.join(' y ')} en el sistema.`;
 
-    const toSpeak = sorted.slice(0, 3);
-    for (const a of toSpeak) {
-      const meta = (a.metadata ?? {}) as { value?: number; min_value?: number; max_value?: number; unit?: string };
-      const uStr = meta.unit ? ` ${unitEs(meta.unit)}` : '';
-      text += ` En el área de ${capArea(a.area)}, alerta ${sevLabel(a.severity)}: ${a.title}.`;
-      if (meta.value != null) {
-        text += ` El valor actual es ${numEs(meta.value)}${uStr}.`;
-        if (meta.max_value != null && meta.value > meta.max_value) {
-          text += ` Está por encima del máximo permitido de ${numEs(meta.max_value)}${uStr}.`;
-        } else if (meta.min_value != null && meta.value < meta.min_value) {
-          text += ` Está por debajo del mínimo permitido de ${numEs(meta.min_value)}${uStr}.`;
+    // Agrupar por triage.grupo (si existe) o por área
+    type AlertRow = (typeof sorted)[number];
+    const groupMap = new Map<string, AlertRow[]>();
+    for (const a of sorted) {
+      const t = (a.metadata as { triage?: { grupo?: string } } | null)?.triage;
+      const key = t?.grupo ?? a.area;
+      const existing = groupMap.get(key);
+      if (existing) existing.push(a);
+      else groupMap.set(key, [a]);
+    }
+
+    const hasGrouped = [...groupMap.values()].some((g) => g.length > 1);
+
+    if (hasGrouped) {
+      // Ordenar grupos: el de menor sevOrder (más crítico) primero
+      const groupsSorted = [...groupMap.entries()].sort(([, ga], [, gb]) => {
+        const minSev = (arr: AlertRow[]) => Math.min(...arr.map((a) => sevOrder(a.severity)));
+        return minSev(ga) - minSev(gb);
+      });
+
+      const toSpeak = groupsSorted.slice(0, 3);
+      const totalSpoken = toSpeak.reduce((acc, [, g]) => acc + g.length, 0);
+
+      for (const [grupo, miembros] of toSpeak) {
+        const first = miembros[0];
+        const t = (first.metadata as { triage?: { grupo?: string; titular?: string } } | null)?.triage;
+        const titulo = t?.titular ?? first.title;
+        const meta = (first.metadata ?? {}) as { value?: number; min_value?: number; max_value?: number; unit?: string };
+        const uStr = meta.unit ? ` ${unitEs(meta.unit)}` : '';
+
+        if (miembros.length > 1) {
+          text += ` En ${capArea(grupo)} hay ${numEs(miembros.length)} alertas relacionadas: ${titulo}.`;
+        } else {
+          text += ` En ${capArea(grupo)}, alerta ${sevLabel(first.severity)}: ${titulo}.`;
+        }
+
+        if (meta.value != null) {
+          text += ` El valor actual es ${numEs(meta.value)}${uStr}.`;
+          if (meta.max_value != null && meta.value > meta.max_value) {
+            text += ` Está por encima del máximo permitido de ${numEs(meta.max_value)}${uStr}.`;
+          } else if (meta.min_value != null && meta.value < meta.min_value) {
+            text += ` Está por debajo del mínimo permitido de ${numEs(meta.min_value)}${uStr}.`;
+          }
         }
       }
-    }
-    if (sorted.length > 3) {
-      const extra = sorted.length - 3;
-      text += ` Además hay ${numEs(extra)} alerta${extra > 1 ? 's' : ''} más pendiente${extra > 1 ? 's' : ''}.`;
+
+      if (sorted.length > totalSpoken) {
+        const extra = sorted.length - totalSpoken;
+        text += ` Además hay ${numEs(extra)} alerta${extra > 1 ? 's' : ''} más pendiente${extra > 1 ? 's' : ''}.`;
+      }
+    } else {
+      // Sin grupos: path original, alerta por alerta
+      const toSpeak = sorted.slice(0, 3);
+      for (const a of toSpeak) {
+        const meta = (a.metadata ?? {}) as { value?: number; min_value?: number; max_value?: number; unit?: string };
+        const uStr = meta.unit ? ` ${unitEs(meta.unit)}` : '';
+        text += ` En el área de ${capArea(a.area)}, alerta ${sevLabel(a.severity)}: ${a.title}.`;
+        if (meta.value != null) {
+          text += ` El valor actual es ${numEs(meta.value)}${uStr}.`;
+          if (meta.max_value != null && meta.value > meta.max_value) {
+            text += ` Está por encima del máximo permitido de ${numEs(meta.max_value)}${uStr}.`;
+          } else if (meta.min_value != null && meta.value < meta.min_value) {
+            text += ` Está por debajo del mínimo permitido de ${numEs(meta.min_value)}${uStr}.`;
+          }
+        }
+      }
+      if (sorted.length > 3) {
+        const extra = sorted.length - 3;
+        text += ` Además hay ${numEs(extra)} alerta${extra > 1 ? 's' : ''} más pendiente${extra > 1 ? 's' : ''}.`;
+      }
     }
 
     if (!this.ai.isAvailable()) return null;
