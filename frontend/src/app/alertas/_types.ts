@@ -12,6 +12,8 @@ export interface Threshold {
   enabled: boolean;
   severity: Severity;
   notes?: string | null;
+  escalate_after_min?: number | null;
+  escalate_drift_pct?: number | null;
 }
 
 export interface SensorKey {

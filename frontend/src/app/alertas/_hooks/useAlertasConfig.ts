@@ -150,6 +150,9 @@ export function useAlertasConfig() {
         max_value: null,
         enabled: false,
         severity: 'warn' as Severity,
+        notes: null,
+        escalate_after_min: null,
+        escalate_drift_pct: null,
       }
     );
   };
