@@ -976,4 +976,63 @@ Cero disrupción al stack existente. Estructura escalable.
 
 ---
 
+## Alertas inteligentes — setup de deploy
+
+### Pantalla de sala de monitoreo (kiosko desatendido)
+
+La pantalla de la sala de monitoreo global corre sin que nadie interactúe con ella.
+Los navegadores bloquean el audio (autoplay) hasta el primer gesto del usuario, por lo
+que **las alertas no suenan solas** salvo que se lance Chromium con la política de
+autoplay desactivada:
+
+```bash
+chromium --kiosk --autoplay-policy=no-user-gesture-required "https://<dominio>/"
+# o Chrome:
+google-chrome --kiosk --autoplay-policy=no-user-gesture-required "https://<dominio>/"
+```
+
+El código ya tiene un fallback: un botón "Activar sonido" aparece en el modal si el
+navegador bloquea el audio (un click habilita el `AudioContext` por toda la sesión).
+El flag es para evitar incluso ese único click en pantallas 100% desatendidas.
+
+### Variables de entorno nuevas (web push PWA)
+
+Generar el par VAPID una vez:
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+**Backend** (`backend/.env`):
+```bash
+VAPID_PUBLIC_KEY=<public key del comando>
+VAPID_PRIVATE_KEY=<private key del comando>
+VAPID_SUBJECT=mailto:admin@tu-dominio.com   # opcional, default mailto:admin@ingenio.local
+```
+
+**Frontend** (`frontend/.env`):
+```bash
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<la MISMA public key del backend>
+```
+
+Sin estas claves el push queda deshabilitado (el backend loguea "VAPID keys vacías" y
+no envía notificaciones); el resto del sistema de alertas funciona igual.
+
+### Migración DB pendiente (requiere owner)
+
+La tabla `industrial.push_subscriptions` ya fue creada. Falta una migración que requiere
+privilegios de **owner** (`supabase_admin`) sobre `industrial.alert_thresholds` — correr
+en la VPS con el rol privilegiado (psql superusuario o Studio):
+
+```sql
+ALTER TABLE industrial.alert_thresholds
+  ADD COLUMN IF NOT EXISTS escalate_after_min integer,
+  ADD COLUMN IF NOT EXISTS escalate_drift_pct numeric;
+```
+
+Sin estas columnas el auto-escalado usa los defaults globales (5 min / 10 %) y los
+overrides por umbral del panel no persisten.
+
+---
+
 **Volver al índice:** [`README.md`](./README.md)
