@@ -358,8 +358,8 @@ export function AlertasModalAuto({ alerts }: Props) {
                       {alerts.length} {alerts.length === 1 ? 'alerta activa' : 'alertas activas'}
                     </h2>
                     <p className="text-xs lg:text-base text-gray-500">
-                      {alerts.filter(a => a.severity === 'critical').length > 0
-                        ? `${alerts.filter(a => a.severity === 'critical').length} críticas · acción requerida`
+                      {alerts.filter(a => effectiveSeverity(a) === 'critical').length > 0
+                        ? `${alerts.filter(a => effectiveSeverity(a) === 'critical').length} críticas · acción requerida`
                         : 'Revisión recomendada'}
                     </p>
                   </div>

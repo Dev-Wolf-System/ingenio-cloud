@@ -63,7 +63,13 @@ export function useAlertModalBehavior(alerts: BehaviorAlert[]) {
     const newOnes = alerts.filter((a) => !prevIdsRef.current.has(a.id));
     prevIdsRef.current = ids;
 
-    if (alerts.length === 0) { setIsOpen(false); return; }
+    if (alerts.length === 0) {
+      setIsOpen(false);
+      prevIdsRef.current = new Set();
+      if (redisplayRef.current) { clearTimeout(redisplayRef.current); redisplayRef.current = null; }
+      if (repeatRef.current) { clearInterval(repeatRef.current); repeatRef.current = null; }
+      return;
+    }
     if (!getLs(LS_MODAL, true)) return;
 
     const hasNewActionable = newOnes.some((a) => effectiveSeverity(a) !== 'info');
@@ -80,6 +86,8 @@ export function useAlertModalBehavior(alerts: BehaviorAlert[]) {
   }, [isOpen, dominant, clearAuto]);
 
   // Repetición cada 5min mientras domine warn
+  // El intervalo NO se cancela al cerrar manualmente: es intencional — mientras
+  // domine warn, el modal reaparece cada 5min aunque el operador lo haya cerrado.
   useEffect(() => {
     if (repeatRef.current) { clearInterval(repeatRef.current); repeatRef.current = null; }
     if (alerts.length > 0 && dominant === 'warn' && getLs(LS_MODAL, true)) {
