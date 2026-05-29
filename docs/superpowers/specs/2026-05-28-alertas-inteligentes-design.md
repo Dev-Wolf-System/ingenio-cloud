@@ -33,6 +33,8 @@ Refactor de `AlertasModalAuto.tsx`. El comportamiento se decide por la severidad
 | **Advertencia** (`warning`) | ✅ abre 8 s y **auto-cierra aunque persista**; si sigue activa, reabre cada 5 min | ✅ | ✅ |
 | **Crítica** (`critical`) | ✅ persistente, requiere cierre manual (acción requerida) | ✅ | ✅ |
 
+Push para los **3 tipos**. La diferencia es solo el comportamiento en la pantalla de la sala (la info no abre modal, solo voz).
+
 Reglas:
 - El modal **agrupa por causa raíz IA** y ordena por **prioridad IA** (no solo por severity).
 - Una sola instancia de modal: si coexisten críticas y advertencias, manda la crítica (modal persistente). Las advertencias se listan dentro.
@@ -112,7 +114,7 @@ tocar el resto.
 - `NotificationsService` con interfaz `NotificationDriver { send(payload): Promise<void> }`.
 - **Driver activo ahora: `WebPushDriver`** (librería `web-push`, claves VAPID en env).
 - Tabla nueva `industrial.push_subscriptions { id, endpoint, keys jsonb, role, created_at }`.
-- Dispara push cuando: nueva alerta `warning|critical`, escalado a crítica, o informativa relevante.
+- Dispara push para los 3 tipos: nueva alerta `info|warning|critical` y escalado a crítica.
 - **Anti-spam: máximo 1 push por sensor cada 30 min.**
 - Payload: `{ title, body, severity, url: '/alertas' }`.
 - Drivers futuros (`EmailDriver` Resend, `WhatsAppDriver` Evolution) implementan la misma interfaz; selección por config/rol.
