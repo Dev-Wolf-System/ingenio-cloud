@@ -13,6 +13,7 @@ import { useAlertasConfig } from './_hooks/useAlertasConfig';
 import { AvisosConfigPanel } from './_components/AvisosConfigPanel';
 import { ThresholdsPanel } from './_components/ThresholdsPanel';
 import { HistorialPanel } from './_components/HistorialPanel';
+import { HistorialCharts } from './_components/HistorialCharts';
 
 export default function AlertasConfigPage() {
   const {
@@ -128,6 +129,8 @@ export default function AlertasConfigPage() {
             getThreshold={getThreshold}
             update={update}
           />
+
+          <HistorialCharts />
 
           <HistorialPanel
             history={history}
