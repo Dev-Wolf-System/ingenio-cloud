@@ -1,13 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePasswordSession } from '@/lib/hooks/usePasswordSession';
 import {
   type Area,
   type Severity,
   type Threshold,
   type SensorKey,
-  type HistoryAlert,
   AREAS,
   apiUrl,
   LS_MODAL,
@@ -46,12 +45,6 @@ async function fetchSensors(): Promise<SensorKey[]> {
   return out;
 }
 
-async function fetchHistory(limit: number, offset = 0): Promise<{ alerts: HistoryAlert[]; total: number }> {
-  const res = await fetch(`${apiUrl}/alerts/history?limit=${limit}&offset=${offset}`);
-  if (!res.ok) return { alerts: [], total: 0 };
-  return res.json();
-}
-
 async function fetchThresholds(): Promise<Threshold[]> {
   const res = await fetch(`${apiUrl}/alerts/thresholds`);
   if (!res.ok) return [];
@@ -69,10 +62,6 @@ async function saveThresholds(thresholds: Threshold[]) {
   return res.json();
 }
 
-// ── constants ────────────────────────────────────────────────────────────────
-
-export const PAGE_SIZE = 25;
-
 // ── hook ─────────────────────────────────────────────────────────────────────
 
 export function useAlertasConfig() {
@@ -83,10 +72,6 @@ export function useAlertasConfig() {
   const [saveOk, setSaveOk] = useState(false);
   const [areaFilter, setAreaFilter] = useState<Area | 'all'>('all');
   const [search, setSearch] = useState('');
-  const [history, setHistory] = useState<HistoryAlert[]>([]);
-  const [historyTotal, setHistoryTotal] = useState(0);
-  const [historyLoading, setHistoryLoading] = useState(false);
-  const [historyPage, setHistoryPage] = useState(0);
 
   // Password session
   const { unlocked, unlock } = usePasswordSession();
@@ -131,28 +116,10 @@ export function useAlertasConfig() {
     setLoading(false);
   };
 
-  // Ref con la página actual: permite que reloadHistory() sin args recargue la
-  // página vigente (botón "Recargar") manteniendo identidad estable (deps []).
-  const pageRef = useRef(historyPage);
-  useEffect(() => { pageRef.current = historyPage; }, [historyPage]);
-
-  const reloadHistory = useCallback(async (page = pageRef.current) => {
-    setHistoryLoading(true);
-    const h = await fetchHistory(PAGE_SIZE, page * PAGE_SIZE);
-    setHistory(h.alerts);
-    setHistoryTotal(h.total);
-    setHistoryLoading(false);
-  }, []);
-
   useEffect(() => {
     reload();
-    reloadHistory(0);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once; reload no está memoizado
   }, []);
-
-  useEffect(() => {
-    reloadHistory(historyPage);
-  }, [historyPage, reloadHistory]);
 
   const getThreshold = (area: Area, key: string): Threshold => {
     const k = `${area}::${key}`;
@@ -223,11 +190,6 @@ export function useAlertasConfig() {
     setLs(LS_VOICE, next);
   });
 
-  const historyPageCount = useMemo(
-    () => Math.max(1, Math.ceil(historyTotal / PAGE_SIZE)),
-    [historyTotal],
-  );
-
   const stats = useMemo(() => {
     const enabled = Array.from(thresholds.values()).filter((t) => t.enabled).length;
     const total = sensors.length;
@@ -245,20 +207,12 @@ export function useAlertasConfig() {
     setAreaFilter,
     search,
     setSearch,
-    history,
-    historyTotal,
-    historyLoading,
-    historyPage,
-    setHistoryPage,
-    historyPageCount,
-    PAGE_SIZE,
     // toggles
     modalEnabled,
     beepEnabled,
     voiceEnabled,
     // actions
     reload,
-    reloadHistory,
     getThreshold,
     update,
     filteredSensors,

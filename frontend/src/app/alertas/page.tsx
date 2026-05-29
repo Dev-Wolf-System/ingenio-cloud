@@ -12,8 +12,6 @@ import { PasswordGate } from '@/components/ui/PasswordGate';
 import { useAlertasConfig } from './_hooks/useAlertasConfig';
 import { AvisosConfigPanel } from './_components/AvisosConfigPanel';
 import { ThresholdsPanel } from './_components/ThresholdsPanel';
-import { HistorialPanel } from './_components/HistorialPanel';
-import { HistorialCharts } from './_components/HistorialCharts';
 
 export default function AlertasConfigPage() {
   const {
@@ -24,17 +22,10 @@ export default function AlertasConfigPage() {
     setAreaFilter,
     search,
     setSearch,
-    history,
-    historyTotal,
-    historyLoading,
-    historyPage,
-    setHistoryPage,
-    historyPageCount,
     modalEnabled,
     beepEnabled,
     voiceEnabled,
     reload,
-    reloadHistory,
     getThreshold,
     update,
     filteredSensors,
@@ -88,6 +79,12 @@ export default function AlertasConfigPage() {
                 <IconRefresh size={13} />
                 Recargar
               </button>
+              <Link
+                href="/alertas/analisis"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-md border-2 border-primary-light/35 text-primary-light hover:bg-bg-hover transition-all"
+              >
+                Ver análisis e historial →
+              </Link>
               <button
                 onClick={onSave}
                 disabled={saving}
@@ -130,17 +127,7 @@ export default function AlertasConfigPage() {
             update={update}
           />
 
-          <HistorialCharts />
 
-          <HistorialPanel
-            history={history}
-            historyTotal={historyTotal}
-            historyLoading={historyLoading}
-            reloadHistory={reloadHistory}
-            historyPage={historyPage}
-            setHistoryPage={setHistoryPage}
-            historyPageCount={historyPageCount}
-          />
         </main>
       </div>
 
