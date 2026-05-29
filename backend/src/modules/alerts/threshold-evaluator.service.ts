@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SupabaseService } from '../supabase/supabase.service';
+import { shouldEscalate } from './escalation';
 
 interface Threshold {
   id: string;
@@ -11,6 +12,8 @@ interface Threshold {
   enabled: boolean;
   severity: 'info' | 'warn' | 'critical';
   notes: string | null;
+  escalate_after_min: number | null;
+  escalate_drift_pct: number | null;
 }
 
 interface DashboardRow {
@@ -24,6 +27,9 @@ interface DashboardRow {
 interface OpenAlertRow {
   id: string;
   source: string;
+  severity: string;
+  detected_at: string;
+  metadata: unknown;
 }
 
 @Injectable()
@@ -43,7 +49,7 @@ export class ThresholdEvaluatorService {
     // 1. Cargar thresholds activos
     const { data: thresholds, error: tErr } = await industrial
       .from('alert_thresholds')
-      .select('id, area, key, min_value, max_value, enabled, severity, notes')
+      .select('id, area, key, min_value, max_value, enabled, severity, notes, escalate_after_min, escalate_drift_pct')
       .eq('enabled', true);
     if (tErr) {
       this.logger.warn(`thresholds load failed: ${tErr.message}`);
@@ -69,16 +75,16 @@ export class ThresholdEvaluatorService {
     // 3. Cargar alertas abiertas (resolved_at IS NULL)
     const { data: openAlerts, error: oErr } = await alerts
       .from('active')
-      .select('id, source')
+      .select('id, source, severity, detected_at, metadata')
       .is('resolved_at', null);
     if (oErr) {
       this.logger.warn(`open alerts load failed: ${oErr.message}`);
       return;
     }
-    const openMap = new Map<string, string>();
+    const openMap = new Map<string, OpenAlertRow>();
     (openAlerts ?? []).forEach((r) => {
       const row = r as OpenAlertRow;
-      openMap.set(row.source, row.id);
+      openMap.set(row.source, row);
     });
 
     // 4. Evaluar
@@ -91,6 +97,7 @@ export class ThresholdEvaluatorService {
       metadata: Record<string, unknown>;
     }> = [];
     const toResolve: string[] = [];
+    const toEscalate: Array<{ id: string; reason: string; metadata: Record<string, unknown>; severity: string }> = [];
 
     for (const rule of rules) {
       const source = `threshold::${rule.area}::${rule.key}`;
@@ -100,7 +107,8 @@ export class ThresholdEvaluatorService {
       const tooLow = rule.min_value != null && row.value < rule.min_value;
       const tooHigh = rule.max_value != null && row.value > rule.max_value;
       const isOut = tooLow || tooHigh;
-      const openId = openMap.get(source);
+      const open = openMap.get(source);
+      const openId = open?.id;
 
       if (isOut && !openId) {
         toOpen.push({
@@ -124,6 +132,24 @@ export class ThresholdEvaluatorService {
         });
       } else if (!isOut && openId) {
         toResolve.push(openId);
+      } else if (isOut && open && open.severity !== 'critical') {
+        const res = shouldEscalate({
+          severity: open.severity,
+          detectedAt: open.detected_at,
+          value: row.value,
+          min: rule.min_value,
+          max: rule.max_value,
+          afterMin: rule.escalate_after_min ?? null,
+          driftPct: rule.escalate_drift_pct ?? null,
+        });
+        if (res.escalate) {
+          toEscalate.push({
+            id: open.id,
+            reason: res.reason!,
+            metadata: (open.metadata as Record<string, unknown>) ?? {},
+            severity: open.severity,
+          });
+        }
       }
     }
 
@@ -143,5 +169,24 @@ export class ThresholdEvaluatorService {
       if (error) this.logger.warn(`alert resolve failed: ${error.message}`);
       else this.logger.log(`resolved ${toResolve.length} alerts`);
     }
+
+    // 7. Escalar alertas persistentes o con drift elevado
+    for (const e of toEscalate) {
+      const { error } = await alerts
+        .from('active')
+        .update({
+          severity: 'critical',
+          metadata: {
+            ...e.metadata,
+            escalated: true,
+            escalated_at: new Date().toISOString(),
+            escalated_reason: e.reason,
+            original_severity: e.severity,
+          },
+        })
+        .eq('id', e.id);
+      if (error) this.logger.warn(`alert escalate failed (${e.id}): ${error.message}`);
+    }
+    if (toEscalate.length > 0) this.logger.log(`escalated ${toEscalate.length} alerts`);
   }
 }
