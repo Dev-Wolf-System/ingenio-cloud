@@ -19,9 +19,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useAlertAudio } from '@/lib/hooks/useAlertAudio';
+import { useAlertModalBehavior, effectiveSeverity } from '@/lib/hooks/useAlertModalBehavior';
 import { normalizeSeverity, SEV_ORDER } from '@/lib/severity';
-
-const REDISPLAY_MS = 5 * 60_000; // 5 min
+import { AlertGroup } from './AlertGroup';
 
 interface AlertMeta {
   value?: number;
@@ -29,6 +29,13 @@ interface AlertMeta {
   max_value?: number;
   unit?: string;
   updated_at?: string;
+  triage?: {
+    severidad?: 'info' | 'warn' | 'critical';
+    grupo?: string;
+    prioridad?: number;
+    titular?: string;
+    recomendacion?: string;
+  };
 }
 
 export interface ActiveAlert {
@@ -50,6 +57,15 @@ interface AnalisisCausa {
 
 interface Props {
   alerts: ActiveAlert[];
+}
+
+const LS_BEEP = 'alert_beep_enabled';
+const LS_VOICE = 'alert_voice_enabled';
+
+function getLs(key: string, def: boolean): boolean {
+  if (typeof window === 'undefined') return def;
+  const v = localStorage.getItem(key);
+  return v === null ? def : v === 'true';
 }
 
 const severityStyles = {
@@ -121,6 +137,7 @@ function AlertItem({ alert }: { alert: ActiveAlert }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const sev = severityStyles[normalizeSeverity(alert.severity)] ?? severityStyles.info;
+  const recomendacion = alert.metadata?.triage?.recomendacion;
 
   const fetchAnalisis = useCallback(async () => {
     if (analisis || loading) return;
@@ -163,6 +180,15 @@ function AlertItem({ alert }: { alert: ActiveAlert }) {
             <ValueBar alert={alert} />
           </div>
         </div>
+
+        {recomendacion && (
+          <div className="mt-2.5 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <p className="text-[10px] lg:text-xs font-semibold uppercase tracking-wider text-amber-400 mb-0.5">
+              Recomendación IA
+            </p>
+            <p className="text-xs lg:text-sm text-amber-200/80 leading-snug">{recomendacion}</p>
+          </div>
+        )}
 
         <button
           onClick={toggle}
@@ -232,26 +258,46 @@ function AlertItem({ alert }: { alert: ActiveAlert }) {
   );
 }
 
-const LS_MODAL = 'alert_modal_enabled';
-const LS_BEEP = 'alert_beep_enabled';
-const LS_VOICE = 'alert_voice_enabled';
+// Agrupar alertas por triage.grupo ?? area, ordenadas por severidad dominante del grupo
+function buildGroups(alerts: ActiveAlert[]): { key: string; titular?: string; alerts: ActiveAlert[] }[] {
+  const map = new Map<string, { titular?: string; alerts: ActiveAlert[] }>();
 
-function getLs(key: string, def: boolean): boolean {
-  if (typeof window === 'undefined') return def;
-  const v = localStorage.getItem(key);
-  return v === null ? def : v === 'true';
+  for (const a of alerts) {
+    const key = a.metadata?.triage?.grupo ?? a.area;
+    if (!map.has(key)) map.set(key, { alerts: [] });
+    const entry = map.get(key)!;
+    if (!entry.titular && a.metadata?.triage?.titular) entry.titular = a.metadata.triage.titular;
+    entry.alerts.push(a);
+  }
+
+  // Ordenar alertas dentro de cada grupo por prioridad asc
+  for (const entry of map.values()) {
+    entry.alerts.sort(
+      (a, b) => (a.metadata?.triage?.prioridad ?? 99) - (b.metadata?.triage?.prioridad ?? 99),
+    );
+  }
+
+  // Ordenar grupos por severidad dominante del grupo (menor SEV_ORDER = más crítico)
+  return [...map.entries()]
+    .map(([key, val]) => ({ key, ...val }))
+    .sort((ga, gb) => {
+      const sevA = Math.min(...ga.alerts.map((a) => SEV_ORDER[effectiveSeverity(a)]));
+      const sevB = Math.min(...gb.alerts.map((a) => SEV_ORDER[effectiveSeverity(a)]));
+      return sevA - sevB;
+    });
 }
 
 export function AlertasModalAuto({ alerts }: Props) {
-  const [isOpen, setIsOpen] = useState(false);
   const [beepOn, setBeepOn] = useState(true);
   const [voiceOn, setVoiceOn] = useState(false);
-  const prevIdsRef = useRef<Set<string>>(new Set());
-  const dismissedAtRef = useRef<number | null>(null);
-  const redisplayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Hook de audio
   const { audioBlocked, enableAudio } = useAlertAudio(alerts);
+
+  // Hook de comportamiento del modal
+  const { isOpen, close, dominant } = useAlertModalBehavior(alerts);
+
+  const sev = severityStyles[dominant] ?? severityStyles.info;
 
   // Leer estado de toggles al montar
   useEffect(() => {
@@ -269,58 +315,7 @@ export function AlertasModalAuto({ alerts }: Props) {
     return () => window.removeEventListener('storage', handler);
   }, []);
 
-  const sorted = [...alerts].sort(
-    (a, b) => SEV_ORDER[normalizeSeverity(a.severity)] - SEV_ORDER[normalizeSeverity(b.severity)],
-  );
-
-  const dominantSev = normalizeSeverity(sorted[0]?.severity ?? 'info');
-  const sev = severityStyles[dominantSev] ?? severityStyles.info;
-
-  const openModal = useCallback(() => {
-    setIsOpen(true);
-    dismissedAtRef.current = null;
-    if (redisplayTimerRef.current) clearTimeout(redisplayTimerRef.current);
-  }, []);
-
-  const closeModal = useCallback(() => {
-    setIsOpen(false);
-    if (alerts.length > 0) {
-      dismissedAtRef.current = Date.now();
-      redisplayTimerRef.current = setTimeout(() => {
-        if (alerts.length > 0) openModal();
-      }, REDISPLAY_MS);
-    }
-  }, [alerts.length, openModal]);
-
-  // Detectar alertas nuevas
-  useEffect(() => {
-    const currentIds = new Set(alerts.map((a) => a.id));
-
-    if (alerts.length === 0) {
-      setIsOpen(false);
-      dismissedAtRef.current = null;
-      if (redisplayTimerRef.current) clearTimeout(redisplayTimerRef.current);
-      prevIdsRef.current = currentIds;
-      return;
-    }
-
-    const nuevas = alerts.filter((a) => !prevIdsRef.current.has(a.id));
-    if (nuevas.length > 0 && dismissedAtRef.current === null) {
-      // Solo abrir modal si el toggle modal está ON
-      if (getLs(LS_MODAL, true)) {
-        openModal();
-      }
-    }
-
-    prevIdsRef.current = currentIds;
-  }, [alerts, openModal]);
-
-  // Cleanup timer al desmontar
-  useEffect(() => {
-    return () => {
-      if (redisplayTimerRef.current) clearTimeout(redisplayTimerRef.current);
-    };
-  }, []);
+  const groups = buildGroups(alerts);
 
   if (alerts.length === 0) return null;
 
@@ -335,7 +330,7 @@ export function AlertasModalAuto({ alerts }: Props) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-            onClick={closeModal}
+            onClick={close}
           />
 
           {/* Modal */}
@@ -370,17 +365,22 @@ export function AlertasModalAuto({ alerts }: Props) {
                   </div>
                 </div>
                 <button
-                  onClick={closeModal}
+                  onClick={close}
                   className="p-1.5 lg:p-2 rounded-lg text-gray-500 hover:text-white hover:bg-white/8 transition-colors"
                 >
                   <IconX size={16} className="lg:w-5 lg:h-5" />
                 </button>
               </div>
 
-              {/* Alert list */}
-              <div className="flex-1 overflow-y-auto p-3 lg:p-5 space-y-2 lg:space-y-3 scrollbar-thin scrollbar-thumb-white/10">
-                {sorted.map((alert) => (
-                  <AlertItem key={alert.id} alert={alert} />
+              {/* Alert list grouped */}
+              <div className="flex-1 overflow-y-auto p-3 lg:p-5 space-y-4 lg:space-y-6 scrollbar-thin scrollbar-thumb-white/10">
+                {groups.map((g) => (
+                  <AlertGroup
+                    key={g.key}
+                    titular={g.titular}
+                    alerts={g.alerts}
+                    renderItem={(a) => <AlertItem key={a.id} alert={a} />}
+                  />
                 ))}
               </div>
 
@@ -411,7 +411,7 @@ export function AlertasModalAuto({ alerts }: Props) {
                   <Link
                     href="/alertas"
                     className="text-[10px] lg:text-[11px] text-gray-700 hover:text-gray-500 transition-colors"
-                    onClick={closeModal}
+                    onClick={close}
                     title="Configurar audio"
                   >
                     Configurar
@@ -420,7 +420,7 @@ export function AlertasModalAuto({ alerts }: Props) {
                 <Link
                   href="/alertas"
                   className="flex items-center gap-1 text-[11px] lg:text-sm text-blue-400 hover:text-blue-300 transition-colors"
-                  onClick={closeModal}
+                  onClick={close}
                 >
                   Ver historial <IconExternalLink size={11} className="lg:w-3.5 lg:h-3.5" />
                 </Link>
