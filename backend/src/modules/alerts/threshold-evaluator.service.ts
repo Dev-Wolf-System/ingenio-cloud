@@ -145,7 +145,7 @@ export class ThresholdEvaluatorService {
         if (res.escalate) {
           toEscalate.push({
             id: open.id,
-            reason: res.reason!,
+            reason: res.reason,
             metadata: (open.metadata as Record<string, unknown>) ?? {},
             severity: open.severity,
           });

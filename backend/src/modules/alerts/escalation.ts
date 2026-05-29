@@ -11,10 +11,9 @@ export interface EscalateInput {
   driftPct: number | null;
 }
 
-export interface EscalateResult {
-  escalate: boolean;
-  reason: 'persistencia' | 'tendencia' | null;
-}
+export type EscalateResult =
+  | { escalate: true; reason: 'persistencia' | 'tendencia' }
+  | { escalate: false; reason: null };
 
 export function shouldEscalate(i: EscalateInput): EscalateResult {
   if (i.severity === 'critical') return { escalate: false, reason: null };
