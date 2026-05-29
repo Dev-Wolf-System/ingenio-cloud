@@ -272,14 +272,15 @@ function buildGroups(alerts: ActiveAlert[]): { key: string; titular?: string; al
   }
 
   // Ordenar alertas dentro de cada grupo por prioridad asc
-  for (const entry of map.values()) {
+  // (Array.from: el target ES5 del proyecto no itera Map iterators con for...of)
+  Array.from(map.values()).forEach((entry) => {
     entry.alerts.sort(
       (a, b) => (a.metadata?.triage?.prioridad ?? 99) - (b.metadata?.triage?.prioridad ?? 99),
     );
-  }
+  });
 
   // Ordenar grupos por severidad dominante del grupo (menor SEV_ORDER = más crítico)
-  return [...map.entries()]
+  return Array.from(map.entries())
     .map(([key, val]) => ({ key, ...val }))
     .sort((ga, gb) => {
       const sevA = Math.min(...ga.alerts.map((a) => SEV_ORDER[effectiveSeverity(a)]));
