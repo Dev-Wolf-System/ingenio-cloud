@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AiService } from '../ai/ai.service';
+import { sevLabel, sevOrder, normalizeSeverity } from './severity';
 
 // ── Helpers TTS ──────────────────────────────────────────────────────────────
 
@@ -227,17 +228,11 @@ export class AlertsService {
       return null;
     }
 
-    // Ordenar critical → warning → info
-    const ORDER: Record<string, number> = { critical: 0, warning: 1, info: 2 };
-    const sorted = [...data].sort(
-      (a, b) => (ORDER[a.severity] ?? 9) - (ORDER[b.severity] ?? 9),
-    );
+    // Ordenar critical → warn → info
+    const sorted = [...data].sort((a, b) => sevOrder(a.severity) - sevOrder(b.severity));
 
-    const sevLabel = (s: string) =>
-      s === 'critical' ? 'crítica' : s === 'warning' ? 'de advertencia' : 'informativa';
-
-    const critCount = sorted.filter((a) => a.severity === 'critical').length;
-    const warnCount = sorted.filter((a) => a.severity === 'warning').length;
+    const critCount = sorted.filter((a) => normalizeSeverity(a.severity) === 'critical').length;
+    const warnCount = sorted.filter((a) => normalizeSeverity(a.severity) === 'warn').length;
     const capArea = (a: string) => a.charAt(0).toUpperCase() + a.slice(1).toLowerCase();
 
     // Encabezado natural — números como palabras para evitar pronunciación en inglés

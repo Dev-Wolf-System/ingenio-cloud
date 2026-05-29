@@ -19,6 +19,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useAlertAudio } from '@/lib/hooks/useAlertAudio';
+import { normalizeSeverity, SEV_ORDER } from '@/lib/severity';
 
 const REDISPLAY_MS = 5 * 60_000; // 5 min
 
@@ -32,7 +33,7 @@ interface AlertMeta {
 
 export interface ActiveAlert {
   id: string;
-  severity: 'critical' | 'warning' | 'info';
+  severity: 'critical' | 'warn' | 'info';
   area: string;
   title: string;
   message: string;
@@ -51,8 +52,6 @@ interface Props {
   alerts: ActiveAlert[];
 }
 
-const SEVERITY_ORDER: Record<string, number> = { critical: 0, warning: 1, info: 2 };
-
 const severityStyles = {
   critical: {
     badge: 'bg-red-500/20 text-red-400 border border-red-500/30',
@@ -61,7 +60,7 @@ const severityStyles = {
     glow: '0 0 40px rgba(239,68,68,0.15)',
     bar: 'bg-red-500',
   },
-  warning: {
+  warn: {
     badge: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
     dot: 'bg-amber-500',
     icon: <IconAlertTriangle size={16} className="text-amber-400 flex-shrink-0" />,
@@ -121,7 +120,7 @@ function AlertItem({ alert }: { alert: ActiveAlert }) {
   const [analisis, setAnalisis] = useState<AnalisisCausa | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
-  const sev = severityStyles[alert.severity] ?? severityStyles.info;
+  const sev = severityStyles[normalizeSeverity(alert.severity)] ?? severityStyles.info;
 
   const fetchAnalisis = useCallback(async () => {
     if (analisis || loading) return;
@@ -271,10 +270,10 @@ export function AlertasModalAuto({ alerts }: Props) {
   }, []);
 
   const sorted = [...alerts].sort(
-    (a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9),
+    (a, b) => SEV_ORDER[normalizeSeverity(a.severity)] - SEV_ORDER[normalizeSeverity(b.severity)],
   );
 
-  const dominantSev = sorted[0]?.severity ?? 'info';
+  const dominantSev = normalizeSeverity(sorted[0]?.severity ?? 'info');
   const sev = severityStyles[dominantSev] ?? severityStyles.info;
 
   const openModal = useCallback(() => {
