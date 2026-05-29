@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SupabaseService } from '../supabase/supabase.service';
 import { shouldEscalate } from './escalation';
+import { NotificationsService } from '../notifications/notifications.service';
 
 interface Threshold {
   id: string;
@@ -36,7 +37,10 @@ interface OpenAlertRow {
 export class ThresholdEvaluatorService {
   private readonly logger = new Logger(ThresholdEvaluatorService.name);
 
-  constructor(private readonly supabase: SupabaseService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly notif: NotificationsService,
+  ) {}
 
   /** Cron cada 30s — evalúa thresholds vs dashboard_data y maneja alerts.active */
   @Cron(CronExpression.EVERY_30_SECONDS, {
@@ -157,7 +161,17 @@ export class ThresholdEvaluatorService {
     if (toOpen.length > 0) {
       const { error } = await alerts.from('active').insert(toOpen);
       if (error) this.logger.warn(`alert open insert failed: ${error.message}`);
-      else this.logger.log(`opened ${toOpen.length} alerts`);
+      else {
+        this.logger.log(`opened ${toOpen.length} alerts`);
+        for (const a of toOpen) {
+          await this.notif.notify(a.source, {
+            title: `${a.severity === 'critical' ? '🔴' : a.severity === 'warn' ? '🟠' : '🔵'} ${a.area}`,
+            body: a.title,
+            severity: a.severity,
+            url: '/alertas',
+          });
+        }
+      }
     }
 
     // 6. Resolver alertas vueltas a rango
@@ -186,6 +200,14 @@ export class ThresholdEvaluatorService {
         })
         .eq('id', e.id);
       if (error) this.logger.warn(`alert escalate failed (${e.id}): ${error.message}`);
+      else {
+        await this.notif.notify(`${e.id}::escalated`, {
+          title: `🔴 Escalada a crítica`,
+          body: `Alerta escaló a crítica (${e.reason})`,
+          severity: 'critical',
+          url: '/alertas',
+        });
+      }
     }
     if (toEscalate.length > 0) this.logger.log(`escalated ${toEscalate.length} alerts`);
   }
