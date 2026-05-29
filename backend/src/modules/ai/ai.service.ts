@@ -365,6 +365,49 @@ Analizá patrones, identificá áreas/turnos problemáticos y recomendá accione
     }
   }
 
+  async analizarPeriodoAlertas(payload: {
+    periodo: string; etiqueta: string;
+    kpis: { total: number; por_severidad: Record<string, number>; por_area: Record<string, number>; duracion_media_min: number; mtbf_min: number | null };
+    comparativa: { total_prev: number | null; delta_pct: number | null } | null;
+    sensores: Array<{ titulo: string; n: number; mtbf_min: number | null }>;
+    correlaciones: Array<{ a: string; b: string; juntas: number }>;
+    paradas: Array<{ motivo: string; minutos: number | null; alertas_relacionadas: number }>;
+  }): Promise<{ resumen: string; patrones: string[]; recomendaciones: string[] } | null> {
+    if (!this.client) return null;
+    const systemPrompt = `Sos ingeniero senior de un ingenio azucarero (La Corona, Tucumán).
+Analizás el período de alertas e INTERPRETÁS (no listás): destacá el cambio vs período
+anterior, el sensor más problemático, correlaciones relevantes, y especialmente SI alguna
+PARADA de fábrica se relaciona con alertas previas (causa probable). Español rioplatense.
+Salida JSON estricto: { resumen (2-4 oraciones), patrones (array 3-5), recomendaciones (array 2-4 priorizadas) }`;
+    const userPrompt = `Período: ${payload.etiqueta}
+KPIs: ${JSON.stringify(payload.kpis)}
+Comparativa vs anterior: ${JSON.stringify(payload.comparativa)}
+Top sensores: ${payload.sensores.slice(0, 5).map((s) => `${s.titulo} (${s.n}x, MTBF ${s.mtbf_min ?? '—'}min)`).join('; ')}
+Correlaciones: ${payload.correlaciones.slice(0, 5).map((c) => `${c.a}+${c.b} (${c.juntas}x)`).join('; ') || 'ninguna'}
+Paradas: ${payload.paradas.map((p) => `${p.motivo} (${p.minutos ?? '?'}min, ${p.alertas_relacionadas} alertas cerca)`).join('; ') || 'ninguna'}`;
+    try {
+      const res = await this.client.chat.completions.create({
+        model: this.model, response_format: { type: 'json_object' }, temperature: 0.4, max_tokens: 600,
+        messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
+      });
+      const content = res.choices[0]?.message?.content ?? '';
+      if (!content.trim()) return null;
+      let c = content.trim();
+      if (c.startsWith('```')) c = c.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+      const s = c.indexOf('{'); const e = c.lastIndexOf('}');
+      if (s === -1 || e === -1) return null;
+      const p = JSON.parse(c.slice(s, e + 1)) as { resumen?: string; patrones?: string[]; recomendaciones?: string[] };
+      return {
+        resumen: p.resumen ?? 'Sin análisis disponible.',
+        patrones: Array.isArray(p.patrones) ? p.patrones : [],
+        recomendaciones: Array.isArray(p.recomendaciones) ? p.recomendaciones : [],
+      };
+    } catch (err) {
+      this.logger.error(`analizarPeriodoAlertas failed: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
   async analizarAlertaCausa(alert: {
     id: string;
     severity: string;
