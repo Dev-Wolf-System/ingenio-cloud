@@ -10,15 +10,20 @@ BACK=ingenio-cloud/backend
 FRONT=ingenio-cloud/frontend
 
 echo "==> 1/3 Respaldando imágenes actuales como :stable (punto de retorno)"
-if docker image inspect "$BACK:latest" >/dev/null 2>&1; then
-  docker tag "$BACK:latest" "$BACK:stable"
-  echo "    backend:latest -> backend:stable"
+# Solo respalda si NO existe ya un :stable, para no pisar el backup bueno en reintentos
+# (si un build falla y reintentás, el :latest puede estar a medio actualizar).
+# Para AVANZAR la línea base tras validar un deploy OK: bash scripts/promote.sh
+if docker image inspect "$BACK:stable" >/dev/null 2>&1; then
+  echo "    backend:stable ya existe — se conserva (no se pisa). promote.sh para avanzar."
+elif docker image inspect "$BACK:latest" >/dev/null 2>&1; then
+  docker tag "$BACK:latest" "$BACK:stable"; echo "    backend:latest -> backend:stable"
 else
   echo "    (no hay $BACK:latest previo — primer deploy)"
 fi
-if docker image inspect "$FRONT:latest" >/dev/null 2>&1; then
-  docker tag "$FRONT:latest" "$FRONT:stable"
-  echo "    frontend:latest -> frontend:stable"
+if docker image inspect "$FRONT:stable" >/dev/null 2>&1; then
+  echo "    frontend:stable ya existe — se conserva (no se pisa)."
+elif docker image inspect "$FRONT:latest" >/dev/null 2>&1; then
+  docker tag "$FRONT:latest" "$FRONT:stable"; echo "    frontend:latest -> frontend:stable"
 else
   echo "    (no hay $FRONT:latest previo — primer deploy)"
 fi
