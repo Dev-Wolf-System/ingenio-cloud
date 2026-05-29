@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AiService } from '../ai/ai.service';
 import { rangoPeriodo, Periodo } from './analisis/periodo';
-import { computeKpis, sensoresStats, correlaciones, cruzarParadas } from './analisis/aggregate';
+import { computeKpis, sensoresStats, correlaciones, cruzarParadas, reliabilidad } from './analisis/aggregate';
 import type { AlertaRow, ParadaRow, AnalisisResponse, Insight } from './analisis/analisis.types';
 
 const VENTANA_CORR_MIN = 15;
@@ -17,13 +17,13 @@ export class AlertsAnalisisService {
 
   constructor(private readonly supabase: SupabaseService, private readonly ai: AiService) {}
 
-  async analisis(periodo: Periodo, refresh = false): Promise<AnalisisResponse> {
-    const rango = rangoPeriodo(periodo);
+  async analisis(periodo: Periodo, refresh = false, offset = 0): Promise<AnalisisResponse> {
+    const rango = rangoPeriodo(periodo, new Date(), undefined, offset);
     const alertsSchema = this.supabase.schema('alerts');
 
     const fetchAlerts = async (desde: Date, hasta: Date): Promise<AlertaRow[]> => {
       const { data, error } = await alertsSchema.from('active')
-        .select('id, severity, area, source, title, detected_at, resolved_at')
+        .select('id, severity, area, source, title, detected_at, resolved_at, acknowledged_at')
         .gte('detected_at', desde.toISOString())
         .lt('detected_at', hasta.toISOString());
       if (error) { this.logger.warn(`analisis alerts fail: ${error.message}`); return []; }
@@ -128,9 +128,11 @@ export class AlertsAnalisisService {
     const kpis = computeKpis(alerts);
     const sensores = sensoresStats(alerts);
     const corr = correlaciones(alerts, VENTANA_CORR_MIN);
+    const spanMin = (rango.hasta.getTime() - rango.desde.getTime()) / 60_000;
+    const reliab = reliabilidad(alerts, paradas, spanMin);
 
     let insight: Insight | null = null;
-    const cacheKey = periodo;
+    const cacheKey = `${periodo}:${offset}`;
     const cached = this.insightCache.get(cacheKey);
     if (!refresh && cached && Date.now() - cached.ts < INSIGHT_TTL_MS) {
       insight = { ...cached.data, cached: true };
@@ -138,7 +140,13 @@ export class AlertsAnalisisService {
       const r = await this.ai.analizarPeriodoAlertas({
         periodo,
         etiqueta: rango.etiqueta,
-        kpis,
+        kpis: {
+          total: kpis.total,
+          por_severidad: kpis.por_severidad,
+          por_area: kpis.por_area,
+          duracion_media_min: kpis.duracion_media_min,
+        },
+        reliabilidad: reliab,
         comparativa: comparativa
           ? { total_prev: comparativa.total_prev, delta_pct: comparativa.delta_pct }
           : null,
@@ -164,6 +172,7 @@ export class AlertsAnalisisService {
         etiqueta: rango.etiqueta,
       },
       kpis,
+      reliabilidad: reliab,
       comparativa,
       series,
       sensores,

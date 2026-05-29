@@ -27,18 +27,24 @@ function inicioDiaIndustrial(d: Date): Date {
   return base;
 }
 
-export function rangoPeriodo(periodo: Periodo, ref = new Date(), zafraInicio?: Date): Rango {
+/**
+ * @param offset retrocede de a una unidad: 0 = actual, 1 = anterior, 2 = ante-anterior…
+ *               (aplica a turno y día; ignorado en zafra).
+ */
+export function rangoPeriodo(periodo: Periodo, ref = new Date(), zafraInicio?: Date, offset = 0): Rango {
   if (periodo === 'turno') {
-    const desde = inicioTurno(ref);
+    const actual = inicioTurno(ref);
+    const desde = new Date(actual.getTime() - offset * 8 * 3600_000);
     const hasta = new Date(desde.getTime() + 8 * 3600_000);
     const prevDesde = new Date(desde.getTime() - 8 * 3600_000);
-    return { desde, hasta, prevDesde, prevHasta: desde, etiqueta: 'Turno actual' };
+    return { desde, hasta, prevDesde, prevHasta: desde, etiqueta: offset === 0 ? 'Turno actual' : offset === 1 ? 'Turno anterior' : `Turno −${offset}` };
   }
   if (periodo === 'dia') {
-    const desde = inicioDiaIndustrial(ref);
+    const actual = inicioDiaIndustrial(ref);
+    const desde = new Date(actual.getTime() - offset * 24 * 3600_000);
     const hasta = new Date(desde.getTime() + 24 * 3600_000);
     const prevDesde = new Date(desde.getTime() - 24 * 3600_000);
-    return { desde, hasta, prevDesde, prevHasta: desde, etiqueta: 'Día industrial' };
+    return { desde, hasta, prevDesde, prevHasta: desde, etiqueta: offset === 0 ? 'Día actual' : offset === 1 ? 'Día anterior' : `Día −${offset}` };
   }
   const desde = zafraInicio ?? new Date(ref.getFullYear(), 0, 1);
   return { desde, hasta: ref, prevDesde: null, prevHasta: null, etiqueta: 'Zafra' };

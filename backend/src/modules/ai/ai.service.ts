@@ -367,27 +367,42 @@ Analizá patrones, identificá áreas/turnos problemáticos y recomendá accione
 
   async analizarPeriodoAlertas(payload: {
     periodo: string; etiqueta: string;
-    kpis: { total: number; por_severidad: Record<string, number>; por_area: Record<string, number>; duracion_media_min: number; mtbf_min: number | null };
+    kpis: { total: number; por_severidad: Record<string, number>; por_area: Record<string, number>; duracion_media_min: number };
+    reliabilidad: { paradas_n: number; downtime_total_min: number; operating_min: number; mtbf_min: number | null; mttr_min: number | null; mttf_min: number | null; mtta_min: number | null };
     comparativa: { total_prev: number | null; delta_pct: number | null } | null;
     sensores: Array<{ titulo: string; n: number; mtbf_min: number | null }>;
     correlaciones: Array<{ a: string; b: string; juntas: number }>;
     paradas: Array<{ motivo: string; minutos: number | null; alertas_relacionadas: number }>;
   }): Promise<{ resumen: string; patrones: string[]; recomendaciones: string[] } | null> {
     if (!this.client) return null;
-    const systemPrompt = `Sos ingeniero senior de un ingenio azucarero (La Corona, Tucumán).
-Analizás el período de alertas e INTERPRETÁS (no listás): destacá el cambio vs período
-anterior, el sensor más problemático, correlaciones relevantes, y especialmente SI alguna
-PARADA de fábrica se relaciona con alertas previas (causa probable). Español rioplatense.
-Salida JSON estricto: { resumen (2-4 oraciones), patrones (array 3-5), recomendaciones (array 2-4 priorizadas) }`;
+    const systemPrompt = `Sos un ingeniero MECÁNICO e INDUSTRIAL senior especializado en ingenios
+azucareros (Ingenio La Corona, Tucumán). Pensás y razonás como un jefe de confiabilidad de planta.
+Tu trabajo es INTERPRETAR el período (NO listar datos): conectá causas y efectos, no describas.
+
+Marco de confiabilidad (usalo en tu razonamiento):
+- MTBF = tiempo medio entre fallas (paradas). Más alto = más estable.
+- MTTR = tiempo medio de reparación (downtime/parada). Más bajo = mejor respuesta de mantenimiento.
+- MTTF = uptime medio antes de falla.
+- MTTA = tiempo medio en reconocer una alerta. Si es alto, el operador tarda en reaccionar.
+Razoná qué dicen estas métricas del estado de la planta y del mantenimiento.
+
+Foco clave: ¿alguna PARADA estuvo PRECEDIDA por alertas (causa raíz/aviso temprano)? Si una
+variable alarmó y minutos después hubo parada en la misma área/máquina, señalalo como causa probable.
+Priorizá el sensor más reincidente y las correlaciones que expliquen fallas.
+
+Español rioplatense, técnico y directo. Salida JSON estricto:
+{ resumen (3-4 oraciones interpretativas), patrones (array 3-5, hallazgos), recomendaciones (array 2-4 priorizadas y accionables) }`;
+    const r = payload.reliabilidad;
     const userPrompt = `Período: ${payload.etiqueta}
-KPIs: ${JSON.stringify(payload.kpis)}
-Comparativa vs anterior: ${JSON.stringify(payload.comparativa)}
-Top sensores: ${payload.sensores.slice(0, 5).map((s) => `${s.titulo} (${s.n}x, MTBF ${s.mtbf_min ?? '—'}min)`).join('; ')}
-Correlaciones: ${payload.correlaciones.slice(0, 5).map((c) => `${c.a}+${c.b} (${c.juntas}x)`).join('; ') || 'ninguna'}
-Paradas: ${payload.paradas.map((p) => `${p.motivo} (${p.minutos ?? '?'}min, ${p.alertas_relacionadas} alertas cerca)`).join('; ') || 'ninguna'}`;
+Alertas: total ${payload.kpis.total} · sev ${JSON.stringify(payload.kpis.por_severidad)} · por área ${JSON.stringify(payload.kpis.por_area)} · duración media alerta ${payload.kpis.duracion_media_min}min
+Comparativa vs período anterior: ${payload.comparativa ? `total previo ${payload.comparativa.total_prev}, cambio ${payload.comparativa.delta_pct}%` : 'sin comparativa'}
+Confiabilidad: ${r.paradas_n} paradas · downtime ${r.downtime_total_min}min · operando ${r.operating_min}min · MTBF ${r.mtbf_min ?? '—'}min · MTTR ${r.mttr_min ?? '—'}min · MTTF ${r.mttf_min ?? '—'}min · MTTA ${r.mtta_min ?? '—'}min
+Top sensores (frecuencia, MTBF alerta): ${payload.sensores.slice(0, 5).map((s) => `${s.titulo} (${s.n}x, ${s.mtbf_min ?? '—'}min)`).join('; ') || 'ninguno'}
+Correlaciones (alarman juntas): ${payload.correlaciones.slice(0, 5).map((c) => `${c.a}+${c.b} (${c.juntas}x)`).join('; ') || 'ninguna'}
+Paradas y alertas cercanas: ${payload.paradas.map((p) => `${p.motivo} (${p.minutos ?? '?'}min, ${p.alertas_relacionadas} alertas alrededor)`).join('; ') || 'ninguna'}`;
     try {
       const res = await this.client.chat.completions.create({
-        model: this.model, response_format: { type: 'json_object' }, temperature: 0.4, max_tokens: 600,
+        model: this.model, response_format: { type: 'json_object' }, temperature: 0.4, max_tokens: 700,
         messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }],
       });
       const content = res.choices[0]?.message?.content ?? '';

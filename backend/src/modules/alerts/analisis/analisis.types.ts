@@ -1,6 +1,7 @@
 export interface AlertaRow {
   id: string; severity: string; area: string; source: string;
   title: string; detected_at: string; resolved_at: string | null;
+  acknowledged_at: string | null;
 }
 
 export interface ParadaRow {
@@ -13,9 +14,20 @@ export interface Kpis {
   total: number;
   por_severidad: { info: number; warn: number; critical: number };
   por_area: Record<string, number>;
-  duracion_media_min: number;
+  duracion_media_min: number;   // duración media de alertas (detección→normalización)
   duracion_max_min: number;
-  mtbf_min: number | null;
+}
+
+/** Métricas de confiabilidad. Failures = paradas reales; downtime = duración de paradas. */
+export interface Reliabilidad {
+  paradas_n: number;
+  span_min: number;             // ventana del período
+  downtime_total_min: number;   // Σ minutos de paradas
+  operating_min: number;        // span − downtime
+  mtbf_min: number | null;      // span / n  (tiempo medio entre fallas)
+  mttr_min: number | null;      // downtime / n  (tiempo medio de reparación)
+  mttf_min: number | null;      // operating / n  (uptime medio hasta falla)
+  mtta_min: number | null;      // prom(acknowledged_at − detected_at) sobre alertas reconocidas
 }
 
 export interface Comparativa {
@@ -37,6 +49,7 @@ export interface AnalisisResponse {
   periodo: 'turno' | 'dia' | 'zafra';
   rango: { desde: string; hasta: string; etiqueta: string };
   kpis: Kpis;
+  reliabilidad: Reliabilidad;
   comparativa: Comparativa | null;
   series: {
     por_turno: Array<{ turno: 'Mañana' | 'Tarde' | 'Noche'; n: number }>;

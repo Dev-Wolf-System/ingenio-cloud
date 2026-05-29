@@ -31,11 +31,12 @@ export class AlertsController {
     return this.svc.resumenHistorial(limit ? Math.min(parseInt(limit, 10), 500) : 100);
   }
 
-  /** GET /api/alerts/analisis?periodo=turno|dia|zafra&refresh=1 */
+  /** GET /api/alerts/analisis?periodo=turno|dia|zafra&offset=0&refresh=1 */
   @Get('analisis')
-  analisis(@Query('periodo') periodo?: string, @Query('refresh') refresh?: string) {
+  analisis(@Query('periodo') periodo?: string, @Query('offset') offset?: string, @Query('refresh') refresh?: string) {
     const p = (['turno', 'dia', 'zafra'] as const).includes(periodo as never) ? (periodo as 'turno' | 'dia' | 'zafra') : 'dia';
-    return this.analisisSvc.analisis(p, refresh === '1');
+    const off = Math.max(0, Math.min(parseInt(offset ?? '0', 10) || 0, 30));
+    return this.analisisSvc.analisis(p, refresh === '1', off);
   }
 
   /** GET /api/alerts/:id/analisis-causa — análisis IA de causa (cache 5min) */
