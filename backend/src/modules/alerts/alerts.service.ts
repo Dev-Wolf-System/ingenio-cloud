@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AiService } from '../ai/ai.service';
 import { sevLabel, sevOrder, normalizeSeverity } from './severity';
+import { getCurrentShift } from '../../common/shift';
 
 // ── Helpers TTS ──────────────────────────────────────────────────────────────
 
@@ -160,6 +161,98 @@ export class AlertsService {
     } catch (err) {
       this.logger.warn(`listHistory exception: ${(err as Error).message}`);
       return { alerts: [], total: 0, stale: true };
+    }
+  }
+
+  async resumenHistorial(limit: number) {
+    try {
+      const alertsSchema = this.supabase.schema('alerts');
+      const { data, error } = await alertsSchema
+        .from('active')
+        .select('id, severity, area, title, detected_at, resolved_at, metadata')
+        .not('resolved_at', 'is', null)
+        .order('detected_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        this.logger.warn(`resumenHistorial fail: ${error.message}`);
+        return { resumen: 'Error al obtener historial.', patrones: [], recomendaciones: [], stats: null, stale: true };
+      }
+
+      const rows = (data ?? []) as Array<{
+        id: string;
+        severity: string;
+        area: string;
+        title: string;
+        detected_at: string;
+        resolved_at: string;
+        metadata: Record<string, unknown>;
+      }>;
+
+      // Build aggregated payload
+      const byArea: Record<string, number> = {};
+      const bySeverity: Record<string, number> = {};
+      const byTurno: Record<string, number> = {};
+      const titleFreq: Record<string, number> = {};
+      let totalDurMin = 0;
+      let maxDurMin = 0;
+      let countWithDur = 0;
+
+      for (const r of rows) {
+        // area
+        byArea[r.area] = (byArea[r.area] ?? 0) + 1;
+
+        // severity (normalizada)
+        const sev = normalizeSeverity(r.severity);
+        bySeverity[sev] = (bySeverity[sev] ?? 0) + 1;
+
+        // turno via getCurrentShift helper
+        const shift = getCurrentShift(new Date(r.detected_at));
+        byTurno[shift.displayName] = (byTurno[shift.displayName] ?? 0) + 1;
+
+        // duration
+        if (r.resolved_at) {
+          const dur = Math.round((new Date(r.resolved_at).getTime() - new Date(r.detected_at).getTime()) / 60_000);
+          if (dur >= 0) {
+            totalDurMin += dur;
+            if (dur > maxDurMin) maxDurMin = dur;
+            countWithDur++;
+          }
+        }
+
+        // title frequency
+        titleFreq[r.title] = (titleFreq[r.title] ?? 0) + 1;
+      }
+
+      const avgDurMin = countWithDur > 0 ? Math.round(totalDurMin / countWithDur) : 0;
+      const top5Titles = Object.entries(titleFreq)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([title, count]) => ({ title, count }));
+
+      const stats = {
+        total: rows.length,
+        byArea,
+        bySeverity,
+        byTurno,
+        avgDurationMin: avgDurMin,
+        maxDurationMin: maxDurMin,
+        top5Sensors: top5Titles,
+      };
+
+      if (!this.ai.isAvailable()) {
+        return { resumen: 'IA no disponible.', patrones: [], recomendaciones: [], stats };
+      }
+
+      const aiResult = await this.ai.resumenHistorial(stats);
+      if (!aiResult) {
+        return { resumen: 'No se pudo generar el resumen.', patrones: [], recomendaciones: [], stats };
+      }
+
+      return { ...aiResult, stats };
+    } catch (err) {
+      this.logger.warn(`resumenHistorial exception: ${(err as Error).message}`);
+      return { resumen: 'Error inesperado.', patrones: [], recomendaciones: [], stats: null, stale: true };
     }
   }
 

@@ -237,6 +237,134 @@ No bajes una severidad por debajo de la informada si ya es crítica.`;
     }
   }
 
+  async resumenHistorial(payload: {
+    total: number;
+    byArea: Record<string, number>;
+    bySeverity: Record<string, number>;
+    byTurno: Record<string, number>;
+    avgDurationMin: number;
+    maxDurationMin: number;
+    top5Sensors: Array<{ title: string; count: number }>;
+  }): Promise<{ resumen: string; patrones: string[]; recomendaciones: string[] } | null> {
+    if (!this.client) return null;
+
+    const systemPrompt = `Sos un ingeniero senior experto en ingenios azucareros (Ingenio La Corona, Tucumán, Argentina).
+Analizás el historial de alertas resueltas del sistema de monitoreo industrial.
+Detectá patrones, tendencias y problemáticas recurrentes.
+Tono: técnico, directo, en español rioplatense.
+Salida JSON estricto con campos:
+- resumen (string, 2-3 oraciones describiendo el período)
+- patrones (array 3-5 strings: patrones o tendencias detectadas)
+- recomendaciones (array 2-4 strings: acciones concretas para reducir alertas)`;
+
+    const areaLines = Object.entries(payload.byArea)
+      .sort((a, b) => b[1] - a[1])
+      .map(([area, cnt]) => `  ${area}: ${cnt}`)
+      .join('\n');
+
+    const sevLines = Object.entries(payload.bySeverity)
+      .sort((a, b) => b[1] - a[1])
+      .map(([sev, cnt]) => `  ${sev}: ${cnt}`)
+      .join('\n');
+
+    const turnoLines = Object.entries(payload.byTurno)
+      .map(([t, cnt]) => `  ${t}: ${cnt}`)
+      .join('\n');
+
+    const topLines = payload.top5Sensors
+      .map((s, i) => `  ${i + 1}. "${s.title}" (${s.count} veces)`)
+      .join('\n');
+
+    const userPrompt = `Historial de alertas resueltas (últimas ${payload.total}):
+
+Por área:
+${areaLines || '  (sin datos)'}
+
+Por severidad:
+${sevLines || '  (sin datos)'}
+
+Por turno:
+${turnoLines || '  (sin datos)'}
+
+Duración promedio: ${payload.avgDurationMin} min | Máxima: ${payload.maxDurationMin} min
+
+Top 5 alertas más frecuentes:
+${topLines || '  (sin datos)'}
+
+Analizá patrones, identificá áreas/turnos problemáticos y recomendá acciones.`;
+
+    try {
+      const res = await this.client.chat.completions.create({
+        model: this.model,
+        response_format: { type: 'json_object' },
+        temperature: 0.4,
+        max_tokens: 500,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      });
+
+      const choice = res.choices[0];
+      const content = choice?.message?.content ?? '';
+      if (!content.trim()) {
+        this.logger.warn('resumenHistorial: LLM devolvió contenido vacío');
+        return null;
+      }
+
+      let cleaned = content.trim();
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+      }
+
+      // Extraer primer objeto JSON balanceado
+      const tryExtractJson = (str: string): string | null => {
+        const start = str.indexOf('{');
+        if (start === -1) return null;
+        let depth = 0;
+        let inString = false;
+        let escape = false;
+        for (let i = start; i < str.length; i++) {
+          const ch = str[i];
+          if (escape) { escape = false; continue; }
+          if (ch === '\\') { escape = true; continue; }
+          if (ch === '"') inString = !inString;
+          if (inString) continue;
+          if (ch === '{') depth++;
+          else if (ch === '}') {
+            depth--;
+            if (depth === 0) return str.slice(start, i + 1);
+          }
+        }
+        return null;
+      };
+
+      const extracted = tryExtractJson(cleaned);
+      if (!extracted) {
+        this.logger.warn(`resumenHistorial: no se encontró JSON. Raw: "${cleaned.slice(0, 300)}"`);
+        return null;
+      }
+
+      let parsed: { resumen?: string; patrones?: string[]; recomendaciones?: string[] };
+      try {
+        parsed = JSON.parse(extracted);
+      } catch (parseErr) {
+        this.logger.warn(`resumenHistorial: JSON parse falló. Error: ${(parseErr as Error).message}`);
+        return null;
+      }
+
+      this.logger.log(`resumenHistorial OK · tokens=${res.usage?.total_tokens ?? '?'}`);
+      return {
+        resumen: parsed.resumen ?? 'Sin análisis disponible.',
+        patrones: Array.isArray(parsed.patrones) ? parsed.patrones : [],
+        recomendaciones: Array.isArray(parsed.recomendaciones) ? parsed.recomendaciones : [],
+      };
+    } catch (err) {
+      this.logger.error(`resumenHistorial failed: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
   async analizarAlertaCausa(alert: {
     id: string;
     severity: string;

@@ -21,6 +21,12 @@ export class AlertsController {
     );
   }
 
+  /** GET /api/alerts/history/resumen?limit=100 — resumen IA del historial de alertas */
+  @Get('history/resumen')
+  historyResumen(@Query('limit') limit?: string) {
+    return this.svc.resumenHistorial(limit ? Math.min(parseInt(limit, 10), 500) : 100);
+  }
+
   /** GET /api/alerts/:id/analisis-causa — análisis IA de causa (cache 5min) */
   @Get(':id/analisis-causa')
   analisisCausa(@Param('id') id: string) {
