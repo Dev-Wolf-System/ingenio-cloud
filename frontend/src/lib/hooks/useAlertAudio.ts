@@ -34,11 +34,6 @@ const bufferCache = new Map<string, AudioBuffer>();
 interface ToneSpec { freq: number; dur: number; gap: number; }
 
 const WARN_TONES: ToneSpec[] = [{ freq: 660, dur: 0.25, gap: 0 }];
-const CRIT_TONES: ToneSpec[] = [
-  { freq: 880, dur: 0.16, gap: 0.08 },
-  { freq: 880, dur: 0.16, gap: 0.08 },
-  { freq: 880, dur: 0.16, gap: 0 },
-];
 
 async function playToneSequence(specs: ToneSpec[]): Promise<void> {
   const ctx = getCtx();
@@ -141,8 +136,9 @@ export function useAlertAudio(alerts: AudioAlert[]) {
   const enableAudio = useCallback(async () => {
     const ok = await ensureRunning();
     setAudioBlocked(!ok);
-    // Pre-cargar buffer de normalización (los beeps de alerta son sintetizados)
+    // Pre-cargar buffers de audio: normalización y alarma crítica
     void loadBuffer('/sounds/normalize.mp3');
+    void loadBuffer('/sounds/alert.mp3');
   }, []);
 
   useEffect(() => {
@@ -171,8 +167,12 @@ export function useAlertAudio(alerts: AudioAlert[]) {
   const playSeverityBeep = useCallback(async (sev: 'info' | 'warn' | 'critical') => {
     if (!(await ensureRunning())) { setAudioBlocked(true); return; }
     if (sev === 'info') return;
-    await playToneSequence(sev === 'critical' ? CRIT_TONES : WARN_TONES);
-  }, []);
+    if (sev === 'critical') {
+      await playBeep('/sounds/alert.mp3');
+    } else {
+      await playToneSequence(WARN_TONES);
+    }
+  }, [playBeep]);
 
   const playVoiceFromBlob = useCallback(async (blob: Blob) => {
     const ctx = getCtx();
