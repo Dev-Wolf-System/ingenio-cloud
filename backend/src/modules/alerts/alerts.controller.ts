@@ -1,10 +1,14 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
+import { AlertsAnalisisService } from './alerts-analisis.service';
 import { AlertsService } from './alerts.service';
 
 @Controller('alerts')
 export class AlertsController {
-  constructor(private readonly svc: AlertsService) {}
+  constructor(
+    private readonly svc: AlertsService,
+    private readonly analisisSvc: AlertsAnalisisService,
+  ) {}
 
   /** GET /api/alerts/active — alertas activas (no resueltas) */
   @Get('active')
@@ -25,6 +29,13 @@ export class AlertsController {
   @Get('history/resumen')
   historyResumen(@Query('limit') limit?: string) {
     return this.svc.resumenHistorial(limit ? Math.min(parseInt(limit, 10), 500) : 100);
+  }
+
+  /** GET /api/alerts/analisis?periodo=turno|dia|zafra&refresh=1 */
+  @Get('analisis')
+  analisis(@Query('periodo') periodo?: string, @Query('refresh') refresh?: string) {
+    const p = (['turno', 'dia', 'zafra'] as const).includes(periodo as never) ? (periodo as 'turno' | 'dia' | 'zafra') : 'dia';
+    return this.analisisSvc.analisis(p, refresh === '1');
   }
 
   /** GET /api/alerts/:id/analisis-causa — análisis IA de causa (cache 5min) */
