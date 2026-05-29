@@ -40,9 +40,14 @@ export class AlertTriageService {
     if (!raw) return;
     const triage = parseTriage(raw);
 
-    // NOTA: ThresholdEvaluatorService (cron 30s) puede escribir metadata/severity en paralelo.
-    // La severidad nunca baja (se conserva la más alta vía sevOrder). En el peor caso una
-    // escalada concurrente puede pisar el campo metadata.triage; se recalcula al próximo tick.
+    // NOTA (limitación conocida): ThresholdEvaluatorService (cron 30s) escribe metadata/severity
+    // en paralelo. Ambos hacen read-modify-write del objeto metadata completo desde su propio
+    // snapshot → el clobber es bidireccional:
+    //   - una escalada concurrente puede pisar metadata.triage (se recalcula al próximo tick, self-heal);
+    //   - este update puede pisar los flags escalated/escalated_reason/original_severity (NO self-heal:
+    //     la escalada no se re-dispara porque la severidad ya es 'critical' → pérdida cosmética).
+    // La severidad nunca baja (se conserva la más alta vía sevOrder). Follow-up: merge JSONB
+    // (metadata = metadata || patch vía RPC) para eliminar el clobber.
     for (const a of data) {
       const t = triage[a.id];
       if (!t) continue;
