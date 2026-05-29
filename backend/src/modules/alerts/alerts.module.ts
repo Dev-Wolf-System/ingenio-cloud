@@ -4,9 +4,10 @@ import { AlertsService } from './alerts.service';
 import { ThresholdsController } from './thresholds.controller';
 import { ThresholdsService } from './thresholds.service';
 import { ThresholdEvaluatorService } from './threshold-evaluator.service';
+import { AlertTriageService } from './alert-triage.service';
 
 @Module({
   controllers: [AlertsController, ThresholdsController],
-  providers: [AlertsService, ThresholdsService, ThresholdEvaluatorService],
+  providers: [AlertsService, ThresholdsService, ThresholdEvaluatorService, AlertTriageService],
 })
 export class AlertsModule {}

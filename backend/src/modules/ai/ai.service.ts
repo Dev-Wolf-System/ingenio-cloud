@@ -181,6 +181,40 @@ Analizá el desempeño del turno considerando los motivos de paradas.`;
     }
   }
 
+  async triageAlertas(
+    alerts: Array<{ id: string; severity: string; area: string; title: string; message: string; metadata: { value?: number; unit?: string; min_value?: number; max_value?: number } }>,
+  ): Promise<string | null> {
+    if (!this.client) return null;
+    const systemPrompt = `Sos ingeniero senior de un ingenio azucarero (La Corona, Tucumán).
+Recibís TODAS las alertas activas a la vez. Tu trabajo: agrupar las que comparten causa raíz,
+priorizar y recomendar. Considerá correlaciones (vapor↔gas, temperatura↔caudal vapor, etc).
+Salida JSON estricto:
+{ "alerts": [ { "id": "<id>", "severidad_recalibrada": "info|warn|critical",
+  "grupo_causa": "<clave corta común a alertas relacionadas>", "prioridad": <1=mayor>,
+  "titular": "<frase ejecutiva>", "recomendacion": "<acción concreta>" } ] }
+No bajes una severidad por debajo de la informada si ya es crítica.`;
+    const userPrompt = `Alertas activas:\n${alerts.map((a) => {
+      const m = a.metadata ?? {};
+      return `- id=${a.id} [${a.severity}] ${a.area}: ${a.title} (valor ${m.value ?? '—'}${m.unit ? ' ' + m.unit : ''}, rango ${m.min_value ?? '—'}..${m.max_value ?? '—'})`;
+    }).join('\n')}`;
+    try {
+      const res = await this.client.chat.completions.create({
+        model: this.model,
+        response_format: { type: 'json_object' },
+        temperature: 0.3,
+        max_tokens: 800,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      });
+      return res.choices[0]?.message?.content ?? null;
+    } catch (err) {
+      this.logger.error(`triageAlertas failed: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
   async generarVozAlertas(text: string): Promise<Buffer | null> {
     if (!this.client) return null;
     try {
