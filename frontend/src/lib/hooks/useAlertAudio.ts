@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { normalizeSeverity, SEV_ORDER } from '@/lib/severity';
 
 export interface AudioAlert {
   id: string;
@@ -27,6 +28,56 @@ function getLs(key: string, def: boolean): boolean {
 
 let sharedCtx: AudioContext | null = null;
 const bufferCache = new Map<string, AudioBuffer>();
+
+// ── Synthesized tones by severity ────────────────────────────────────────────
+
+interface ToneSpec { freq: number; dur: number; gap: number; }
+
+const WARN_TONES: ToneSpec[] = [{ freq: 660, dur: 0.25, gap: 0 }];
+const CRIT_TONES: ToneSpec[] = [
+  { freq: 880, dur: 0.16, gap: 0.08 },
+  { freq: 880, dur: 0.16, gap: 0.08 },
+  { freq: 880, dur: 0.16, gap: 0 },
+];
+
+async function playToneSequence(specs: ToneSpec[]): Promise<void> {
+  const ctx = getCtx();
+  if (!ctx) return;
+
+  let t = ctx.currentTime + 0.01; // pequeño offset inicial
+  let totalMs = 0;
+
+  for (const spec of specs) {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(spec.freq, t);
+
+    const attack = 0.01;
+    const decay = 0.03;
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(0.3, t + attack);
+    gain.gain.setValueAtTime(0.3, t + spec.dur - decay);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + spec.dur);
+
+    osc.start(t);
+    osc.stop(t + spec.dur);
+
+    totalMs += (spec.dur + spec.gap) * 1000;
+    t += spec.dur + spec.gap;
+  }
+
+  await new Promise<void>((resolve) => setTimeout(resolve, totalMs));
+}
+
+function dominantSeverity(alerts: AudioAlert[]): 'info' | 'warn' | 'critical' {
+  return alerts.reduce<'info' | 'warn' | 'critical'>((best, a) => {
+    const sev = normalizeSeverity(a.severity);
+    return SEV_ORDER[sev] < SEV_ORDER[best] ? sev : best;
+  }, 'info');
+}
 
 function getCtx(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -90,8 +141,7 @@ export function useAlertAudio(alerts: AudioAlert[]) {
   const enableAudio = useCallback(async () => {
     const ok = await ensureRunning();
     setAudioBlocked(!ok);
-    // Pre-cargar buffers de beep para que el primer disparo no tenga latencia
-    void loadBuffer('/sounds/alert.mp3');
+    // Pre-cargar buffer de normalización (los beeps de alerta son sintetizados)
     void loadBuffer('/sounds/normalize.mp3');
   }, []);
 
@@ -116,6 +166,12 @@ export function useAlertAudio(alerts: AudioAlert[]) {
     if (!(await ensureRunning())) { setAudioBlocked(true); return; }
     const buf = await loadBuffer(url);
     if (buf) await playBuffer(buf);
+  }, []);
+
+  const playSeverityBeep = useCallback(async (sev: 'info' | 'warn' | 'critical') => {
+    if (!(await ensureRunning())) { setAudioBlocked(true); return; }
+    if (sev === 'info') return;
+    await playToneSequence(sev === 'critical' ? CRIT_TONES : WARN_TONES);
   }, []);
 
   const playVoiceFromBlob = useCallback(async (blob: Blob) => {
@@ -149,9 +205,9 @@ export function useAlertAudio(alerts: AudioAlert[]) {
     const beepEnabled = getLs(LS_BEEP, true);
     const voiceEnabled = getLs(LS_VOICE, false);
     if (!beepEnabled && !voiceEnabled) return;
-    if (beepEnabled) await playBeep('/sounds/alert.mp3');
+    if (beepEnabled) await playSeverityBeep(dominantSeverity(alertsToPlay));
     if (voiceEnabled) await playVoice(alertsToPlay.map((a) => a.id));
-  }, [playBeep, playVoice]);
+  }, [playSeverityBeep, playVoice]);
 
   const fireNormalizeAudio = useCallback(async (resolved: AudioAlert[]) => {
     const beepEnabled = getLs(LS_BEEP, true);

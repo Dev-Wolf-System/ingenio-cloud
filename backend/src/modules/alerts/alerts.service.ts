@@ -335,7 +335,17 @@ export class AlertsService {
     const resto = sorted.length - critCount - warnCount;
     if (resto > 0) parts.push(`${numEs(resto)} aviso${resto > 1 ? 's' : ''}`);
 
-    let text = `Atención, hay ${parts.join(' y ')} en el sistema.`;
+    // Apertura diferenciada por severidad dominante
+    const dominant = sorted.reduce<'info' | 'warn' | 'critical'>((best, a) => {
+      const sev = normalizeSeverity(a.severity);
+      return sevOrder(sev) < sevOrder(best) ? sev : best;
+    }, 'info');
+    const opening =
+      dominant === 'critical' ? '¡Alarma crítica! ' :
+      dominant === 'warn'     ? 'Atención. '        :
+                                'Aviso del sistema. ';
+
+    let text = `${opening}Hay ${parts.join(' y ')} en el sistema.`;
 
     // Agrupar por triage.grupo (si existe) o por área
     type AlertRow = (typeof sorted)[number];
@@ -381,6 +391,12 @@ export class AlertsService {
             text += ` Está por debajo del mínimo permitido de ${numEs(meta.min_value)}${uStr}.`;
           }
         }
+
+        const recom = (first.metadata as { triage?: { recomendacion?: string } })?.triage?.recomendacion;
+        if (recom) {
+          const sevFirst = normalizeSeverity(first.severity);
+          text += sevFirst === 'critical' ? ` Acción inmediata: ${recom}.` : ` Se recomienda: ${recom}.`;
+        }
       }
 
       if (sorted.length > totalSpoken) {
@@ -401,6 +417,11 @@ export class AlertsService {
           } else if (meta.min_value != null && meta.value < meta.min_value) {
             text += ` Está por debajo del mínimo permitido de ${numEs(meta.min_value)}${uStr}.`;
           }
+        }
+        const recomSingle = (a.metadata as { triage?: { recomendacion?: string } })?.triage?.recomendacion;
+        if (recomSingle) {
+          const sevA = normalizeSeverity(a.severity);
+          text += sevA === 'critical' ? ` Acción inmediata: ${recomSingle}.` : ` Se recomienda: ${recomSingle}.`;
         }
       }
       if (sorted.length > 3) {

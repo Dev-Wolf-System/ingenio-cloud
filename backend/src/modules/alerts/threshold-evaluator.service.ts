@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { SupabaseService } from '../supabase/supabase.service';
 import { shouldEscalate } from './escalation';
 import { NotificationsService } from '../notifications/notifications.service';
+import { normalizeSeverity } from './severity';
 
 interface Threshold {
   id: string;
@@ -164,9 +165,14 @@ export class ThresholdEvaluatorService {
       else {
         this.logger.log(`opened ${toOpen.length} alerts`);
         for (const a of toOpen) {
+          const sevN = normalizeSeverity(a.severity);
+          const bodySuffix =
+            sevN === 'critical' ? ' · acción inmediata requerida' :
+            sevN === 'warn'     ? ' · revisar'                    :
+                                  ' · informativo';
           await this.notif.notify(a.source, {
-            title: `${a.severity === 'critical' ? '🔴' : a.severity === 'warn' ? '🟠' : '🔵'} ${a.area}`,
-            body: a.title,
+            title: `${sevN === 'critical' ? '🔴' : sevN === 'warn' ? '🟠' : '🔵'} ${a.area}`,
+            body: `${a.title}${bodySuffix}`,
             severity: a.severity,
             url: '/alertas',
           });
@@ -203,7 +209,7 @@ export class ThresholdEvaluatorService {
       else {
         await this.notif.notify(`${e.id}::escalated`, {
           title: `🔴 Escalada a crítica`,
-          body: `Alerta escaló a crítica (${e.reason})`,
+          body: `Escaló a crítica (${e.reason}) · acción inmediata`,
           severity: 'critical',
           url: '/alertas',
         });
