@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePasswordSession } from '@/lib/hooks/usePasswordSession';
 import {
   type Area,
@@ -131,25 +131,28 @@ export function useAlertasConfig() {
     setLoading(false);
   };
 
-  const reloadHistory = useCallback(async (page = historyPage) => {
+  // Ref con la página actual: permite que reloadHistory() sin args recargue la
+  // página vigente (botón "Recargar") manteniendo identidad estable (deps []).
+  const pageRef = useRef(historyPage);
+  useEffect(() => { pageRef.current = historyPage; }, [historyPage]);
+
+  const reloadHistory = useCallback(async (page = pageRef.current) => {
     setHistoryLoading(true);
     const h = await fetchHistory(PAGE_SIZE, page * PAGE_SIZE);
     setHistory(h.alerts);
     setHistoryTotal(h.total);
     setHistoryLoading(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyPage]);
+  }, []);
 
   useEffect(() => {
     reload();
     reloadHistory(0);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-once; reload no está memoizado
   }, []);
 
   useEffect(() => {
     reloadHistory(historyPage);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [historyPage]);
+  }, [historyPage, reloadHistory]);
 
   const getThreshold = (area: Area, key: string): Threshold => {
     const k = `${area}::${key}`;
