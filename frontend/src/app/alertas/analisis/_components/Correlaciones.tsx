@@ -21,8 +21,7 @@ export function Correlaciones({
     >
       {isEmpty ? (
         <div
-          className="flex flex-col items-center justify-center gap-2 py-10"
-          style={{ color: C.muted }}
+          className="flex flex-col items-center justify-center gap-2 py-10 text-text-muted"
         >
           <IconArrowsExchange size={28} className="opacity-25" />
           <p className="text-sm">Sin correlaciones detectadas en este período</p>
@@ -34,23 +33,23 @@ export function Correlaciones({
               key={i}
               className="flex items-center justify-between gap-3 rounded-xl px-4 py-2.5"
               style={{
-                background: C.surface,
-                border: `1px solid ${C.border}`,
+                background: 'var(--bg-card)',
+                border: '1px solid var(--border)',
                 backdropFilter: 'blur(12px)',
               }}
             >
               {/* Sensors */}
               <div className="flex items-center gap-2 min-w-0">
                 <span
-                  className="text-sm font-semibold truncate"
-                  style={{ color: '#D0D8F0', maxWidth: 140 }}
+                  className="text-sm font-semibold truncate text-text-primary"
+                  style={{ maxWidth: 140 }}
                 >
                   {c.a}
                 </span>
-                <IconArrowsExchange size={13} style={{ color: C.muted, flexShrink: 0 }} />
+                <IconArrowsExchange size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                 <span
-                  className="text-sm font-semibold truncate"
-                  style={{ color: '#D0D8F0', maxWidth: 140 }}
+                  className="text-sm font-semibold truncate text-text-primary"
+                  style={{ maxWidth: 140 }}
                 >
                   {c.b}
                 </span>
@@ -71,9 +70,9 @@ export function Correlaciones({
                 <span
                   className="text-xs lg:text-sm tabular-nums px-2 py-0.5 rounded-full"
                   style={{
-                    background: 'rgba(107,122,158,0.12)',
-                    border: `1px solid ${C.border}`,
-                    color: C.muted,
+                    background: 'var(--bg-surface)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-muted)',
                   }}
                 >
                   ≤{c.ventana_min} min

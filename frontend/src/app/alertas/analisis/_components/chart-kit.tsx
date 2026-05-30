@@ -7,10 +7,7 @@ export const C = {
   amber:   '#FFB800',
   green:   '#00E5A0',
   red:     '#FF4757',
-  muted:   '#6B7A9E',
   indigo:  '#6366F1',
-  surface: 'rgba(255,255,255,0.04)',
-  border:  'rgba(255,255,255,0.08)',
 } as const;
 
 // ── Glass tooltip ─────────────────────────────────────────────────────────────
@@ -29,14 +26,14 @@ export function GlassTooltip({
     <div
       className="rounded-lg px-3 py-2 text-sm"
       style={{
-        background: 'rgba(17,24,39,0.92)',
+        background: 'var(--bg-card)',
         backdropFilter: 'blur(20px)',
-        border: `1px solid ${C.border}`,
+        border: '1px solid var(--border)',
         boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
       }}
     >
       {label && (
-        <p className="font-semibold mb-1" style={{ color: '#F0F4FF' }}>
+        <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
           {label}
         </p>
       )}

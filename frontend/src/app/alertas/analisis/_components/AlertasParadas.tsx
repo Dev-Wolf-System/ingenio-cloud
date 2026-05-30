@@ -12,9 +12,9 @@ function fmtOffset(min: number): string {
 }
 
 function offsetColor(min: number): string {
-  if (min < 0) return C.amber;   // antes de la parada
-  if (min === 0) return C.muted;
-  return C.green;                // después
+  if (min < 0) return C.amber;              // antes de la parada
+  if (min === 0) return 'var(--text-muted)';
+  return C.green;                           // después
 }
 
 export function AlertasParadas({
@@ -33,8 +33,7 @@ export function AlertasParadas({
     >
       {isEmpty ? (
         <div
-          className="flex flex-col items-center justify-center gap-2 py-10"
-          style={{ color: C.muted }}
+          className="flex flex-col items-center justify-center gap-2 py-10 text-text-muted"
         >
           <IconClockStop size={28} className="opacity-25" />
           <p className="text-sm">Sin paradas registradas en este período</p>
@@ -53,16 +52,16 @@ export function AlertasParadas({
               ? C.red
               : maxSev === 'warn'
               ? C.amber
-              : 'rgba(255,255,255,0.06)';
+              : 'var(--border)';
 
             return (
               <div
                 key={i}
                 className="rounded-xl p-4 flex flex-col gap-3"
                 style={{
-                  background: C.surface,
+                  background: 'var(--bg-card)',
                   backdropFilter: 'blur(16px)',
-                  border: `1px solid ${C.border}`,
+                  border: '1px solid var(--border)',
                   borderLeft: `3px solid ${borderColor}`,
                   boxShadow: '0 4px 16px rgba(0,0,0,0.22)',
                 }}
@@ -72,19 +71,19 @@ export function AlertasParadas({
                   <div className="flex flex-col gap-0.5 min-w-0">
                     <span
                       className="text-base lg:text-lg font-bold truncate"
-                      style={{ color: '#F0F4FF' }}
+                      style={{ color: 'var(--text-primary)' }}
                     >
                       {p.motivo}
                     </span>
                     <div className="flex items-center gap-2 flex-wrap">
                       {p.maquina && (
-                        <span className="text-xs lg:text-sm" style={{ color: C.muted }}>
+                        <span className="text-xs lg:text-sm" style={{ color: 'var(--text-muted)' }}>
                           <IconEngine size={11} className="inline mr-0.5" />
                           {p.maquina}
                         </span>
                       )}
                       {p.origen && (
-                        <span className="text-xs lg:text-sm" style={{ color: C.muted }}>
+                        <span className="text-xs lg:text-sm" style={{ color: 'var(--text-muted)' }}>
                           · {p.origen}
                         </span>
                       )}
@@ -116,7 +115,7 @@ export function AlertasParadas({
                         style={{
                           background: `${sevColor(a.severidad)}12`,
                           border: `1px solid ${sevColor(a.severidad)}30`,
-                          color: '#D0D8F0',
+                          color: 'var(--text-primary)',
                         }}
                         title={`${a.titulo} — ${fmtOffset(a.offset_min)}`}
                       >
@@ -136,7 +135,7 @@ export function AlertasParadas({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm" style={{ color: C.muted }}>
+                  <p className="text-sm text-text-muted">
                     Sin alertas asociadas
                   </p>
                 )}

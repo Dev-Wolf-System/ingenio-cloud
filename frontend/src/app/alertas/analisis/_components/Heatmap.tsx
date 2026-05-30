@@ -3,12 +3,11 @@
 import { IconLayoutGrid } from '@tabler/icons-react';
 import { PremiumPanel } from '@/components/industrial/PremiumPanel';
 import type { AnalisisResponse } from '../_types';
-import { C } from './chart-kit';
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 function heatColor(intensity: number): string {
-  if (intensity === 0) return 'rgba(255,255,255,0.03)';
+  if (intensity === 0) return 'var(--bg-card-2)';
   const alpha = 0.12 + intensity * 0.75;
   // cyan → red gradient by intensity
   const r = Math.round(255 * Math.min(1, intensity * 2));
@@ -42,8 +41,7 @@ export function Heatmap({
     >
       {isEmpty ? (
         <div
-          className="flex flex-col items-center justify-center gap-2 py-10"
-          style={{ color: C.muted }}
+          className="flex flex-col items-center justify-center gap-2 py-10 text-text-muted"
         >
           <IconLayoutGrid size={28} className="opacity-25" />
           <p className="text-sm">Sin datos para el mapa de calor</p>
@@ -56,7 +54,7 @@ export function Heatmap({
               <div
                 key={h}
                 className="flex-1 text-center"
-                style={{ fontSize: 9, color: C.muted, minWidth: 14 }}
+                style={{ fontSize: 9, color: 'var(--text-muted)', minWidth: 14 }}
               >
                 {h % 4 === 0 ? h : ''}
               </div>
@@ -68,7 +66,7 @@ export function Heatmap({
             <div key={dayIdx} className="flex items-center gap-[1px] mb-[2px]">
               <span
                 className="w-7 text-right pr-1 shrink-0"
-                style={{ fontSize: 10, color: C.muted }}
+                style={{ fontSize: 10, color: 'var(--text-muted)' }}
               >
                 {day}
               </span>
@@ -84,7 +82,7 @@ export function Heatmap({
                       height: 18,
                       minWidth: 14,
                       background: heatColor(intensity),
-                      border: n > 0 ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent',
+                      border: n > 0 ? '1px solid var(--border)' : '1px solid transparent',
                     }}
                   />
                 );
@@ -94,7 +92,7 @@ export function Heatmap({
 
           {/* Legend */}
           <div className="flex items-center gap-2 mt-3">
-            <span style={{ fontSize: 10, color: C.muted }}>Baja</span>
+            <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Baja</span>
             <div className="flex gap-[2px]">
               {[0, 0.2, 0.4, 0.6, 0.8, 1].map((v, i) => (
                 <div
@@ -104,7 +102,7 @@ export function Heatmap({
                 />
               ))}
             </div>
-            <span style={{ fontSize: 8, color: C.muted }}>Alta</span>
+            <span style={{ fontSize: 8, color: 'var(--text-muted)' }}>Alta</span>
           </div>
         </div>
       )}

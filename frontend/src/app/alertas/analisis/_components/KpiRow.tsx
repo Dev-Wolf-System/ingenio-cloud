@@ -25,7 +25,7 @@ function fmtNum(n: number, decimals = 0): string {
 function DeltaChip({ pct }: { pct: number }) {
   const up   = pct > 0;
   const zero = pct === 0;
-  const color = zero ? C.muted : up ? C.red : C.green;
+  const color = zero ? 'var(--text-muted)' : up ? C.red : C.green;
   const bg    = zero
     ? 'rgba(107,122,158,0.15)'
     : up
@@ -58,16 +58,16 @@ function KpiCard({ label, value, icon, accentColor, chip, sub }: KpiCardProps) {
     <div
       className="flex flex-col gap-2 rounded-xl p-4"
       style={{
-        background: C.surface,
+        background: 'var(--bg-card)',
         backdropFilter: 'blur(20px)',
-        border: `1px solid ${C.border}`,
+        border: '1px solid var(--border)',
         boxShadow: `0 4px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.04)`,
       }}
     >
       <div className="flex items-center justify-between">
         <span
           className="text-xs uppercase tracking-[0.18em] font-semibold"
-          style={{ color: C.muted }}
+          style={{ color: 'var(--text-muted)' }}
         >
           {label}
         </span>
@@ -85,7 +85,7 @@ function KpiCard({ label, value, icon, accentColor, chip, sub }: KpiCardProps) {
       <div className="flex items-end gap-2">
         <span
           className="text-2xl lg:text-3xl font-bold tabular-nums leading-none"
-          style={{ color: '#F0F4FF', fontVariantNumeric: 'tabular-nums' }}
+          style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}
         >
           {value}
         </span>
@@ -93,7 +93,7 @@ function KpiCard({ label, value, icon, accentColor, chip, sub }: KpiCardProps) {
       </div>
 
       {sub && (
-        <span className="text-xs" style={{ color: C.muted }}>
+        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
           {sub}
         </span>
       )}
@@ -117,9 +117,9 @@ function RelCard({ label, value, icon, accentColor, subtitle, isNull }: RelCardP
     <div
       className="flex flex-col gap-2 rounded-xl p-4"
       style={{
-        background: isNull ? 'rgba(255,255,255,0.02)' : C.surface,
+        background: 'var(--bg-card)',
         backdropFilter: 'blur(20px)',
-        border: `1px solid ${isNull ? 'rgba(255,255,255,0.05)' : C.border}`,
+        border: '1px solid var(--border)',
         boxShadow: `0 4px 24px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.03)`,
         opacity: isNull ? 0.6 : 1,
       }}
@@ -127,7 +127,7 @@ function RelCard({ label, value, icon, accentColor, subtitle, isNull }: RelCardP
       <div className="flex items-center justify-between">
         <span
           className="text-xs uppercase tracking-[0.18em] font-semibold"
-          style={{ color: C.muted }}
+          style={{ color: 'var(--text-muted)' }}
         >
           {label}
         </span>
@@ -144,12 +144,12 @@ function RelCard({ label, value, icon, accentColor, subtitle, isNull }: RelCardP
 
       <span
         className="text-xl lg:text-2xl font-bold tabular-nums leading-none"
-        style={{ color: isNull ? C.muted : '#F0F4FF', fontVariantNumeric: 'tabular-nums' }}
+        style={{ color: isNull ? 'var(--text-muted)' : 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}
       >
         {value}
       </span>
 
-      <span className="text-[10px]" style={{ color: C.muted }}>
+      <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
         {isNull ? 'Sin paradas registradas' : subtitle}
       </span>
     </div>

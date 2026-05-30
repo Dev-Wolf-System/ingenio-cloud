@@ -30,7 +30,7 @@ export function ComparativaTurnos({
   const data = porTurno.map((t) => ({
     name:  t.turno,
     n:     t.n,
-    fill:  TURNO_COLOR[t.turno] ?? C.muted,
+    fill:  TURNO_COLOR[t.turno] ?? C.indigo,
   }));
 
   const isEmpty = data.every((d) => d.n === 0);
@@ -50,8 +50,7 @@ export function ComparativaTurnos({
     >
       {isEmpty ? (
         <div
-          className="flex flex-col items-center justify-center gap-2 py-10"
-          style={{ color: C.muted }}
+          className="flex flex-col items-center justify-center gap-2 py-10 text-text-muted"
         >
           <IconChartBar size={28} className="opacity-25" />
           <p className="text-sm">Sin alertas en este período</p>
@@ -61,19 +60,19 @@ export function ComparativaTurnos({
           <BarChart data={data} margin={{ top: 8, right: 12, left: -16, bottom: 4 }}>
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 13, fill: C.muted }}
+              tick={{ fontSize: 13, fill: 'var(--text-muted)' }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 12, fill: C.muted }}
+              tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
             />
             <Tooltip
               content={<GlassTooltip />}
-              cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+              cursor={{ fill: 'var(--bg-hover)' }}
             />
             <Bar dataKey="n" name="Alertas" radius={[6, 6, 0, 0]} maxBarSize={72}>
               {data.map((entry, i) => (

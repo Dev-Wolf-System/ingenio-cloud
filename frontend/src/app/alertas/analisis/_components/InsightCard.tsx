@@ -15,8 +15,8 @@ import { C } from './chart-kit';
 function SkeletonLine({ w = '100%' }: { w?: string }) {
   return (
     <div
-      className="h-3 rounded animate-pulse"
-      style={{ width: w, background: 'rgba(255,255,255,0.07)' }}
+      className="h-3 rounded animate-pulse bg-bg-hover"
+      style={{ width: w }}
     />
   );
 }
@@ -36,9 +36,9 @@ export function InsightCard({
     <div
       className="rounded-2xl p-5 flex flex-col gap-4"
       style={{
-        background: 'rgba(0,212,255,0.04)',
+        background: 'var(--bg-card)',
         backdropFilter: 'blur(24px)',
-        border: '1px solid rgba(0,212,255,0.22)',
+        border: '1px solid var(--border)',
         boxShadow: '0 0 32px rgba(0,212,255,0.08), 0 8px 32px rgba(0,0,0,0.30)',
       }}
     >
@@ -63,7 +63,7 @@ export function InsightCard({
               Insight del período
             </h3>
             {insight?.generado_at && !loading && (
-              <p className="text-xs mt-0.5" style={{ color: C.muted }}>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
                 {new Date(insight.generado_at).toLocaleString('es-AR', {
                   day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
                 })}
@@ -113,8 +113,8 @@ export function InsightCard({
             {[80, 120, 100, 90].map((w, i) => (
               <div
                 key={i}
-                className="h-5 rounded-full animate-pulse"
-                style={{ width: w, background: 'rgba(255,255,255,0.07)' }}
+                className="h-5 rounded-full animate-pulse bg-bg-hover"
+                style={{ width: w }}
               />
             ))}
           </div>
@@ -126,12 +126,12 @@ export function InsightCard({
         <div
           className="flex items-center gap-3 rounded-xl px-4 py-3"
           style={{
-            background: 'rgba(107,122,158,0.08)',
-            border: `1px solid ${C.border}`,
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border)',
           }}
         >
-          <IconAlertCircle size={18} style={{ color: C.muted }} />
-          <p className="text-sm" style={{ color: C.muted }}>
+          <IconAlertCircle size={18} style={{ color: 'var(--text-muted)' }} />
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             Análisis IA no disponible para este período.
           </p>
         </div>
@@ -142,7 +142,7 @@ export function InsightCard({
         <div className="flex flex-col gap-4">
           {/* Resumen */}
           {insight.resumen && (
-            <p className="text-sm lg:text-base leading-relaxed" style={{ color: '#D0D8F0' }}>
+            <p className="text-sm lg:text-base leading-relaxed" style={{ color: 'var(--text-primary)' }}>
               {insight.resumen}
             </p>
           )}
@@ -203,7 +203,7 @@ export function InsightCard({
                       >
                         {i + 1}
                       </span>
-                      <span className="text-sm leading-relaxed" style={{ color: '#B0BACE' }}>
+                      <span className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                         {r}
                       </span>
                     </li>

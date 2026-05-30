@@ -46,7 +46,7 @@ export function TendenciaDiaria({
           }}
         >
           <IconInfoCircle size={20} style={{ color: C.cyan }} className="shrink-0" />
-          <p className="text-sm leading-relaxed" style={{ color: '#A8B8D0' }}>
+          <p className="text-sm leading-relaxed text-text-secondary">
             La tendencia diaria se ve mejor en período{' '}
             <span className="font-semibold" style={{ color: C.cyan }}>
               Zafra
@@ -65,13 +65,13 @@ export function TendenciaDiaria({
             </defs>
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 12, fill: C.muted }}
+              tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
               axisLine={false}
               tickLine={false}
               interval="preserveStartEnd"
             />
             <YAxis
-              tick={{ fontSize: 12, fill: C.muted }}
+              tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}

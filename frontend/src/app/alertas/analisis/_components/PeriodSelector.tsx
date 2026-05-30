@@ -33,8 +33,8 @@ export function PeriodSelector({
       <div
         className="inline-flex items-center rounded-xl p-1 gap-1"
         style={{
-          background: C.surface,
-          border: `1px solid ${C.border}`,
+          background: 'var(--bg-card)',
+          border: '1px solid var(--border)',
           backdropFilter: 'blur(16px)',
         }}
       >
@@ -46,7 +46,7 @@ export function PeriodSelector({
               onClick={() => onPeriodo(opt.value)}
               className="relative px-4 py-2 rounded-lg text-sm font-semibold uppercase tracking-wider transition-all duration-200"
               style={{
-                color:      active ? '#F0F4FF' : C.muted,
+                color:      active ? 'var(--text-primary)' : 'var(--text-muted)',
                 background: active ? 'rgba(0,212,255,0.18)' : 'transparent',
                 border:     active ? `1px solid rgba(0,212,255,0.40)` : '1px solid transparent',
                 boxShadow:  active ? '0 0 14px rgba(0,212,255,0.25)' : 'none',
@@ -63,8 +63,8 @@ export function PeriodSelector({
         <div
           className="inline-flex items-center gap-1 rounded-xl px-1 py-1"
           style={{
-            background: C.surface,
-            border: `1px solid ${C.border}`,
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border)',
             backdropFilter: 'blur(16px)',
           }}
         >
@@ -73,7 +73,7 @@ export function PeriodSelector({
             disabled={offset >= 30}
             className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
             style={{
-              color:      offset >= 30 ? 'rgba(107,122,158,0.35)' : C.muted,
+              color:      offset >= 30 ? 'var(--text-disabled)' : 'var(--text-muted)',
               background: 'transparent',
               cursor:     offset >= 30 ? 'not-allowed' : 'pointer',
             }}
@@ -84,7 +84,7 @@ export function PeriodSelector({
 
           <span
             className="px-3 py-1 text-sm font-semibold tabular-nums min-w-[120px] text-center"
-            style={{ color: offset === 0 ? C.cyan : '#F0F4FF' }}
+            style={{ color: offset === 0 ? C.cyan : 'var(--text-primary)' }}
           >
             {etiqueta}
           </span>
@@ -94,7 +94,7 @@ export function PeriodSelector({
             disabled={offset === 0}
             className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
             style={{
-              color:      offset === 0 ? 'rgba(107,122,158,0.35)' : C.muted,
+              color:      offset === 0 ? 'var(--text-disabled)' : 'var(--text-muted)',
               background: 'transparent',
               cursor:     offset === 0 ? 'not-allowed' : 'pointer',
             }}

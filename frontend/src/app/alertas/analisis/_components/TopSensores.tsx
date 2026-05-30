@@ -15,7 +15,7 @@ import type { AnalisisResponse } from '../_types';
 import { C, fmtMin } from './chart-kit';
 
 // top‐8, horizontal bar, color cycling
-const BAR_COLORS = [C.red, C.amber, C.cyan, C.green, '#A89BFF', C.amber, C.red, C.muted];
+const BAR_COLORS = [C.red, C.amber, C.cyan, C.green, '#A89BFF', C.amber, C.red, C.indigo];
 
 export function TopSensores({
   sensores,
@@ -40,8 +40,7 @@ export function TopSensores({
     >
       {isEmpty ? (
         <div
-          className="flex flex-col items-center justify-center gap-2 py-10"
-          style={{ color: C.muted }}
+          className="flex flex-col items-center justify-center gap-2 py-10 text-text-muted"
         >
           <IconRadar2 size={28} className="opacity-25" />
           <p className="text-sm">Sin sensores registrados en este período</p>
@@ -55,7 +54,7 @@ export function TopSensores({
           >
             <XAxis
               type="number"
-              tick={{ fontSize: 12, fill: C.muted }}
+              tick={{ fontSize: 12, fill: 'var(--text-muted)' }}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
@@ -64,7 +63,7 @@ export function TopSensores({
               type="category"
               dataKey="name"
               width={150}
-              tick={{ fontSize: 11, fill: C.muted }}
+              tick={{ fontSize: 11, fill: 'var(--text-muted)' }}
               axisLine={false}
               tickLine={false}
             />
@@ -76,13 +75,13 @@ export function TopSensores({
                   <div
                     className="rounded-lg px-3 py-2 text-sm"
                     style={{
-                      background: 'rgba(17,24,39,0.92)',
+                      background: 'var(--bg-card)',
                       backdropFilter: 'blur(20px)',
-                      border: `1px solid ${C.border}`,
+                      border: '1px solid var(--border)',
                       boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
                     }}
                   >
-                    <p className="font-semibold mb-1" style={{ color: '#F0F4FF' }}>
+                    <p className="font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>
                       {props.label}
                     </p>
                     <p style={{ color: C.cyan }}>
@@ -97,7 +96,7 @@ export function TopSensores({
                   </div>
                 );
               }}
-              cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+              cursor={{ fill: 'var(--bg-hover)' }}
             />
             <Bar dataKey="n" name="Ocurrencias" radius={[0, 5, 5, 0]} maxBarSize={22}>
               {top8.map((_, i) => (
