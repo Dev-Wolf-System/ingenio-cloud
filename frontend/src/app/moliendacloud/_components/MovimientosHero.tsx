@@ -93,43 +93,6 @@ function PillSelector({ selected, onChange }: PillSelectorProps) {
   );
 }
 
-// ── tile de movimientos por categoría ─────────────────────────────────────────
-
-interface MovTileProps {
-  stats: CategoriaStats;
-  categoria: Categoria;
-  loading: boolean;
-}
-
-function MovTile({ stats, categoria, loading }: MovTileProps) {
-  const isPendiente = stats.pendiente;
-
-  const hint = isPendiente
-    ? 'categorías a confirmar'
-    : stats.camiones > 0
-    ? `${stats.toneladas.toFixed(1)} t · últ. 24 h`
-    : 'sin movimientos (24 h)';
-
-  return (
-    <div className="flex flex-col h-full">
-      <PillSelector
-        selected={categoria}
-        onChange={() => {/* controlado desde fuera */}}
-      />
-      <PremiumTile
-        icon={<IconTruck size={14} />}
-        label={`Movimientos · ${categoria}`}
-        value={loading ? undefined : stats.camiones}
-        unit="camiones"
-        precision={0}
-        accent={isPendiente ? 'neutral' : 'primary'}
-        size="hero"
-        hint={loading ? 'Cargando…' : hint}
-      />
-    </div>
-  );
-}
-
 // ── tile wrapper con selector ─────────────────────────────────────────────────
 
 interface MovimientosSelectorTileProps {
