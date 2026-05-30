@@ -44,7 +44,7 @@ export function PeriodSelector({
             <button
               key={opt.value}
               onClick={() => onPeriodo(opt.value)}
-              className="relative px-4 py-2 rounded-lg text-sm font-semibold uppercase tracking-wider transition-all duration-200"
+              className="relative px-4 py-2 rounded-lg text-sm lg:text-base font-semibold uppercase tracking-wider transition-all duration-200"
               style={{
                 color:      active ? 'var(--text-primary)' : 'var(--text-muted)',
                 background: active ? 'rgba(0,212,255,0.18)' : 'transparent',
@@ -83,7 +83,7 @@ export function PeriodSelector({
           </button>
 
           <span
-            className="px-3 py-1 text-sm font-semibold tabular-nums min-w-[120px] text-center"
+            className="px-3 py-1 text-sm lg:text-base font-semibold tabular-nums min-w-[120px] text-center"
             style={{ color: offset === 0 ? C.cyan : 'var(--text-primary)' }}
           >
             {etiqueta}

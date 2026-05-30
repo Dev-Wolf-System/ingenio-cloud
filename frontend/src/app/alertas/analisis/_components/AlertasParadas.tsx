@@ -70,7 +70,7 @@ export function AlertasParadas({
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex flex-col gap-0.5 min-w-0">
                     <span
-                      className="text-base lg:text-lg font-bold truncate"
+                      className="text-base lg:text-lg xl:text-xl font-bold truncate"
                       style={{ color: 'var(--text-primary)' }}
                     >
                       {p.motivo}

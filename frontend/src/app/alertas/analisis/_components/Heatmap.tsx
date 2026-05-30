@@ -44,7 +44,7 @@ export function Heatmap({
           className="flex flex-col items-center justify-center gap-2 py-10 text-text-muted"
         >
           <IconLayoutGrid size={28} className="opacity-25" />
-          <p className="text-sm">Sin datos para el mapa de calor</p>
+          <p className="text-sm lg:text-base">Sin datos para el mapa de calor</p>
         </div>
       ) : (
         <div className="overflow-x-auto">

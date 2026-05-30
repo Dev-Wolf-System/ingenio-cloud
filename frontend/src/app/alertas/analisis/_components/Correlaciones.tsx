@@ -41,14 +41,14 @@ export function Correlaciones({
               {/* Sensors */}
               <div className="flex items-center gap-2 min-w-0">
                 <span
-                  className="text-sm font-semibold truncate text-text-primary"
+                  className="text-sm lg:text-base font-semibold truncate text-text-primary"
                   style={{ maxWidth: 140 }}
                 >
                   {c.a}
                 </span>
                 <IconArrowsExchange size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
                 <span
-                  className="text-sm font-semibold truncate text-text-primary"
+                  className="text-sm lg:text-base font-semibold truncate text-text-primary"
                   style={{ maxWidth: 140 }}
                 >
                   {c.b}

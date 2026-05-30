@@ -53,7 +53,7 @@ export function ComparativaTurnos({
           className="flex flex-col items-center justify-center gap-2 py-10 text-text-muted"
         >
           <IconChartBar size={28} className="opacity-25" />
-          <p className="text-sm">Sin alertas en este período</p>
+          <p className="text-sm lg:text-base">Sin alertas en este período</p>
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={260}>

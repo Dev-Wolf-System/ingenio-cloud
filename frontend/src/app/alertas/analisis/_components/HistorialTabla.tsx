@@ -93,7 +93,7 @@ export function HistorialTabla({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1 pb-3 border-b border-border/40">
         {/* Turno */}
         <div className="flex items-center gap-1">
-          <span className="text-xs text-text-muted uppercase tracking-wider mr-1">Turno:</span>
+          <span className="text-xs lg:text-sm text-text-muted uppercase tracking-wider mr-1">Turno:</span>
           {TURNOS.map((t) => (
             <FilterPill
               key={t.value}
@@ -106,7 +106,7 @@ export function HistorialTabla({
 
         {/* Área */}
         <div className="flex items-center gap-1">
-          <span className="text-xs text-text-muted uppercase tracking-wider mr-1">Área:</span>
+          <span className="text-xs lg:text-sm text-text-muted uppercase tracking-wider mr-1">Área:</span>
           <FilterPill label="Todas" active={filterArea === 'all'} onClick={() => setFilterArea('all')} />
           {AREAS.map((a) => (
             <FilterPill
@@ -121,7 +121,7 @@ export function HistorialTabla({
 
         {/* Severidad */}
         <div className="flex items-center gap-1">
-          <span className="text-xs text-text-muted uppercase tracking-wider mr-1">Sev:</span>
+          <span className="text-xs lg:text-sm text-text-muted uppercase tracking-wider mr-1">Sev:</span>
           <FilterPill label="Todas" active={filterSev === 'all'} onClick={() => setFilterSev('all')} />
           {(['info', 'warn', 'critical'] as const).map((s) => (
             <FilterPill
@@ -222,7 +222,7 @@ export function HistorialTabla({
       {/* ── Paginator ─────────────────────────────────────────────────────── */}
       {historyTotal > 0 && (
         <div className="flex items-center justify-between pt-3 mt-1 border-t border-border/40">
-          <span className="text-xs text-text-muted mono">
+          <span className="text-xs lg:text-sm text-text-muted mono">
             {historyTotal} eventos · página <span className="text-text-primary font-semibold">{historyPage + 1}</span> de {historyPageCount}
           </span>
           <div className="flex items-center gap-1">

@@ -66,7 +66,7 @@ function KpiCard({ label, value, icon, accentColor, chip, sub }: KpiCardProps) {
     >
       <div className="flex items-center justify-between">
         <span
-          className="text-xs uppercase tracking-[0.18em] font-semibold"
+          className="text-xs lg:text-sm uppercase tracking-[0.18em] font-semibold"
           style={{ color: 'var(--text-muted)' }}
         >
           {label}
@@ -84,7 +84,7 @@ function KpiCard({ label, value, icon, accentColor, chip, sub }: KpiCardProps) {
 
       <div className="flex items-end gap-2">
         <span
-          className="text-2xl lg:text-3xl font-bold tabular-nums leading-none"
+          className="text-2xl lg:text-3xl xl:text-4xl font-bold tabular-nums leading-none"
           style={{ color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}
         >
           {value}
@@ -127,7 +127,7 @@ function RelCard({ label, value, icon, accentColor, subtitle, isNull, emptyLabel
     >
       <div className="flex items-center justify-between">
         <span
-          className="text-xs uppercase tracking-[0.18em] font-semibold"
+          className="text-xs lg:text-sm uppercase tracking-[0.18em] font-semibold"
           style={{ color: 'var(--text-muted)' }}
         >
           {label}
@@ -144,13 +144,13 @@ function RelCard({ label, value, icon, accentColor, subtitle, isNull, emptyLabel
       </div>
 
       <span
-        className="text-xl lg:text-2xl font-bold tabular-nums leading-none"
+        className="text-xl lg:text-2xl xl:text-3xl font-bold tabular-nums leading-none"
         style={{ color: isNull ? 'var(--text-muted)' : 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}
       >
         {value}
       </span>
 
-      <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
+      <span className="text-[10px] lg:text-xs" style={{ color: 'var(--text-muted)' }}>
         {isNull ? emptyLabel : subtitle}
       </span>
     </div>

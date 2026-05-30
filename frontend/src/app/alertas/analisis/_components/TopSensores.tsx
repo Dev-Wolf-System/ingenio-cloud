@@ -43,7 +43,7 @@ export function TopSensores({
           className="flex flex-col items-center justify-center gap-2 py-10 text-text-muted"
         >
           <IconRadar2 size={28} className="opacity-25" />
-          <p className="text-sm">Sin sensores registrados en este período</p>
+          <p className="text-sm lg:text-base">Sin sensores registrados en este período</p>
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={Math.max(220, top8.length * 42)}>

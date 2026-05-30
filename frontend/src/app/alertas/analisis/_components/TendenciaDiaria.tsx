@@ -46,7 +46,7 @@ export function TendenciaDiaria({
           }}
         >
           <IconInfoCircle size={20} style={{ color: C.cyan }} className="shrink-0" />
-          <p className="text-sm leading-relaxed text-text-secondary">
+          <p className="text-sm lg:text-base leading-relaxed text-text-secondary">
             La tendencia diaria se ve mejor en período{' '}
             <span className="font-semibold" style={{ color: C.cyan }}>
               Zafra

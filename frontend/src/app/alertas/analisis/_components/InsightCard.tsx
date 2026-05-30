@@ -57,7 +57,7 @@ export function InsightCard({
           </div>
           <div>
             <h3
-              className="text-sm font-bold uppercase tracking-wider"
+              className="text-sm lg:text-base font-bold uppercase tracking-wider"
               style={{ color: C.cyan }}
             >
               Insight del período
@@ -142,7 +142,7 @@ export function InsightCard({
         <div className="flex flex-col gap-4">
           {/* Resumen */}
           {insight.resumen && (
-            <p className="text-sm lg:text-base leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+            <p className="text-sm lg:text-base xl:text-lg leading-relaxed" style={{ color: 'var(--text-primary)' }}>
               {insight.resumen}
             </p>
           )}
@@ -164,7 +164,7 @@ export function InsightCard({
                   {insight.patrones.map((p, i) => (
                     <span
                       key={i}
-                      className="text-sm px-2.5 py-1 rounded-full"
+                      className="text-sm lg:text-base px-2.5 py-1 rounded-full"
                       style={{
                         background: 'rgba(255,184,0,0.10)',
                         border: '1px solid rgba(255,184,0,0.25)',
@@ -203,7 +203,7 @@ export function InsightCard({
                       >
                         {i + 1}
                       </span>
-                      <span className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                      <span className="text-sm lg:text-base leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                         {r}
                       </span>
                     </li>
