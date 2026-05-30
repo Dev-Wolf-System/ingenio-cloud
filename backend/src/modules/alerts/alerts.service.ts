@@ -54,37 +54,6 @@ function numEs(n: number): string {
   return String(n).split('').join(' ');
 }
 
-/** Normaliza unidades técnicas a texto hablable en español */
-function unitEs(unit: string): string {
-  const MAP: Record<string, string> = {
-    '°C':   'grados',
-    '°F':   'grados Fahrenheit',
-    'ºC':   'grados',
-    '%':    'por ciento',
-    't/h':  'toneladas por hora',
-    'Tn/H': 'toneladas por hora',
-    'tn/h': 'toneladas por hora',
-    'm³/h': 'metros cúbicos por hora',
-    'm3/h': 'metros cúbicos por hora',
-    'm³':   'metros cúbicos',
-    'm3':   'metros cúbicos',
-    'MW':   'megavatios',
-    'kW':   'kilovatios',
-    'kWh':  'kilovatios hora',
-    'bar':  'bar',
-    'pH':   '',              // "pH" se pronuncia bien solo
-    'rpm':  'revoluciones por minuto',
-    'kg':   'kilogramos',
-    'kg/h': 'kilogramos por hora',
-    'L/h':  'litros por hora',
-    'l/h':  'litros por hora',
-    'psi':  'psi',
-    'V':    'voltios',
-    'A':    'amperes',
-    'Hz':   'hertz',
-  };
-  return MAP[unit] ?? unit;
-}
 
 interface AlertRow {
   id: string;
@@ -324,109 +293,64 @@ export class AlertsService {
     // Ordenar critical → warn → info
     const sorted = [...data].sort((a, b) => sevOrder(a.severity) - sevOrder(b.severity));
 
-    const critCount = sorted.filter((a) => normalizeSeverity(a.severity) === 'critical').length;
-    const warnCount = sorted.filter((a) => normalizeSeverity(a.severity) === 'warn').length;
-    const capArea = (a: string) => a.charAt(0).toUpperCase() + a.slice(1).toLowerCase();
-
-    // Encabezado natural — números como palabras para evitar pronunciación en inglés
-    const parts: string[] = [];
-    if (critCount > 0) parts.push(`${numEs(critCount)} alerta${critCount > 1 ? 's' : ''} crítica${critCount > 1 ? 's' : ''}`);
-    if (warnCount > 0) parts.push(`${numEs(warnCount)} advertencia${warnCount > 1 ? 's' : ''}`);
-    const resto = sorted.length - critCount - warnCount;
-    if (resto > 0) parts.push(`${numEs(resto)} aviso${resto > 1 ? 's' : ''}`);
-
-    // Apertura diferenciada por severidad dominante
+    // Severidad dominante
     const dominant = sorted.reduce<'info' | 'warn' | 'critical'>((best, a) => {
       const sev = normalizeSeverity(a.severity);
       return sevOrder(sev) < sevOrder(best) ? sev : best;
     }, 'info');
-    const opening =
-      dominant === 'critical' ? '¡Alarma crítica! ' :
-      dominant === 'warn'     ? 'Atención. '        :
-                                'Aviso del sistema. ';
 
-    let text = `${opening}Hay ${parts.join(' y ')} en el sistema.`;
+    let text: string;
 
-    // Agrupar por triage.grupo (si existe) o por área
-    type AlertRow = (typeof sorted)[number];
-    const groupMap = new Map<string, AlertRow[]>();
-    for (const a of sorted) {
-      const t = (a.metadata as { triage?: { grupo?: string } } | null)?.triage;
-      const key = t?.grupo ?? a.area;
-      const existing = groupMap.get(key);
-      if (existing) existing.push(a);
-      else groupMap.set(key, [a]);
-    }
+    if (sorted.length === 1) {
+      // ── 1 alerta: frase directa ───────────────────────────────────────────
+      const a = sorted[0];
+      const meta = (a.metadata ?? {}) as { value?: number; min_value?: number; max_value?: number; unit?: string };
+      const rango =
+        meta.value != null && meta.min_value != null && meta.value < meta.min_value ? 'mínimo' :
+        meta.value != null && meta.max_value != null && meta.value > meta.max_value ? 'máximo' :
+        'de trabajo';
+      text = `Atención, alerta ${sevLabel(a.severity)}. ${a.title} fuera del rango ${rango}.`;
+    } else {
+      // ── Varias alertas: encabezado corto + máx 3 mencionadas ─────────────
+      const critCount = sorted.filter((a) => normalizeSeverity(a.severity) === 'critical').length;
+      const severidadTexto =
+        dominant === 'critical' && critCount === sorted.length ? 'críticas' :
+        dominant === 'critical' ? 'varias' :
+        dominant === 'warn'     ? 'de advertencia' :
+                                  'informativas';
 
-    const hasGrouped = [...groupMap.values()].some((g) => g.length > 1);
+      text = `Atención, ${numEs(sorted.length)} alertas ${severidadTexto}.`;
 
-    if (hasGrouped) {
-      // Ordenar grupos: el de menor sevOrder (más crítico) primero
-      const groupsSorted = [...groupMap.entries()].sort(([, ga], [, gb]) => {
-        const minSev = (arr: AlertRow[]) => Math.min(...arr.map((a) => sevOrder(a.severity)));
+      // Agrupar por triage.grupo o área para mencionar hasta 3 grupos/alertas
+      type SortedRow = (typeof sorted)[number];
+      const groupMap = new Map<string, SortedRow[]>();
+      for (const a of sorted) {
+        const t = (a.metadata as { triage?: { grupo?: string } } | null)?.triage;
+        const key = t?.grupo ?? a.area;
+        const existing = groupMap.get(key);
+        if (existing) existing.push(a);
+        else groupMap.set(key, [a]);
+      }
+
+      // Ordenar grupos: más crítico primero
+      const groupsSorted = Array.from(groupMap.entries()).sort(([, ga], [, gb]) => {
+        const minSev = (arr: SortedRow[]) => Math.min(...arr.map((x) => sevOrder(x.severity)));
         return minSev(ga) - minSev(gb);
       });
 
       const toSpeak = groupsSorted.slice(0, 3);
-      const totalSpoken = toSpeak.reduce((acc, [, g]) => acc + g.length, 0);
-
       for (const [grupo, miembros] of toSpeak) {
         const first = miembros[0];
-        const t = (first.metadata as { triage?: { grupo?: string; titular?: string } } | null)?.triage;
+        const t = (first.metadata as { triage?: { titular?: string } } | null)?.triage;
         const titulo = t?.titular ?? first.title;
-        const meta = (first.metadata ?? {}) as { value?: number; min_value?: number; max_value?: number; unit?: string };
-        const uStr = meta.unit ? ` ${unitEs(meta.unit)}` : '';
-
-        if (miembros.length > 1) {
-          text += ` En ${capArea(grupo)} hay ${numEs(miembros.length)} alertas relacionadas: ${titulo}.`;
-        } else {
-          text += ` En ${capArea(grupo)}, alerta ${sevLabel(first.severity)}: ${titulo}.`;
-        }
-
-        if (meta.value != null) {
-          text += ` El valor actual es ${numEs(meta.value)}${uStr}.`;
-          if (meta.max_value != null && meta.value > meta.max_value) {
-            text += ` Está por encima del máximo permitido de ${numEs(meta.max_value)}${uStr}.`;
-          } else if (meta.min_value != null && meta.value < meta.min_value) {
-            text += ` Está por debajo del mínimo permitido de ${numEs(meta.min_value)}${uStr}.`;
-          }
-        }
-
-        const recom = (first.metadata as { triage?: { recomendacion?: string } })?.triage?.recomendacion;
-        if (recom) {
-          const sevFirst = normalizeSeverity(first.severity);
-          text += sevFirst === 'critical' ? ` Acción inmediata: ${recom}.` : ` Se recomienda: ${recom}.`;
-        }
+        const capGrupo = grupo.charAt(0).toUpperCase() + grupo.slice(1).toLowerCase();
+        text += ` ${capGrupo}: ${titulo}.`;
       }
 
+      const totalSpoken = toSpeak.reduce((acc, [, g]) => acc + g.length, 0);
       if (sorted.length > totalSpoken) {
         const extra = sorted.length - totalSpoken;
-        text += ` Además hay ${numEs(extra)} alerta${extra > 1 ? 's' : ''} más pendiente${extra > 1 ? 's' : ''}.`;
-      }
-    } else {
-      // Sin grupos: path original, alerta por alerta
-      const toSpeak = sorted.slice(0, 3);
-      for (const a of toSpeak) {
-        const meta = (a.metadata ?? {}) as { value?: number; min_value?: number; max_value?: number; unit?: string };
-        const uStr = meta.unit ? ` ${unitEs(meta.unit)}` : '';
-        text += ` En el área de ${capArea(a.area)}, alerta ${sevLabel(a.severity)}: ${a.title}.`;
-        if (meta.value != null) {
-          text += ` El valor actual es ${numEs(meta.value)}${uStr}.`;
-          if (meta.max_value != null && meta.value > meta.max_value) {
-            text += ` Está por encima del máximo permitido de ${numEs(meta.max_value)}${uStr}.`;
-          } else if (meta.min_value != null && meta.value < meta.min_value) {
-            text += ` Está por debajo del mínimo permitido de ${numEs(meta.min_value)}${uStr}.`;
-          }
-        }
-        const recomSingle = (a.metadata as { triage?: { recomendacion?: string } })?.triage?.recomendacion;
-        if (recomSingle) {
-          const sevA = normalizeSeverity(a.severity);
-          text += sevA === 'critical' ? ` Acción inmediata: ${recomSingle}.` : ` Se recomienda: ${recomSingle}.`;
-        }
-      }
-      if (sorted.length > 3) {
-        const extra = sorted.length - 3;
-        text += ` Además hay ${numEs(extra)} alerta${extra > 1 ? 's' : ''} más pendiente${extra > 1 ? 's' : ''}.`;
+        text += ` Y ${numEs(extra)} más.`;
       }
     }
 
