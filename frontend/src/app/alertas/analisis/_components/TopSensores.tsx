@@ -12,7 +12,7 @@ import {
 import { IconRadar2 } from '@tabler/icons-react';
 import { PremiumPanel } from '@/components/industrial/PremiumPanel';
 import type { AnalisisResponse } from '../_types';
-import { C, GlassTooltip, fmtMin } from './chart-kit';
+import { C, fmtMin } from './chart-kit';
 
 // top‐8, horizontal bar, color cycling
 const BAR_COLORS = [C.red, C.amber, C.cyan, C.green, '#A89BFF', C.amber, C.red, C.muted];
