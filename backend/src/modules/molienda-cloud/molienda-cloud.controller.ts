@@ -26,4 +26,20 @@ export class MoliendaCloudController {
     const list = (procesos ?? '').split(',').map((s) => s.trim()).filter(Boolean);
     return this.svc.lab(list, desde, hasta);
   }
+
+  @Get('comparativa-cana')
+  comparativaCana() { return this.svc.comparativaCana(); }
+
+  @Get('movimientos-cana')
+  movimientosCana(@Query('limit') limit?: string) {
+    return this.svc.movimientosCana(limit ? parseInt(limit, 10) : 100);
+  }
+
+  @Get('azucar')
+  azucar(
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
+  ) {
+    return this.svc.azucar(desde, hasta);
+  }
 }
