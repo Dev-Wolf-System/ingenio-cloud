@@ -2,6 +2,32 @@
 import { useQuery } from '@tanstack/react-query';
 import type { CanchonResumen, BalanzaHoraRow, MovimientoRow, MoliendaBloque, LabRow } from '../_types';
 
+export interface CanaAgg {
+  cana_bruta_kg: number;
+  cana_neta_kg: number;
+  trash_kg: number;
+  trash_pond: number | null;
+  rto_pond: number | null;
+  brix_pond: number | null;
+  pol_pond: number | null;
+  pureza_pond: number | null;
+  n: number;
+}
+export interface Comparativa { actual: CanaAgg; ult_cierre: CanaAgg; acumulado: CanaAgg }
+export interface MovCanaRow {
+  numero_pesada: number | null;
+  grupo: string | null;
+  razon_social: string | null;
+  numero_analisis: number | null;
+  peso_bruto: number | null;
+  trash: number | null;
+  brix: number | null;
+  pol: number | null;
+  neto_cana: number | null;
+  variedad: string | null;
+  salida_at: string | null;
+}
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
 
 async function get<T>(p: string): Promise<T | null> {
@@ -23,6 +49,14 @@ export function useMovimientosTipo() {
 
 export function useMoliendaBloques() {
   return useQuery({ queryKey: ['mc', 'mol-bloques'], queryFn: () => get<{ data: MoliendaBloque[] }>('molienda-bloques'), refetchInterval: 60_000 });
+}
+
+export function useComparativaCana() {
+  return useQuery({ queryKey: ['mc', 'comparativa-cana'], queryFn: () => get<Comparativa & { stale?: boolean }>('comparativa-cana'), refetchInterval: 60_000 });
+}
+
+export function useMovimientosCana() {
+  return useQuery({ queryKey: ['mc', 'mov-cana'], queryFn: () => get<{ data: MovCanaRow[] }>('movimientos-cana?limit=100'), refetchInterval: 30_000 });
 }
 
 export function useLab(procesos: string[], desde?: string, hasta?: string) {

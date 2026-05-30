@@ -9,6 +9,7 @@ import { ComparativaCana } from './_components/ComparativaCana';
 import { PromediosMolienda } from './_components/PromediosMolienda';
 import { AnalisisAzucarModal } from './_components/AnalisisAzucarModal';
 import { ResumenFabricaModal } from './_components/ResumenFabricaModal';
+import { MovimientosCana } from './_components/MovimientosCana';
 
 export default function MoliendaCloudPage() {
   return (
@@ -54,6 +55,7 @@ export default function MoliendaCloudPage() {
             <CanchonHoraChart />
             <ComparativaCana />
             <PromediosMolienda />
+            <MovimientosCana />
           </main>
 
           <div className="flex flex-wrap gap-3">

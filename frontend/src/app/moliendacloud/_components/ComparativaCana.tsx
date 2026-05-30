@@ -1,58 +1,125 @@
 'use client';
 
 import { PremiumPanel } from '@/components/industrial/PremiumPanel';
-import { useMoliendaBloques } from '../_hooks/useMoliendaCloud';
-import type { MoliendaBloque } from '../_types';
+import { useComparativaCana, type CanaAgg } from '../_hooks/useMoliendaCloud';
 
-// ── helpers ──────────────────────────────────────────────────────────────────
+// ── formatters ────────────────────────────────────────────────────────────────
 
-function maxAcumulado(rows: MoliendaBloque[], bloque: string): number | null {
-  const matches = rows.filter((r) => r.bloque === bloque);
-  if (matches.length === 0) return null;
-  return matches.reduce((m, r) => Math.max(m, r.acumulado_kg), 0);
-}
-
-function fmtTon(kg: number | null): string {
+function fmtTon(kg: number | null, decimals = 1): string {
   if (kg === null) return '—';
-  return (kg / 1000).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+  return (kg / 1000).toLocaleString('es-AR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
 }
 
-// ── types ─────────────────────────────────────────────────────────────────────
+function fmtNum(v: number | null, decimals = 2): string {
+  if (v === null) return '—';
+  return v.toLocaleString('es-AR', {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+}
+
+// ── trend chip ────────────────────────────────────────────────────────────────
+
+type TrendDir = 'up' | 'down' | 'neutral';
+type TrendSense = 'higher-better' | 'lower-better' | 'neutral';
+
+function trendDir(actual: number | null, ref: number | null): TrendDir {
+  if (actual === null || ref === null || ref === 0) return 'neutral';
+  const diff = actual - ref;
+  if (Math.abs(diff / ref) < 0.001) return 'neutral';
+  return diff > 0 ? 'up' : 'down';
+}
+
+function TrendChip({ dir, sense }: { dir: TrendDir; sense: TrendSense }) {
+  if (dir === 'neutral' || sense === 'neutral') return null;
+  const isGood =
+    (sense === 'higher-better' && dir === 'up') ||
+    (sense === 'lower-better' && dir === 'down');
+  const color = isGood ? 'var(--ok)' : 'var(--danger)';
+  const arrow = dir === 'up' ? '↑' : '↓';
+  return (
+    <span
+      className="ml-1 text-[10px] font-bold tabular-nums"
+      style={{ color }}
+      aria-hidden
+    >
+      {arrow}
+    </span>
+  );
+}
+
+// ── row definitions ───────────────────────────────────────────────────────────
 
 interface RowDef {
   label: string;
-  dayActual: string;
-  dayAnterior: string;
-  zafra: string;
-  pending: boolean;
+  get: (a: CanaAgg) => string;
+  getNum: (a: CanaAgg) => number | null;
+  sense: TrendSense;
 }
+
+const ROWS: RowDef[] = [
+  {
+    label: 'CAÑA BRUTA (t)',
+    get: (a) => fmtTon(a.cana_bruta_kg),
+    getNum: (a) => a.cana_bruta_kg,
+    sense: 'neutral',
+  },
+  {
+    label: 'TRASH POND. (%)',
+    get: (a) => fmtNum(a.trash_pond),
+    getNum: (a) => a.trash_pond,
+    sense: 'lower-better',
+  },
+  {
+    label: 'TRASH (kg)',
+    get: (a) => fmtTon(a.trash_kg),
+    getNum: (a) => a.trash_kg,
+    sense: 'lower-better',
+  },
+  {
+    label: 'CAÑA NETA (t)',
+    get: (a) => fmtTon(a.cana_neta_kg),
+    getNum: (a) => a.cana_neta_kg,
+    sense: 'neutral',
+  },
+  {
+    label: 'RTO. PONDERADO',
+    get: (a) => fmtNum(a.rto_pond),
+    getNum: (a) => a.rto_pond,
+    sense: 'higher-better',
+  },
+  {
+    label: 'BRIX POND.',
+    get: (a) => fmtNum(a.brix_pond),
+    getNum: (a) => a.brix_pond,
+    sense: 'neutral',
+  },
+  {
+    label: 'POL POND.',
+    get: (a) => fmtNum(a.pol_pond),
+    getNum: (a) => a.pol_pond,
+    sense: 'neutral',
+  },
+  {
+    label: 'PUREZA POND.',
+    get: (a) => fmtNum(a.pureza_pond),
+    getNum: (a) => a.pureza_pond,
+    sense: 'higher-better',
+  },
+];
 
 // ── component ─────────────────────────────────────────────────────────────────
 
 export function ComparativaCana() {
-  const { data, isLoading } = useMoliendaBloques();
-
-  const rows = data?.data ?? [];
-
-  const molDia    = fmtTon(maxAcumulado(rows, 'dia_corriente'));
-  const molAnt    = fmtTon(maxAcumulado(rows, 'dia_anterior'));
-  const molZafra  = fmtTon(maxAcumulado(rows, 'zafra'));
-
-  const tableRows: RowDef[] = [
-    { label: 'MOLIENDA (t)',          dayActual: molDia,   dayAnterior: molAnt,   zafra: molZafra, pending: false },
-    { label: 'TRASH PONDERADO (%)',   dayActual: '—',      dayAnterior: '—',      zafra: '—',      pending: true  },
-    { label: 'TRASH (kg)',            dayActual: '—',      dayAnterior: '—',      zafra: '—',      pending: true  },
-    { label: 'CAÑA NETA (t)',         dayActual: '—',      dayAnterior: '—',      zafra: '—',      pending: true  },
-    { label: 'RTO. PONDERADO',        dayActual: '—',      dayAnterior: '—',      zafra: '—',      pending: true  },
-    { label: 'BRIX PONDERADO',        dayActual: '—',      dayAnterior: '—',      zafra: '—',      pending: true  },
-    { label: 'POL PONDERADO',         dayActual: '—',      dayAnterior: '—',      zafra: '—',      pending: true  },
-    { label: 'PUREZA PONDERADA',      dayActual: '—',      dayAnterior: '—',      zafra: '—',      pending: true  },
-  ];
+  const { data, isLoading } = useComparativaCana();
 
   return (
     <PremiumPanel
       title="COMPARATIVO DE CAÑA"
-      subtitle="Día actual · Día anterior · Zafra"
+      subtitle="Actual · Últ. Cierre · Acumulado"
       accent="primary"
     >
       {isLoading ? (
@@ -61,28 +128,31 @@ export function ComparativaCana() {
             Cargando…
           </span>
         </div>
-      ) : rows.length === 0 ? (
+      ) : !data ? (
         <div className="flex items-center justify-center py-10">
           <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
             Sin datos disponibles
           </span>
         </div>
       ) : (
-        <div className="flex flex-col gap-2 overflow-x-auto">
-          <table className="w-full text-sm border-collapse">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm border-collapse min-w-[380px]">
             <thead>
               <tr>
                 <th
-                  className="py-2 px-3 text-left text-[11px] font-semibold tracking-[0.12em] uppercase w-44"
+                  className="py-2 px-2 lg:px-3 text-left text-[10px] font-semibold tracking-[0.12em] uppercase w-36 lg:w-44"
                   style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}
                 >
                   Métrica
                 </th>
-                {(['DÍA ACTUAL', 'DÍA ANTERIOR', 'ZAFRA'] as const).map((col) => (
+                {(['ACTUAL', 'ÚLT. CIERRE', 'ACUMULADO'] as const).map((col, ci) => (
                   <th
                     key={col}
-                    className="py-2 px-3 text-right text-[11px] font-semibold tracking-[0.12em] uppercase"
-                    style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}
+                    className="py-2 px-2 lg:px-3 text-right text-[10px] font-semibold tracking-[0.12em] uppercase"
+                    style={{
+                      color: ci === 0 ? 'var(--primary-light)' : 'var(--text-muted)',
+                      borderBottom: `1px solid ${ci === 0 ? 'var(--primary-light)' : 'var(--border)'}`,
+                    }}
                   >
                     {col}
                   </th>
@@ -90,40 +160,54 @@ export function ComparativaCana() {
               </tr>
             </thead>
             <tbody>
-              {tableRows.map((row, i) => (
-                <tr
-                  key={row.label}
-                  style={{
-                    borderBottom: i < tableRows.length - 1 ? '1px solid var(--border)' : 'none',
-                    opacity: row.pending ? 0.45 : 1,
-                  }}
-                >
-                  <td
-                    className="py-2 px-3 text-[11px] font-semibold tracking-[0.10em]"
-                    style={{ color: 'var(--text-muted)' }}
+              {ROWS.map((row, i) => {
+                const actualVal = row.get(data.actual);
+                const cierreVal = row.get(data.ult_cierre);
+                const acumVal   = row.get(data.acumulado);
+                const dir = trendDir(row.getNum(data.actual), row.getNum(data.ult_cierre));
+                return (
+                  <tr
+                    key={row.label}
+                    style={{
+                      borderBottom: i < ROWS.length - 1 ? '1px solid var(--border)' : 'none',
+                    }}
                   >
-                    {row.label}
-                  </td>
-                  {([row.dayActual, row.dayAnterior, row.zafra] as const).map((val, j) => (
                     <td
-                      key={j}
-                      className="py-2 px-3 text-right tabular-nums font-medium"
-                      style={{ color: row.pending ? 'var(--text-muted)' : 'var(--text-primary)' }}
+                      className="py-2 px-2 lg:px-3 text-[10px] lg:text-[11px] font-semibold tracking-[0.10em]"
+                      style={{ color: 'var(--text-muted)' }}
                     >
-                      {val}
+                      {row.label}
                     </td>
-                  ))}
-                </tr>
-              ))}
+                    {/* ACTUAL — accent column */}
+                    <td
+                      className="py-2 px-2 lg:px-3 text-right tabular-nums font-semibold text-sm"
+                      style={{
+                        color: 'var(--text-primary)',
+                        borderLeft: '1px solid color-mix(in srgb, var(--primary-light) 30%, transparent)',
+                      }}
+                    >
+                      {actualVal}
+                      <TrendChip dir={dir} sense={row.sense} />
+                    </td>
+                    {/* ÚLT. CIERRE */}
+                    <td
+                      className="py-2 px-2 lg:px-3 text-right tabular-nums font-medium text-sm"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {cierreVal}
+                    </td>
+                    {/* ACUMULADO */}
+                    <td
+                      className="py-2 px-2 lg:px-3 text-right tabular-nums font-medium text-sm"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {acumVal}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
-
-          <p
-            className="mt-1 text-[10px] italic px-1"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            * Métricas ponderadas (Trash, Caña Neta, Rto., Brix, Pol, Pureza): fuente a confirmar — dato pendiente.
-          </p>
         </div>
       )}
     </PremiumPanel>
