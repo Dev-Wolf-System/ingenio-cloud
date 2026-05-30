@@ -8,11 +8,11 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { TooltipProps } from 'recharts';
 import { PremiumPanel } from '@/components/industrial/PremiumPanel';
 import { useBalanzaHora } from '../_hooks/useMoliendaCloud';
 
-function GlassTooltip({ active, payload, label }: TooltipProps<number, string>) {
+interface TooltipEntry { name?: string; value?: number; color?: string }
+function GlassTooltip({ active, payload, label }: { active?: boolean; payload?: TooltipEntry[]; label?: string }) {
   if (!active || !payload || payload.length === 0) return null;
   return (
     <div
@@ -95,7 +95,16 @@ export function CanchonHoraChart() {
               width={30}
               allowDecimals={false}
             />
-            <Tooltip content={<GlassTooltip />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+            <Tooltip
+              content={(props) => (
+                <GlassTooltip
+                  active={props.active}
+                  payload={props.payload as TooltipEntry[] | undefined}
+                  label={props.label as string | undefined}
+                />
+              )}
+              cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+            />
             <Bar
               yAxisId="left"
               dataKey="camiones"

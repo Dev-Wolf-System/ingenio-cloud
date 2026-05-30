@@ -153,7 +153,7 @@ export function MovimientosHero() {
   const movQ = useMovimientosTipo();
 
   const canchon = canchonQ.data?.data ?? null;
-  const rows: MovimientoRow[] = movQ.data?.data ?? [];
+  const rows: MovimientoRow[] = useMemo(() => movQ.data?.data ?? [], [movQ.data]);
 
   const totalCamiones   = typeof canchon?.total_camiones === 'number' ? canchon.total_camiones : null;
   const esperando       = typeof canchon?.esperando_balanza === 'number' ? canchon.esperando_balanza : null;
