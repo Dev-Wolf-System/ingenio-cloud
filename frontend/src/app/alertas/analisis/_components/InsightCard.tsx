@@ -63,7 +63,7 @@ export function InsightCard({
               Insight del período
             </h3>
             {insight?.generado_at && !loading && (
-              <p className="text-[10px] mt-0.5" style={{ color: C.muted }}>
+              <p className="text-xs mt-0.5" style={{ color: C.muted }}>
                 {new Date(insight.generado_at).toLocaleString('es-AR', {
                   day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
                 })}
@@ -75,7 +75,7 @@ export function InsightCard({
         <div className="flex items-center gap-2">
           {insight?.cached && !loading && (
             <span
-              className="text-[9px] uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
+              className="text-xs uppercase tracking-wider px-2 py-0.5 rounded-full font-semibold"
               style={{
                 background: 'rgba(255,184,0,0.12)',
                 border: '1px solid rgba(255,184,0,0.30)',
@@ -142,7 +142,7 @@ export function InsightCard({
         <div className="flex flex-col gap-4">
           {/* Resumen */}
           {insight.resumen && (
-            <p className="text-sm leading-relaxed" style={{ color: '#D0D8F0' }}>
+            <p className="text-sm lg:text-base leading-relaxed" style={{ color: '#D0D8F0' }}>
               {insight.resumen}
             </p>
           )}
@@ -154,7 +154,7 @@ export function InsightCard({
                 <div className="flex items-center gap-1.5 mb-2">
                   <IconStar size={13} style={{ color: C.amber }} />
                   <span
-                    className="text-[9px] uppercase tracking-[0.18em] font-semibold"
+                    className="text-xs uppercase tracking-[0.18em] font-semibold"
                     style={{ color: C.amber }}
                   >
                     Patrones detectados
@@ -164,7 +164,7 @@ export function InsightCard({
                   {insight.patrones.map((p, i) => (
                     <span
                       key={i}
-                      className="text-[11px] px-2.5 py-1 rounded-full"
+                      className="text-sm px-2.5 py-1 rounded-full"
                       style={{
                         background: 'rgba(255,184,0,0.10)',
                         border: '1px solid rgba(255,184,0,0.25)',
@@ -184,7 +184,7 @@ export function InsightCard({
                 <div className="flex items-center gap-1.5 mb-2">
                   <IconBulb size={13} style={{ color: C.green }} />
                   <span
-                    className="text-[9px] uppercase tracking-[0.18em] font-semibold"
+                    className="text-xs uppercase tracking-[0.18em] font-semibold"
                     style={{ color: C.green }}
                   >
                     Recomendaciones
@@ -194,7 +194,7 @@ export function InsightCard({
                   {insight.recomendaciones.map((r, i) => (
                     <li key={i} className="flex items-start gap-2.5">
                       <span
-                        className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold"
+                        className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
                         style={{
                           background: 'rgba(0,229,160,0.12)',
                           border: '1px solid rgba(0,229,160,0.28)',
@@ -203,7 +203,7 @@ export function InsightCard({
                       >
                         {i + 1}
                       </span>
-                      <span className="text-xs leading-relaxed" style={{ color: '#B0BACE' }}>
+                      <span className="text-sm leading-relaxed" style={{ color: '#B0BACE' }}>
                         {r}
                       </span>
                     </li>

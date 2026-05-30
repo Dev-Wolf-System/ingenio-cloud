@@ -37,7 +37,7 @@ export function AlertasParadas({
           style={{ color: C.muted }}
         >
           <IconClockStop size={28} className="opacity-25" />
-          <p className="text-xs">Sin paradas registradas en este período</p>
+          <p className="text-sm">Sin paradas registradas en este período</p>
         </div>
       ) : (
         <div className="flex flex-col gap-3">
@@ -71,20 +71,20 @@ export function AlertasParadas({
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex flex-col gap-0.5 min-w-0">
                     <span
-                      className="text-sm font-bold truncate"
+                      className="text-base lg:text-lg font-bold truncate"
                       style={{ color: '#F0F4FF' }}
                     >
                       {p.motivo}
                     </span>
                     <div className="flex items-center gap-2 flex-wrap">
                       {p.maquina && (
-                        <span className="text-[11px]" style={{ color: C.muted }}>
+                        <span className="text-xs lg:text-sm" style={{ color: C.muted }}>
                           <IconEngine size={11} className="inline mr-0.5" />
                           {p.maquina}
                         </span>
                       )}
                       {p.origen && (
-                        <span className="text-[11px]" style={{ color: C.muted }}>
+                        <span className="text-xs lg:text-sm" style={{ color: C.muted }}>
                           · {p.origen}
                         </span>
                       )}
@@ -94,7 +94,7 @@ export function AlertasParadas({
                   {/* duration badge */}
                   {p.minutos !== null && (
                     <span
-                      className="shrink-0 text-[10px] font-bold tabular-nums px-2.5 py-1 rounded-full"
+                      className="shrink-0 text-xs font-bold tabular-nums px-2.5 py-1 rounded-full"
                       style={{
                         background: 'rgba(255,184,0,0.12)',
                         border: '1px solid rgba(255,184,0,0.30)',
@@ -112,7 +112,7 @@ export function AlertasParadas({
                     {p.alertas_relacionadas.map((a) => (
                       <span
                         key={a.id}
-                        className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full"
+                        className="inline-flex items-center gap-1 text-xs lg:text-sm px-2.5 py-1 rounded-full"
                         style={{
                           background: `${sevColor(a.severidad)}12`,
                           border: `1px solid ${sevColor(a.severidad)}30`,
@@ -136,7 +136,7 @@ export function AlertasParadas({
                     ))}
                   </div>
                 ) : (
-                  <p className="text-[11px]" style={{ color: C.muted }}>
+                  <p className="text-sm" style={{ color: C.muted }}>
                     Sin alertas asociadas
                   </p>
                 )}

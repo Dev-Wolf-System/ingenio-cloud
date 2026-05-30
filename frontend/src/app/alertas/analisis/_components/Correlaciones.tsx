@@ -25,7 +25,7 @@ export function Correlaciones({
           style={{ color: C.muted }}
         >
           <IconArrowsExchange size={28} className="opacity-25" />
-          <p className="text-xs">Sin correlaciones detectadas en este período</p>
+          <p className="text-sm">Sin correlaciones detectadas en este período</p>
         </div>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -42,14 +42,14 @@ export function Correlaciones({
               {/* Sensors */}
               <div className="flex items-center gap-2 min-w-0">
                 <span
-                  className="text-xs font-semibold truncate"
+                  className="text-sm font-semibold truncate"
                   style={{ color: '#D0D8F0', maxWidth: 140 }}
                 >
                   {c.a}
                 </span>
                 <IconArrowsExchange size={13} style={{ color: C.muted, flexShrink: 0 }} />
                 <span
-                  className="text-xs font-semibold truncate"
+                  className="text-sm font-semibold truncate"
                   style={{ color: '#D0D8F0', maxWidth: 140 }}
                 >
                   {c.b}
@@ -59,7 +59,7 @@ export function Correlaciones({
               {/* Badges */}
               <div className="flex items-center gap-2 shrink-0">
                 <span
-                  className="text-[10px] font-bold tabular-nums px-2 py-0.5 rounded-full"
+                  className="text-xs lg:text-sm font-bold tabular-nums px-2 py-0.5 rounded-full"
                   style={{
                     background: 'rgba(0,212,255,0.12)',
                     border: '1px solid rgba(0,212,255,0.30)',
@@ -69,7 +69,7 @@ export function Correlaciones({
                   {c.juntas}x
                 </span>
                 <span
-                  className="text-[10px] tabular-nums px-2 py-0.5 rounded-full"
+                  className="text-xs lg:text-sm tabular-nums px-2 py-0.5 rounded-full"
                   style={{
                     background: 'rgba(107,122,158,0.12)',
                     border: `1px solid ${C.border}`,

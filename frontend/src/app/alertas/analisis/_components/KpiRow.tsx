@@ -34,7 +34,7 @@ function DeltaChip({ pct }: { pct: number }) {
   const arrow = zero ? '→' : up ? '↑' : '↓';
   return (
     <span
-      className="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums tracking-wide"
+      className="inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums tracking-wide"
       style={{ color, background: bg, border: `1px solid ${color}33` }}
     >
       {arrow} {Math.abs(pct).toFixed(1)}%
@@ -66,7 +66,7 @@ function KpiCard({ label, value, icon, accentColor, chip, sub }: KpiCardProps) {
     >
       <div className="flex items-center justify-between">
         <span
-          className="text-[9px] uppercase tracking-[0.18em] font-semibold"
+          className="text-xs uppercase tracking-[0.18em] font-semibold"
           style={{ color: C.muted }}
         >
           {label}
@@ -84,7 +84,7 @@ function KpiCard({ label, value, icon, accentColor, chip, sub }: KpiCardProps) {
 
       <div className="flex items-end gap-2">
         <span
-          className="text-2xl font-bold tabular-nums leading-none"
+          className="text-2xl lg:text-3xl font-bold tabular-nums leading-none"
           style={{ color: '#F0F4FF', fontVariantNumeric: 'tabular-nums' }}
         >
           {value}
@@ -93,7 +93,7 @@ function KpiCard({ label, value, icon, accentColor, chip, sub }: KpiCardProps) {
       </div>
 
       {sub && (
-        <span className="text-[10px]" style={{ color: C.muted }}>
+        <span className="text-xs" style={{ color: C.muted }}>
           {sub}
         </span>
       )}
@@ -126,7 +126,7 @@ function RelCard({ label, value, icon, accentColor, subtitle, isNull }: RelCardP
     >
       <div className="flex items-center justify-between">
         <span
-          className="text-[9px] uppercase tracking-[0.18em] font-semibold"
+          className="text-xs uppercase tracking-[0.18em] font-semibold"
           style={{ color: C.muted }}
         >
           {label}
@@ -143,7 +143,7 @@ function RelCard({ label, value, icon, accentColor, subtitle, isNull }: RelCardP
       </div>
 
       <span
-        className="text-2xl font-bold tabular-nums leading-none"
+        className="text-xl lg:text-2xl font-bold tabular-nums leading-none"
         style={{ color: isNull ? C.muted : '#F0F4FF', fontVariantNumeric: 'tabular-nums' }}
       >
         {value}

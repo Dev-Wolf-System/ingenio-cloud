@@ -55,7 +55,7 @@ export function TendenciaDiaria({
           </p>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={220}>
+        <ResponsiveContainer width="100%" height={260}>
           <AreaChart data={data} margin={{ top: 8, right: 12, left: -16, bottom: 4 }}>
             <defs>
               <linearGradient id="tendGrad" x1="0" y1="0" x2="0" y2="1">
@@ -65,13 +65,13 @@ export function TendenciaDiaria({
             </defs>
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 9, fill: C.muted }}
+              tick={{ fontSize: 12, fill: C.muted }}
               axisLine={false}
               tickLine={false}
               interval="preserveStartEnd"
             />
             <YAxis
-              tick={{ fontSize: 10, fill: C.muted }}
+              tick={{ fontSize: 12, fill: C.muted }}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}

@@ -54,19 +54,19 @@ export function ComparativaTurnos({
           style={{ color: C.muted }}
         >
           <IconChartBar size={28} className="opacity-25" />
-          <p className="text-xs">Sin alertas en este período</p>
+          <p className="text-sm">Sin alertas en este período</p>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={220}>
+        <ResponsiveContainer width="100%" height={260}>
           <BarChart data={data} margin={{ top: 8, right: 12, left: -16, bottom: 4 }}>
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 12, fill: C.muted }}
+              tick={{ fontSize: 13, fill: C.muted }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 10, fill: C.muted }}
+              tick={{ fontSize: 12, fill: C.muted }}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}

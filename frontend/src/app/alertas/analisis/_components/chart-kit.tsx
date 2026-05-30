@@ -27,7 +27,7 @@ export function GlassTooltip({
   if (!active || !payload?.length) return null;
   return (
     <div
-      className="rounded-lg px-3 py-2 text-xs"
+      className="rounded-lg px-3 py-2 text-sm"
       style={{
         background: 'rgba(17,24,39,0.92)',
         backdropFilter: 'blur(20px)',

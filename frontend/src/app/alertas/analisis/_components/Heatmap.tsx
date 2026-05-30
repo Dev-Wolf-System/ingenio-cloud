@@ -46,7 +46,7 @@ export function Heatmap({
           style={{ color: C.muted }}
         >
           <IconLayoutGrid size={28} className="opacity-25" />
-          <p className="text-xs">Sin datos para el mapa de calor</p>
+          <p className="text-sm">Sin datos para el mapa de calor</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -56,7 +56,7 @@ export function Heatmap({
               <div
                 key={h}
                 className="flex-1 text-center"
-                style={{ fontSize: 7, color: C.muted, minWidth: 12 }}
+                style={{ fontSize: 9, color: C.muted, minWidth: 14 }}
               >
                 {h % 4 === 0 ? h : ''}
               </div>
@@ -68,7 +68,7 @@ export function Heatmap({
             <div key={dayIdx} className="flex items-center gap-[1px] mb-[2px]">
               <span
                 className="w-7 text-right pr-1 shrink-0"
-                style={{ fontSize: 8, color: C.muted }}
+                style={{ fontSize: 10, color: C.muted }}
               >
                 {day}
               </span>
@@ -81,8 +81,8 @@ export function Heatmap({
                     title={`${day} ${h}:00 · ${n} alerta${n !== 1 ? 's' : ''}`}
                     className="rounded-[2px] flex-1 cursor-default"
                     style={{
-                      height: 14,
-                      minWidth: 12,
+                      height: 18,
+                      minWidth: 14,
                       background: heatColor(intensity),
                       border: n > 0 ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent',
                     }}
@@ -94,7 +94,7 @@ export function Heatmap({
 
           {/* Legend */}
           <div className="flex items-center gap-2 mt-3">
-            <span style={{ fontSize: 8, color: C.muted }}>Baja</span>
+            <span style={{ fontSize: 10, color: C.muted }}>Baja</span>
             <div className="flex gap-[2px]">
               {[0, 0.2, 0.4, 0.6, 0.8, 1].map((v, i) => (
                 <div

@@ -44,10 +44,10 @@ export function TopSensores({
           style={{ color: C.muted }}
         >
           <IconRadar2 size={28} className="opacity-25" />
-          <p className="text-xs">Sin sensores registrados en este período</p>
+          <p className="text-sm">Sin sensores registrados en este período</p>
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height={Math.max(180, top8.length * 36)}>
+        <ResponsiveContainer width="100%" height={Math.max(220, top8.length * 42)}>
           <BarChart
             layout="vertical"
             data={top8}
@@ -55,7 +55,7 @@ export function TopSensores({
           >
             <XAxis
               type="number"
-              tick={{ fontSize: 10, fill: C.muted }}
+              tick={{ fontSize: 12, fill: C.muted }}
               axisLine={false}
               tickLine={false}
               allowDecimals={false}
@@ -63,8 +63,8 @@ export function TopSensores({
             <YAxis
               type="category"
               dataKey="name"
-              width={140}
-              tick={{ fontSize: 9, fill: C.muted }}
+              width={150}
+              tick={{ fontSize: 11, fill: C.muted }}
               axisLine={false}
               tickLine={false}
             />
@@ -74,7 +74,7 @@ export function TopSensores({
                 const d = props.payload[0].payload as typeof top8[number];
                 return (
                   <div
-                    className="rounded-lg px-3 py-2 text-xs"
+                    className="rounded-lg px-3 py-2 text-sm"
                     style={{
                       background: 'rgba(17,24,39,0.92)',
                       backdropFilter: 'blur(20px)',

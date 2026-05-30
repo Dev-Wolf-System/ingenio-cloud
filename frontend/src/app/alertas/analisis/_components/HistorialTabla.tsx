@@ -82,7 +82,7 @@ export function HistorialTabla({
         <button
           onClick={reloadHistory}
           disabled={historyLoading}
-          className="inline-flex items-center gap-1.5 text-2xs lg:text-xs text-text-muted hover:text-primary-light transition-colors px-3 py-1.5 rounded-md hover:bg-bg-hover border border-border"
+          className="inline-flex items-center gap-1.5 text-xs lg:text-sm text-text-muted hover:text-primary-light transition-colors px-3 py-1.5 rounded-md hover:bg-bg-hover border border-border"
         >
           <IconRefresh size={12} className={historyLoading ? 'animate-spin' : ''} />
           Recargar
@@ -93,7 +93,7 @@ export function HistorialTabla({
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-1 pb-3 border-b border-border/40">
         {/* Turno */}
         <div className="flex items-center gap-1">
-          <span className="text-2xs text-text-muted uppercase tracking-wider mr-1">Turno:</span>
+          <span className="text-xs text-text-muted uppercase tracking-wider mr-1">Turno:</span>
           {TURNOS.map((t) => (
             <FilterPill
               key={t.value}
@@ -106,7 +106,7 @@ export function HistorialTabla({
 
         {/* Área */}
         <div className="flex items-center gap-1">
-          <span className="text-2xs text-text-muted uppercase tracking-wider mr-1">Área:</span>
+          <span className="text-xs text-text-muted uppercase tracking-wider mr-1">Área:</span>
           <FilterPill label="Todas" active={filterArea === 'all'} onClick={() => setFilterArea('all')} />
           {AREAS.map((a) => (
             <FilterPill
@@ -121,7 +121,7 @@ export function HistorialTabla({
 
         {/* Severidad */}
         <div className="flex items-center gap-1">
-          <span className="text-2xs text-text-muted uppercase tracking-wider mr-1">Sev:</span>
+          <span className="text-xs text-text-muted uppercase tracking-wider mr-1">Sev:</span>
           <FilterPill label="Todas" active={filterSev === 'all'} onClick={() => setFilterSev('all')} />
           {(['info', 'warn', 'critical'] as const).map((s) => (
             <FilterPill
@@ -152,7 +152,7 @@ export function HistorialTabla({
         <div className="overflow-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-[10px] lg:text-xs uppercase tracking-wider text-text-muted border-b border-border">
+              <tr className="text-left text-xs lg:text-sm uppercase tracking-wider text-text-muted border-b border-border">
                 <th className="px-3 lg:px-4 py-2 lg:py-3 font-medium">Sev.</th>
                 <th className="px-3 lg:px-4 py-2 lg:py-3 font-medium">Área</th>
                 <th className="px-3 lg:px-4 py-2 lg:py-3 font-medium">Alerta</th>
@@ -187,7 +187,7 @@ export function HistorialTabla({
                     </td>
                     <td className="px-3 lg:px-4 py-2 lg:py-3 max-w-[220px]">
                       <p className="text-xs lg:text-sm font-medium text-text-primary truncate">{h.title}</p>
-                      {h.message && <p className="text-2xs lg:text-xs text-text-disabled truncate">{h.message}</p>}
+                      {h.message && <p className="text-xs lg:text-sm text-text-disabled truncate">{h.message}</p>}
                     </td>
                     <td className="px-3 lg:px-4 py-2 lg:py-3">
                       {h.metadata?.value != null ? (
@@ -197,13 +197,13 @@ export function HistorialTabla({
                       ) : <span className="text-text-disabled">—</span>}
                     </td>
                     <td className="px-3 lg:px-4 py-2 lg:py-3">
-                      <span className="mono text-2xs lg:text-xs text-text-primary tabular-nums">{fmtDate(h.detected_at)}</span>
+                      <span className="mono text-xs lg:text-sm text-text-primary tabular-nums">{fmtDate(h.detected_at)}</span>
                     </td>
                     <td className="px-3 lg:px-4 py-2 lg:py-3">
                       {h.resolved_at ? (
-                        <span className="mono text-2xs lg:text-xs text-ok tabular-nums">{fmtDate(h.resolved_at)}</span>
+                        <span className="mono text-xs lg:text-sm text-ok tabular-nums">{fmtDate(h.resolved_at)}</span>
                       ) : (
-                        <span className="text-2xs lg:text-xs text-warn font-semibold">activa</span>
+                        <span className="text-xs lg:text-sm text-warn font-semibold">activa</span>
                       )}
                     </td>
                     <td className="px-3 lg:px-4 py-2 lg:py-3 text-center">
@@ -222,7 +222,7 @@ export function HistorialTabla({
       {/* ── Paginator ─────────────────────────────────────────────────────── */}
       {historyTotal > 0 && (
         <div className="flex items-center justify-between pt-3 mt-1 border-t border-border/40">
-          <span className="text-2xs text-text-muted mono">
+          <span className="text-xs text-text-muted mono">
             {historyTotal} eventos · página <span className="text-text-primary font-semibold">{historyPage + 1}</span> de {historyPageCount}
           </span>
           <div className="flex items-center gap-1">

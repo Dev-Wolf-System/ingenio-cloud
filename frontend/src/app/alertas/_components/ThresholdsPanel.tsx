@@ -33,7 +33,7 @@ function StatusBadge({ status }: { status: LiveStatus }) {
   const conf = STATUS_CONF[status];
   return (
     <span
-      className="text-[9px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap"
+      className="text-xs uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap"
       style={{ color: conf.color, background: conf.bg, border: `1px solid ${conf.color}33` }}
     >
       {conf.label}
@@ -62,7 +62,7 @@ function SmallNumberInput({
         onChange(v === '' ? null : Number(v));
       }}
       placeholder={placeholder}
-      className="w-14 mono tabular-nums text-xs bg-bg-card/60 border border-border rounded px-1.5 py-0.5 text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-primary-light/50"
+      className="w-14 mono tabular-nums text-sm bg-bg-card/60 border border-border rounded px-1.5 py-0.5 text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-primary-light/50"
     />
   );
 }
@@ -101,7 +101,7 @@ function AreaHeader({
           >
             {label}
           </span>
-          <span className="text-[10px] text-text-muted ml-1">
+          <span className="text-xs text-text-muted ml-1">
             {enabledCount}/{total} activos
           </span>
         </div>
@@ -178,7 +178,7 @@ export function ThresholdsPanel({
               placeholder="Buscar sensor…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="text-xs bg-bg-card/60 border border-border rounded-md pl-7 pr-2 py-1.5 text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-primary-light/50 w-36 sm:w-44"
+              className="text-sm bg-bg-card/60 border border-border rounded-md pl-7 pr-2 py-1.5 text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-primary-light/50 w-36 sm:w-44"
             />
           </div>
         </div>
@@ -192,7 +192,7 @@ export function ThresholdsPanel({
         <div className="overflow-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-[10px] lg:text-xs uppercase tracking-wider text-text-muted border-b border-border">
+              <tr className="text-left text-xs lg:text-sm uppercase tracking-wider text-text-muted border-b border-border">
                 <th className="px-3 lg:px-4 py-2 lg:py-3 font-medium">Sensor</th>
                 <th className="px-3 lg:px-4 py-2 lg:py-3 font-medium text-center">Estado</th>
                 <th className="px-3 lg:px-4 py-2 lg:py-3 font-medium text-center">Valor actual</th>
@@ -230,10 +230,10 @@ export function ThresholdsPanel({
                           >
                             {/* Sensor name */}
                             <td className="px-3 lg:px-4 py-2 lg:py-3">
-                              <div className="font-medium text-text-primary text-xs lg:text-sm">
+                              <div className="font-medium text-text-primary text-sm lg:text-base">
                                 {s.key.replaceAll('_', ' ')}
                               </div>
-                              <div className="text-[10px] text-text-disabled mono">{s.unit ?? '—'}</div>
+                              <div className="text-xs text-text-disabled mono">{s.unit ?? '—'}</div>
                             </td>
 
                             {/* Live status */}
@@ -295,7 +295,7 @@ export function ThresholdsPanel({
                                     } mt-0.5`}
                                   />
                                 </button>
-                                <span className={`text-[9px] whitespace-nowrap ${t.escalate_enabled !== false ? 'text-text-muted' : 'text-text-disabled'}`}>
+                                <span className={`text-xs whitespace-nowrap ${t.escalate_enabled !== false ? 'text-text-muted' : 'text-text-disabled'}`}>
                                   Escalar a crítica
                                 </span>
                               </div>
@@ -313,7 +313,7 @@ export function ThresholdsPanel({
                                   placeholder="%"
                                 />
                               </div>
-                              <div className={`text-[9px] mt-0.5 whitespace-nowrap transition-opacity ${t.escalate_enabled === false ? 'opacity-30' : 'text-text-disabled'}`}>tiempo / deriva</div>
+                              <div className={`text-xs mt-0.5 whitespace-nowrap transition-opacity ${t.escalate_enabled === false ? 'opacity-30' : 'text-text-disabled'}`}>tiempo / deriva</div>
                             </td>
 
                             {/* Notes */}
@@ -323,7 +323,7 @@ export function ThresholdsPanel({
                                 value={t.notes ?? ''}
                                 onChange={(e) => update(s.area, s.key, { notes: e.target.value || null })}
                                 placeholder="nota…"
-                                className="w-28 lg:w-36 text-xs bg-bg-card/60 border border-border rounded px-2 py-1 text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-primary-light/50"
+                                className="w-28 lg:w-36 text-sm bg-bg-card/60 border border-border rounded px-2 py-1 text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-primary-light/50"
                               />
                             </td>
 

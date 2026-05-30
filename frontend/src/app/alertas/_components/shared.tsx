@@ -91,7 +91,7 @@ export function FilterPill({
   return (
     <button
       onClick={onClick}
-      className="text-2xs uppercase tracking-wider px-2.5 py-1 rounded transition-all"
+      className="text-xs uppercase tracking-wider px-2.5 py-1 rounded transition-all"
       style={{
         background: active
           ? color
