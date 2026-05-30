@@ -131,6 +131,47 @@ sección de tiempo real. Paleta/tema vía tokens existentes.
 - Cero cambios en vistas/componentes del dashboard principal.
 - Base lista para sumar login/RBAC en el futuro (ruta y layout aislados).
 
+## 6.bis — Refinamiento v2 (referencia "Molienda Online" + datos confirmados)
+
+El usuario aportó mockups de la "Molienda Online" legacy como REFERENCIA de información,
+**no para copiar literal**: tomamos las mismas secciones/datos y los mostramos **mejor,
+premium, con nuestra paleta/estilo** (más limpio, jerarquía clara, no denso/anticuado).
+
+**Fuentes de datos CONFIRMADAS (ya no pendientes):**
+- **Comparativo de caña** (Caña Bruta, Trash Pond, Trash Kg, Caña Neta, Rto Pond, Brix Pond,
+  Pol Pond, Pureza Pond) → `legacy.muestras_lab` (cols: peso_bruto, neto_cana, trash,
+  trash_real, pol, brix, pureza, rendimiento, azucar_producido, nrocierre, fecha_industrial).
+  Ponderado por `neto_cana`. Columnas **Actual / Últ. Cierre / Acumulado** = día corriente /
+  último `nrocierre` / zafra.
+- **Tabla movimientos de caña** (NRO PESADA, GRUPO, CAÑERO, NRO MUESTRA, CAÑA BRUTA, TRASH,
+  BRIX, POL…) → `legacy.muestras_lab` (numero_pesada, grupo, razon_social, numero_analisis,
+  peso_bruto, trash, brix, pol, variedad).
+- **Modal Análisis de Azúcar** → `legacy.especiales`: params COLOR(`color_icumsa`),
+  TURBIDEZ(`turbidez`), HUMEDAD(`humedad`), CENIZAS(`cenizas`), SEDIMENTO(`sediment_test`),
+  SO2(`so2_ppm`), GRANULOMETRÍA. Tipos (columnas) por `proceso_codigo`: C.CORTA=`Cinta Corta`,
+  C.LARGA=`Cinta Larga`, EMBOLSADO=`Envases`/`ProduccionBolsas`, CRUDO=(confirmar; placeholder
+  si no aparece). **Estado Silos** → `proceso_codigo='SILO'` (silo, destino CAÑERO/REF/VACIO,
+  calidad). **Cal/Soda/ART** → `proceso_codigo='Soda_Cal'` + ART de `legacy.destileria_cubas`/
+  `production.v_destileria_analisis` (art_porciento). Selector por hora (`hora_lectura`) +
+  promedio del día.
+- **Resumen Fábrica (jugos)** → `legacy.lab_general` (Jugo Mixto, Clarificado, Melado…).
+- **Tiempo real molienda/producción** → reuso `MoliendaProduccionHora` (sin cambios).
+- **Botones "Ind. Fabricación/Trapiche/Caldera/Usina/Destilería"** del mockup → reinterpretarlos
+  premium (no obligatorio copiarlos); evaluar si son accesos a modales por área o indicadores.
+  Definir en build (placeholder si no aporta dato nuevo ya disponible).
+- **Footer** (Paradas/Total/Últ Pesada/Pol Bagazo/Pol Cachaza/Agua Imbibición; En Canchón/
+  Prom Hora/Prom Día) → datos ya disponibles en el dashboard/vistas; integrar premium.
+
+**Premium (cómo mejorar vs el legacy):** tarjetas glass con jerarquía, números tabulares
+grandes con `lg:`/`xl:`, tablas con buena densidad + sticky header + scroll, tooltips glass,
+estados de tendencia (↑↓) en el comparativo, modales con la estética de los del dashboard.
+Mantener mobile usable (base) + agrandar en pantallas grandes.
+
+**Backend nuevo (read-only):** sumar al módulo `molienda-cloud` endpoints
+`/comparativa-cana` (agrega muestras_lab ponderado por día/cierre/zafra),
+`/movimientos-cana` (filas de muestras_lab del día), `/azucar` (especiales por proceso+hora +
+silos + soda_cal + ART). Sin tocar vistas existentes.
+
 ## 7. Fuera de alcance (ahora)
 - Login / RBAC / niveles de acceso (futuro, solo previsto).
 - Cablear datos cuyo mapeo de negocio no esté confirmado (van como placeholder).
