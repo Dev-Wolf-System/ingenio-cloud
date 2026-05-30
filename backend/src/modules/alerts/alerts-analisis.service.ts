@@ -84,6 +84,15 @@ export class AlertsAnalisisService {
     } catch (err) {
       this.logger.warn(`analisis paradas fail: ${(err as Error).message}`);
     }
+    // fn_paradas_turno filtra grueso por fecha_industrial (±1 día), NO por hora.
+    // Recortar a la ventana fina del período: dejar solo paradas que SOLAPAN [desde, hasta].
+    const desdeMs = rango.desde.getTime();
+    const hastaMs = rango.hasta.getTime();
+    paradas = paradas.filter((p) => {
+      const ini = new Date(p.inicio).getTime();
+      const fin = p.fin ? new Date(p.fin).getTime() : ini;
+      return fin >= desdeMs && ini < hastaMs;
+    });
     paradas = cruzarParadas(alerts, paradas, PARADA_ANTES_MIN, PARADA_DESPUES_MIN);
 
     const turnoDe = (iso: string): 'Mañana' | 'Tarde' | 'Noche' => {

@@ -110,9 +110,10 @@ interface RelCardProps {
   accentColor: string;
   subtitle: string;
   isNull: boolean;
+  emptyLabel?: string;
 }
 
-function RelCard({ label, value, icon, accentColor, subtitle, isNull }: RelCardProps) {
+function RelCard({ label, value, icon, accentColor, subtitle, isNull, emptyLabel = 'Sin paradas registradas' }: RelCardProps) {
   return (
     <div
       className="flex flex-col gap-2 rounded-xl p-4"
@@ -150,7 +151,7 @@ function RelCard({ label, value, icon, accentColor, subtitle, isNull }: RelCardP
       </span>
 
       <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
-        {isNull ? 'Sin paradas registradas' : subtitle}
+        {isNull ? emptyLabel : subtitle}
       </span>
     </div>
   );
@@ -255,6 +256,7 @@ export function KpiRow({
           accentColor="#A89BFF"
           subtitle="reconocimiento"
           isNull={reliabilidad.mtta_min === null}
+          emptyLabel="Sin reconocimientos"
         />
       </div>
     </div>
