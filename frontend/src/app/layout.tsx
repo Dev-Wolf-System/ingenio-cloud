@@ -62,6 +62,7 @@ export const metadata: Metadata = {
   },
   applicationName: 'Ingenio Cloud',
   formatDetection: { telephone: false },
+  manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {

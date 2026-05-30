@@ -1,10 +1,14 @@
 import { Body, Controller, Get, HttpCode, Param, Post, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
+import { AlertsAnalisisService } from './alerts-analisis.service';
 import { AlertsService } from './alerts.service';
 
 @Controller('alerts')
 export class AlertsController {
-  constructor(private readonly svc: AlertsService) {}
+  constructor(
+    private readonly svc: AlertsService,
+    private readonly analisisSvc: AlertsAnalisisService,
+  ) {}
 
   /** GET /api/alerts/active — alertas activas (no resueltas) */
   @Get('active')
@@ -19,6 +23,20 @@ export class AlertsController {
       limit ? Math.min(parseInt(limit, 10), 500) : 100,
       offset ? parseInt(offset, 10) : 0,
     );
+  }
+
+  /** GET /api/alerts/history/resumen?limit=100 — resumen IA del historial de alertas */
+  @Get('history/resumen')
+  historyResumen(@Query('limit') limit?: string) {
+    return this.svc.resumenHistorial(limit ? Math.min(parseInt(limit, 10), 500) : 100);
+  }
+
+  /** GET /api/alerts/analisis?periodo=turno|dia|zafra&offset=0&refresh=1 */
+  @Get('analisis')
+  analisis(@Query('periodo') periodo?: string, @Query('offset') offset?: string, @Query('refresh') refresh?: string) {
+    const p = (['turno', 'dia', 'zafra'] as const).includes(periodo as never) ? (periodo as 'turno' | 'dia' | 'zafra') : 'dia';
+    const off = Math.max(0, Math.min(parseInt(offset ?? '0', 10) || 0, 30));
+    return this.analisisSvc.analisis(p, refresh === '1', off);
   }
 
   /** GET /api/alerts/:id/analisis-causa — análisis IA de causa (cache 5min) */

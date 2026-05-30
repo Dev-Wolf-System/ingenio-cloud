@@ -1,6 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AiService } from '../ai/ai.service';
+import { sevLabel, sevOrder, normalizeSeverity } from './severity';
+import { getCurrentShift } from '../../common/shift';
 
 // ── Helpers TTS ──────────────────────────────────────────────────────────────
 
@@ -52,37 +54,6 @@ function numEs(n: number): string {
   return String(n).split('').join(' ');
 }
 
-/** Normaliza unidades técnicas a texto hablable en español */
-function unitEs(unit: string): string {
-  const MAP: Record<string, string> = {
-    '°C':   'grados',
-    '°F':   'grados Fahrenheit',
-    'ºC':   'grados',
-    '%':    'por ciento',
-    't/h':  'toneladas por hora',
-    'Tn/H': 'toneladas por hora',
-    'tn/h': 'toneladas por hora',
-    'm³/h': 'metros cúbicos por hora',
-    'm3/h': 'metros cúbicos por hora',
-    'm³':   'metros cúbicos',
-    'm3':   'metros cúbicos',
-    'MW':   'megavatios',
-    'kW':   'kilovatios',
-    'kWh':  'kilovatios hora',
-    'bar':  'bar',
-    'pH':   '',              // "pH" se pronuncia bien solo
-    'rpm':  'revoluciones por minuto',
-    'kg':   'kilogramos',
-    'kg/h': 'kilogramos por hora',
-    'L/h':  'litros por hora',
-    'l/h':  'litros por hora',
-    'psi':  'psi',
-    'V':    'voltios',
-    'A':    'amperes',
-    'Hz':   'hertz',
-  };
-  return MAP[unit] ?? unit;
-}
 
 interface AlertRow {
   id: string;
@@ -162,6 +133,98 @@ export class AlertsService {
     }
   }
 
+  async resumenHistorial(limit: number) {
+    try {
+      const alertsSchema = this.supabase.schema('alerts');
+      const { data, error } = await alertsSchema
+        .from('active')
+        .select('id, severity, area, title, detected_at, resolved_at, metadata')
+        .not('resolved_at', 'is', null)
+        .order('detected_at', { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        this.logger.warn(`resumenHistorial fail: ${error.message}`);
+        return { resumen: 'Error al obtener historial.', patrones: [], recomendaciones: [], stats: null, stale: true };
+      }
+
+      const rows = (data ?? []) as Array<{
+        id: string;
+        severity: string;
+        area: string;
+        title: string;
+        detected_at: string;
+        resolved_at: string;
+        metadata: Record<string, unknown>;
+      }>;
+
+      // Build aggregated payload
+      const byArea: Record<string, number> = {};
+      const bySeverity: Record<string, number> = {};
+      const byTurno: Record<string, number> = {};
+      const titleFreq: Record<string, number> = {};
+      let totalDurMin = 0;
+      let maxDurMin = 0;
+      let countWithDur = 0;
+
+      for (const r of rows) {
+        // area
+        byArea[r.area] = (byArea[r.area] ?? 0) + 1;
+
+        // severity (normalizada)
+        const sev = normalizeSeverity(r.severity);
+        bySeverity[sev] = (bySeverity[sev] ?? 0) + 1;
+
+        // turno via getCurrentShift helper
+        const shift = getCurrentShift(new Date(r.detected_at));
+        byTurno[shift.displayName] = (byTurno[shift.displayName] ?? 0) + 1;
+
+        // duration
+        if (r.resolved_at) {
+          const dur = Math.round((new Date(r.resolved_at).getTime() - new Date(r.detected_at).getTime()) / 60_000);
+          if (dur >= 0) {
+            totalDurMin += dur;
+            if (dur > maxDurMin) maxDurMin = dur;
+            countWithDur++;
+          }
+        }
+
+        // title frequency
+        titleFreq[r.title] = (titleFreq[r.title] ?? 0) + 1;
+      }
+
+      const avgDurMin = countWithDur > 0 ? Math.round(totalDurMin / countWithDur) : 0;
+      const top5Titles = Object.entries(titleFreq)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([title, count]) => ({ title, count }));
+
+      const stats = {
+        total: rows.length,
+        byArea,
+        bySeverity,
+        byTurno,
+        avgDurationMin: avgDurMin,
+        maxDurationMin: maxDurMin,
+        top5Sensors: top5Titles,
+      };
+
+      if (!this.ai.isAvailable()) {
+        return { resumen: 'IA no disponible.', patrones: [], recomendaciones: [], stats };
+      }
+
+      const aiResult = await this.ai.resumenHistorial(stats);
+      if (!aiResult) {
+        return { resumen: 'No se pudo generar el resumen.', patrones: [], recomendaciones: [], stats };
+      }
+
+      return { ...aiResult, stats };
+    } catch (err) {
+      this.logger.warn(`resumenHistorial exception: ${(err as Error).message}`);
+      return { resumen: 'Error inesperado.', patrones: [], recomendaciones: [], stats: null, stale: true };
+    }
+  }
+
   async getAnalisisCausa(id: string) {
     // Buscar alerta
     const alertsSchema = this.supabase.schema('alerts');
@@ -227,45 +290,68 @@ export class AlertsService {
       return null;
     }
 
-    // Ordenar critical → warning → info
-    const ORDER: Record<string, number> = { critical: 0, warning: 1, info: 2 };
-    const sorted = [...data].sort(
-      (a, b) => (ORDER[a.severity] ?? 9) - (ORDER[b.severity] ?? 9),
-    );
+    // Ordenar critical → warn → info
+    const sorted = [...data].sort((a, b) => sevOrder(a.severity) - sevOrder(b.severity));
 
-    const sevLabel = (s: string) =>
-      s === 'critical' ? 'crítica' : s === 'warning' ? 'de advertencia' : 'informativa';
+    // Severidad dominante
+    const dominant = sorted.reduce<'info' | 'warn' | 'critical'>((best, a) => {
+      const sev = normalizeSeverity(a.severity);
+      return sevOrder(sev) < sevOrder(best) ? sev : best;
+    }, 'info');
 
-    const critCount = sorted.filter((a) => a.severity === 'critical').length;
-    const warnCount = sorted.filter((a) => a.severity === 'warning').length;
-    const capArea = (a: string) => a.charAt(0).toUpperCase() + a.slice(1).toLowerCase();
+    let text: string;
 
-    // Encabezado natural — números como palabras para evitar pronunciación en inglés
-    const parts: string[] = [];
-    if (critCount > 0) parts.push(`${numEs(critCount)} alerta${critCount > 1 ? 's' : ''} crítica${critCount > 1 ? 's' : ''}`);
-    if (warnCount > 0) parts.push(`${numEs(warnCount)} advertencia${warnCount > 1 ? 's' : ''}`);
-    const resto = sorted.length - critCount - warnCount;
-    if (resto > 0) parts.push(`${numEs(resto)} aviso${resto > 1 ? 's' : ''}`);
-
-    let text = `Atención, hay ${parts.join(' y ')} en el sistema.`;
-
-    const toSpeak = sorted.slice(0, 3);
-    for (const a of toSpeak) {
+    if (sorted.length === 1) {
+      // ── 1 alerta: frase directa ───────────────────────────────────────────
+      const a = sorted[0];
       const meta = (a.metadata ?? {}) as { value?: number; min_value?: number; max_value?: number; unit?: string };
-      const uStr = meta.unit ? ` ${unitEs(meta.unit)}` : '';
-      text += ` En el área de ${capArea(a.area)}, alerta ${sevLabel(a.severity)}: ${a.title}.`;
-      if (meta.value != null) {
-        text += ` El valor actual es ${numEs(meta.value)}${uStr}.`;
-        if (meta.max_value != null && meta.value > meta.max_value) {
-          text += ` Está por encima del máximo permitido de ${numEs(meta.max_value)}${uStr}.`;
-        } else if (meta.min_value != null && meta.value < meta.min_value) {
-          text += ` Está por debajo del mínimo permitido de ${numEs(meta.min_value)}${uStr}.`;
-        }
+      const rango =
+        meta.value != null && meta.min_value != null && meta.value < meta.min_value ? 'mínimo' :
+        meta.value != null && meta.max_value != null && meta.value > meta.max_value ? 'máximo' :
+        'de trabajo';
+      text = `Atención, alerta ${sevLabel(a.severity)}. ${a.title} fuera del rango ${rango}.`;
+    } else {
+      // ── Varias alertas: encabezado corto + máx 3 mencionadas ─────────────
+      const critCount = sorted.filter((a) => normalizeSeverity(a.severity) === 'critical').length;
+      const severidadTexto =
+        dominant === 'critical' && critCount === sorted.length ? 'críticas' :
+        dominant === 'critical' ? 'varias' :
+        dominant === 'warn'     ? 'de advertencia' :
+                                  'informativas';
+
+      text = `Atención, ${numEs(sorted.length)} alertas ${severidadTexto}.`;
+
+      // Agrupar por triage.grupo o área para mencionar hasta 3 grupos/alertas
+      type SortedRow = (typeof sorted)[number];
+      const groupMap = new Map<string, SortedRow[]>();
+      for (const a of sorted) {
+        const t = (a.metadata as { triage?: { grupo?: string } } | null)?.triage;
+        const key = t?.grupo ?? a.area;
+        const existing = groupMap.get(key);
+        if (existing) existing.push(a);
+        else groupMap.set(key, [a]);
       }
-    }
-    if (sorted.length > 3) {
-      const extra = sorted.length - 3;
-      text += ` Además hay ${numEs(extra)} alerta${extra > 1 ? 's' : ''} más pendiente${extra > 1 ? 's' : ''}.`;
+
+      // Ordenar grupos: más crítico primero
+      const groupsSorted = Array.from(groupMap.entries()).sort(([, ga], [, gb]) => {
+        const minSev = (arr: SortedRow[]) => Math.min(...arr.map((x) => sevOrder(x.severity)));
+        return minSev(ga) - minSev(gb);
+      });
+
+      const toSpeak = groupsSorted.slice(0, 3);
+      for (const [grupo, miembros] of toSpeak) {
+        const first = miembros[0];
+        const t = (first.metadata as { triage?: { titular?: string } } | null)?.triage;
+        const titulo = t?.titular ?? first.title;
+        const capGrupo = grupo.charAt(0).toUpperCase() + grupo.slice(1).toLowerCase();
+        text += ` ${capGrupo}: ${titulo}.`;
+      }
+
+      const totalSpoken = toSpeak.reduce((acc, [, g]) => acc + g.length, 0);
+      if (sorted.length > totalSpoken) {
+        const extra = sorted.length - totalSpoken;
+        text += ` Y ${numEs(extra)} más.`;
+      }
     }
 
     if (!this.ai.isAvailable()) return null;
