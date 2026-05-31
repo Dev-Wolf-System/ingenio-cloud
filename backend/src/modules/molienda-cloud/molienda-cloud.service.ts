@@ -68,7 +68,7 @@ export class MoliendaCloudService {
   }
 
   async comparativaCana() {
-    const { data, error } = await this.supabase.schema('legacy').from('muestras_lab')
+    const { data, error } = await this.supabase.schema('production').from('v_mc_muestras_lab')
       .select('peso_bruto, neto_cana, trash, pol, brix, pureza, rendimiento, fecha_industrial, nrocierre')
       .order('fecha_industrial', { ascending: false })
       .limit(5000);
@@ -88,7 +88,7 @@ export class MoliendaCloudService {
   }
 
   async movimientosCana(limit = 100) {
-    const { data, error } = await this.supabase.schema('legacy').from('muestras_lab')
+    const { data, error } = await this.supabase.schema('production').from('v_mc_muestras_lab')
       .select('numero_pesada, grupo, razon_social, numero_analisis, peso_bruto, trash, brix, pol, neto_cana, variedad, salida_at')
       .order('numero_pesada', { ascending: false })
       .limit(limit);
@@ -98,7 +98,7 @@ export class MoliendaCloudService {
 
   async azucar(desde?: string, hasta?: string) {
     // Primero obtenemos la max fecha_industrial del día
-    const { data: fechaData, error: fechaError } = await this.supabase.schema('legacy').from('especiales')
+    const { data: fechaData, error: fechaError } = await this.supabase.schema('production').from('v_mc_especiales')
       .select('fecha_industrial')
       .order('fecha_industrial', { ascending: false })
       .limit(1);
@@ -107,7 +107,7 @@ export class MoliendaCloudService {
     const maxFecha = (fechaData ?? [])[0]?.fecha_industrial ?? null;
     if (!maxFecha) return { data: [] };
 
-    let q = this.supabase.schema('legacy').from('especiales')
+    let q = this.supabase.schema('production').from('v_mc_especiales')
       .select('proceso_codigo, fecha_industrial, hora_lectura, color_icumsa, turbidez, humedad, cenizas, sediment_test, so2_ppm, granulometria_20, granulometria_30, calidad, silo, destino')
       .eq('fecha_industrial', maxFecha)
       .order('hora_lectura', { ascending: true });
@@ -283,7 +283,7 @@ export class MoliendaCloudService {
   }
 
   async lab(procesos: string[], desde?: string, hasta?: string) {
-    let q = this.supabase.schema('legacy').from('lab_general')
+    let q = this.supabase.schema('production').from('v_mc_lab_general')
       .select('proceso_codigo, fecha_industrial, hora_lectura, kilos, brix_manual, brix_automatico, pol_manual, pol_automatico, pureza')
       .order('hora_lectura', { ascending: true });
     if (procesos.length) q = q.in('proceso_codigo', procesos);
