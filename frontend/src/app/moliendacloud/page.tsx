@@ -97,7 +97,7 @@ function TrapicheEstadoBar() {
   const config = ESTADO_CONFIG[estado];
 
   return (
-    <div className="max-w-[1600px] mx-auto w-full px-3 sm:px-4 my-2">
+    <div className="w-full px-3 sm:px-4 my-2">
       <AnimatePresence mode="wait">
         <m.div
           key={estado}
@@ -211,8 +211,8 @@ export default function MoliendaCloudPage() {
           right={<MoliendaProduccionHora />}
         />
 
-        {/* Movimientos de caña — full width */}
-        <div className="max-w-[1600px] mx-auto w-full px-3 sm:px-4 pb-3">
+        {/* Movimientos de caña — full width (sin max-w, ocupa todo el ancho) */}
+        <div className="w-full px-3 sm:px-4 pb-3">
           <MovimientosCana />
         </div>
 

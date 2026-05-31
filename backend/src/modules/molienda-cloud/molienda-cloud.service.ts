@@ -159,13 +159,14 @@ export class MoliendaCloudService {
       this.logger.warn(`paradasAnalisis fetch fail: ${(err as Error).message}`);
     }
 
-    // fn_paradas_turno filtra grueso por fecha_industrial; recortar a ventana exacta.
+    // fn_paradas_turno filtra grueso por fecha_industrial (±1 día); recortar a la ventana
+    // exacta del período. Criterio: la parada PERTENECE al turno/día en que INICIÓ
+    // (inicio dentro de [desde, hasta)) — evita que paradas de turnos vecinos se cuelen.
     const desdeMs = rango.desde.getTime();
     const hastaMs = rango.hasta.getTime();
     paradas = paradas.filter((p) => {
       const ini = new Date(p.inicio).getTime();
-      const fin = p.fin ? new Date(p.fin).getTime() : ini;
-      return fin >= desdeMs && ini < hastaMs;
+      return ini >= desdeMs && ini < hastaMs;
     });
 
     const reliab = reliabilidad([], paradas, spanMin);
@@ -207,8 +208,8 @@ export class MoliendaCloudService {
     let impacto: { prom_t_h: number; toneladas_no_molidas: number } | null = null;
     try {
       const bloques = await this.moliendaBloques();
-      const filasBloque = (bloques.data as Array<{ molienda_kg?: number | null; tipo?: string | null }>)
-        .filter((f) => f.tipo === 'dia_corriente' && f.molienda_kg != null);
+      const filasBloque = (bloques.data as Array<{ molienda_kg?: number | null; bloque?: string | null }>)
+        .filter((f) => f.bloque === 'dia_corriente' && f.molienda_kg != null);
       if (filasBloque.length > 0) {
         const promKgH = filasBloque.reduce((s, f) => s + (f.molienda_kg ?? 0), 0) / filasBloque.length;
         const promTH = Math.round((promKgH / 1000) * 10) / 10;

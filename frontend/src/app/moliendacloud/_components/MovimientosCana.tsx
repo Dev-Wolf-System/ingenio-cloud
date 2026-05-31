@@ -75,16 +75,15 @@ export function MovimientosCana() {
         </div>
       ) : (
         <div
-          className="overflow-auto rounded-lg"
-          style={{ maxHeight: '420px' }}
+          className="overflow-auto rounded-lg max-h-[420px] lg:max-h-[560px]"
         >
-          <table className="w-full text-xs border-collapse" style={{ minWidth: '640px' }}>
+          <table className="w-full text-xs lg:text-sm xl:text-base border-collapse" style={{ minWidth: '640px' }}>
             <thead className="sticky top-0 z-10" style={{ background: 'var(--bg-card)' }}>
               <tr>
                 {COLS.map((col) => (
                   <th
                     key={col.header}
-                    className={`py-2 px-2 lg:px-3 text-[10px] font-semibold tracking-[0.12em] uppercase whitespace-nowrap ${col.align === 'right' ? 'text-right' : 'text-left'}`}
+                    className={`py-2 lg:py-3 px-2 lg:px-4 text-[10px] lg:text-xs font-semibold tracking-[0.12em] uppercase whitespace-nowrap ${col.align === 'right' ? 'text-right' : 'text-left'}`}
                     style={{
                       color: 'var(--text-muted)',
                       borderBottom: '1px solid var(--border)',
@@ -109,7 +108,7 @@ export function MovimientosCana() {
                     {COLS.map((col) => (
                       <td
                         key={col.header}
-                        className={`py-1.5 px-2 lg:px-3 ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.mono ? 'tabular-nums' : ''} font-medium`}
+                        className={`py-1.5 lg:py-2.5 px-2 lg:px-4 ${col.align === 'right' ? 'text-right' : 'text-left'} ${col.mono ? 'tabular-nums' : ''} font-medium`}
                         style={{ color: 'var(--text-primary)' }}
                         title={col.header === 'CAÑERO' ? (row.razon_social ?? '') : undefined}
                       >
