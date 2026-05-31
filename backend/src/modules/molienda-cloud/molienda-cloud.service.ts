@@ -68,12 +68,12 @@ export class MoliendaCloudService {
   }
 
   async comparativaCana() {
-    // Lógica de períodos en la vista production.v_mc_comparativa_cana (espeja v_molienda_bloques):
-    //   actual = día corriente (dia_obj, borde 08:00): tonelaje desde balanza + calidad lab parcial
-    //   ult_cierre = día anterior (dia_obj-1): solo lab (último día cerrado)
-    //   acumulado = zafra del año en curso (lab) + balanza del día corriente
+    // Lógica de períodos en la vista production.v_mc_comparativa_cana (espeja el dashboard):
+    //   molienda = de v_molienda_bloques (mismos números que el dashboard: día corriente/anterior/zafra)
+    //   tonelaje caña (bruta/neta/trash) = legacy.movimientos (live, zafra completa), día por salida_at -8h
+    //   calidad ponderada = muestras_lab; zafra desde production.zafras.fecha_inicio
     const { data, error } = await this.supabase.schema('production').from('v_mc_comparativa_cana')
-      .select('periodo, cana_bruta_kg, cana_neta_kg, trash_kg, trash_pond, rto_pond, brix_pond, pol_pond, pureza_pond, n');
+      .select('periodo, molienda_kg, cana_bruta_kg, cana_neta_kg, trash_kg, trash_pond, rto_pond, brix_pond, pol_pond, pureza_pond, n');
     if (error) { this.logger.warn(`comparativaCana: ${error.message}`); return { stale: true, actual: null, ult_cierre: null, acumulado: null }; }
 
     const rows = (data ?? []) as Array<Record<string, unknown>>;
@@ -83,6 +83,7 @@ export class MoliendaCloudService {
       const r = rows.find((x) => x.periodo === p);
       if (!r) return null;
       return {
+        molienda_kg: num(r.molienda_kg),
         cana_bruta_kg: num(r.cana_bruta_kg),
         cana_neta_kg: num(r.cana_neta_kg),
         trash_kg: num(r.trash_kg),
@@ -101,16 +102,20 @@ export class MoliendaCloudService {
   async movimientosCana(limit = 100) {
     const { data, error } = await this.supabase.schema('production').from('v_mc_muestras_lab')
       .select('numero_pesada, grupo, razon_social, numero_analisis, peso_bruto, trash, brix, pol, pureza, rendimiento, neto_cana, variedad, salida_at')
-      .order('numero_pesada', { ascending: false })
+      .order('salida_at', { ascending: false, nullsFirst: false })
       .limit(limit);
     if (error) { this.logger.warn(`movimientosCana: ${error.message}`); return { stale: true, data: [] }; }
     return { data: data ?? [] };
   }
 
   async azucar(desde?: string, hasta?: string) {
-    // Primero obtenemos la max fecha_industrial del día
+    // Máx fecha_industrial SIN pasar de hoy (hay filas con fecha futura, ej. Soda_Cal a 06-05,
+    // que ensombrecían el día real y dejaban el modal vacío).
+    const n = new Date();
+    const hoyStr = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
     const { data: fechaData, error: fechaError } = await this.supabase.schema('production').from('v_mc_especiales')
       .select('fecha_industrial')
+      .lte('fecha_industrial', hoyStr)
       .order('fecha_industrial', { ascending: false })
       .limit(1);
     if (fechaError) { this.logger.warn(`azucar (fecha): ${fechaError.message}`); return { stale: true, data: [] }; }
@@ -131,7 +136,17 @@ export class MoliendaCloudService {
   }
 
   async paradasAnalisis(periodo: Periodo, offset = 0) {
-    const rango = rangoPeriodo(periodo, new Date(), undefined, offset);
+    // Zafra: arrancar desde production.zafras.fecha_inicio del año en curso (no 1-ene),
+    // así el selector "Zafra" sólo cuenta paradas de la zafra vigente (ej. 2026 desde 18-may).
+    let zafraInicio: Date | undefined;
+    if (periodo === 'zafra') {
+      const anio = new Date().getFullYear();
+      const { data: zf } = await this.supabase.schema('production').from('zafras')
+        .select('fecha_inicio').eq('anio', anio).limit(1);
+      const fi = (zf ?? [])[0]?.fecha_inicio as string | undefined;
+      if (fi) zafraInicio = new Date(fi);
+    }
+    const rango = rangoPeriodo(periodo, new Date(), zafraInicio, offset);
     const spanMin = (rango.hasta.getTime() - rango.desde.getTime()) / 60_000;
 
     let paradas: ParadaRow[] = [];

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { CanchonResumen, BalanzaHoraRow, MovimientoRow, MoliendaBloque, LabRow } from '../_types';
 
 export interface CanaAgg {
+  molienda_kg: number;
   cana_bruta_kg: number;
   cana_neta_kg: number;
   trash_kg: number;
@@ -42,7 +43,7 @@ export function useCanchon() {
 }
 
 export function useBalanzaHora() {
-  return useQuery({ queryKey: ['mc', 'balanza-hora'], queryFn: () => get<{ data: BalanzaHoraRow[] }>('balanza-hora'), refetchInterval: 60_000 });
+  return useQuery({ queryKey: ['mc', 'balanza-hora'], queryFn: () => get<{ data: BalanzaHoraRow[] }>('balanza-hora'), refetchInterval: 30_000 });
 }
 
 export function useMovimientosTipo() {
@@ -50,11 +51,11 @@ export function useMovimientosTipo() {
 }
 
 export function useMoliendaBloques() {
-  return useQuery({ queryKey: ['mc', 'mol-bloques'], queryFn: () => get<{ data: MoliendaBloque[] }>('molienda-bloques'), refetchInterval: 60_000 });
+  return useQuery({ queryKey: ['mc', 'mol-bloques'], queryFn: () => get<{ data: MoliendaBloque[] }>('molienda-bloques'), refetchInterval: 30_000 });
 }
 
 export function useComparativaCana() {
-  return useQuery({ queryKey: ['mc', 'comparativa-cana'], queryFn: () => get<Comparativa & { stale?: boolean }>('comparativa-cana'), refetchInterval: 60_000 });
+  return useQuery({ queryKey: ['mc', 'comparativa-cana'], queryFn: () => get<Comparativa & { stale?: boolean }>('comparativa-cana'), refetchInterval: 30_000 });
 }
 
 export function useMovimientosCana() {
@@ -86,7 +87,7 @@ export function useAzucar(desde?: string, hasta?: string) {
   return useQuery({
     queryKey: ['mc', 'azucar', desde ?? '', hasta ?? ''],
     queryFn: () => get<{ data: EspRow[] }>(`azucar${suffix}`),
-    refetchInterval: 60_000,
+    refetchInterval: 30_000,
   });
 }
 
@@ -97,6 +98,6 @@ export function useLab(procesos: string[], desde?: string, hasta?: string) {
   return useQuery({
     queryKey: ['mc', 'lab', procesos, desde, hasta],
     queryFn: () => get<{ data: LabRow[] }>(`lab?${params.toString()}`),
-    refetchInterval: 60_000,
+    refetchInterval: 30_000,
   });
 }

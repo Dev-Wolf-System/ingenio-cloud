@@ -9,6 +9,7 @@ export interface CanaRow {
 }
 
 export interface CanaAgg {
+  molienda_kg: number;
   cana_bruta_kg: number;
   cana_neta_kg: number;
   trash_kg: number;
