@@ -161,10 +161,12 @@ export function ComparativaCana() {
             </thead>
             <tbody>
               {ROWS.map((row, i) => {
-                const actualVal = row.get(data.actual);
-                const cierreVal = row.get(data.ult_cierre);
-                const acumVal   = row.get(data.acumulado);
-                const dir = trendDir(row.getNum(data.actual), row.getNum(data.ult_cierre));
+                const actualVal = data.actual ? row.get(data.actual) : '—';
+                const cierreVal = data.ult_cierre ? row.get(data.ult_cierre) : '—';
+                const acumVal   = data.acumulado ? row.get(data.acumulado) : '—';
+                const dir = data.actual && data.ult_cierre
+                  ? trendDir(row.getNum(data.actual), row.getNum(data.ult_cierre))
+                  : 'neutral';
                 return (
                   <tr
                     key={row.label}

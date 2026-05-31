@@ -13,7 +13,7 @@ export interface CanaAgg {
   pureza_pond: number | null;
   n: number;
 }
-export interface Comparativa { actual: CanaAgg; ult_cierre: CanaAgg; acumulado: CanaAgg }
+export interface Comparativa { actual: CanaAgg | null; ult_cierre: CanaAgg | null; acumulado: CanaAgg | null }
 export interface MovCanaRow {
   numero_pesada: number | null;
   grupo: string | null;
