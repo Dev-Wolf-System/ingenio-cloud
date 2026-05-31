@@ -100,9 +100,17 @@ export class MoliendaCloudService {
   }
 
   async movimientosCana(limit = 100) {
-    const { data, error } = await this.supabase.schema('production').from('v_mc_muestras_lab')
+    // Lee de v_mc_movimientos_cana = legacy.movimientos (LIVE, trae la última pesada real)
+    // LEFT JOIN lab para calidad (brix/pol null en las pesadas más nuevas hasta que cargue lab).
+    // Filtra el día corriente industrial (borde 07:00) y ordena por numero_pesada desc.
+    const n = new Date(); // contenedor TZ=ART
+    const diaObj = new Date(n);
+    if (n.getHours() < 7) diaObj.setDate(diaObj.getDate() - 1);
+    const diaStr = `${diaObj.getFullYear()}-${String(diaObj.getMonth() + 1).padStart(2, '0')}-${String(diaObj.getDate()).padStart(2, '0')}`;
+    const { data, error } = await this.supabase.schema('production').from('v_mc_movimientos_cana')
       .select('numero_pesada, grupo, razon_social, numero_analisis, peso_neto, trash, brix, pol, pureza, rendimiento, neto_cana, variedad, salida_at')
-      .order('salida_at', { ascending: false, nullsFirst: false })
+      .eq('dia_ind', diaStr)
+      .order('numero_pesada', { ascending: false })
       .limit(limit);
     if (error) { this.logger.warn(`movimientosCana: ${error.message}`); return { stale: true, data: [] }; }
     return { data: data ?? [] };
@@ -312,8 +320,23 @@ export class MoliendaCloudService {
   }
 
   async lab(procesos: string[], desde?: string, hasta?: string) {
+    // Día más reciente (sin pasar de hoy) de los procesos pedidos. Sin esto, el query
+    // sin filtro de fecha devolvía 2000 filas de toda la historia ordenadas por hora y
+    // Jugo Mixto (mucho más frecuente) tapaba al resto → sólo se graficaba Jugo Mixto.
+    const nn = new Date();
+    const hoyStr = `${nn.getFullYear()}-${String(nn.getMonth() + 1).padStart(2, '0')}-${String(nn.getDate()).padStart(2, '0')}`;
+    let fq = this.supabase.schema('production').from('v_mc_lab_general')
+      .select('fecha_industrial').lte('fecha_industrial', hoyStr)
+      .order('fecha_industrial', { ascending: false }).limit(1);
+    if (procesos.length) fq = fq.in('proceso_codigo', procesos);
+    const { data: fd, error: fe } = await fq;
+    if (fe) { this.logger.warn(`lab (fecha): ${fe.message}`); return { stale: true, data: [] }; }
+    const maxFecha = (fd ?? [])[0]?.fecha_industrial ?? null;
+    if (!maxFecha) return { data: [] };
+
     let q = this.supabase.schema('production').from('v_mc_lab_general')
       .select('proceso_codigo, fecha_industrial, hora_lectura, kilos, brix_manual, brix_automatico, pol_manual, pol_automatico, pureza, ph_manual, temperatura_manual')
+      .eq('fecha_industrial', maxFecha)
       .order('hora_lectura', { ascending: true });
     if (procesos.length) q = q.in('proceso_codigo', procesos);
     if (desde) q = q.gte('hora_lectura', desde);

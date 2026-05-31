@@ -117,7 +117,7 @@ interface KpiTileProps {
 function KpiTile({ label, value, sub, color = '#00D4FF', icon }: KpiTileProps) {
   return (
     <div
-      className="flex-1 min-w-[120px] rounded-xl border p-3.5 flex flex-col gap-1"
+      className="flex-1 min-w-[130px] rounded-xl border p-4 lg:p-5 flex flex-col gap-1"
       style={{
         background: 'var(--bg-card, #1A2236)',
         borderColor: 'var(--border, #1E3A5F)',
@@ -366,7 +366,7 @@ function ImpactoKpiTile({ impacto }: { impacto: ImpactoData | null | undefined }
 
   return (
     <div
-      className="flex-1 min-w-[140px] rounded-xl border p-3.5 flex flex-col gap-1"
+      className="flex-1 min-w-[150px] rounded-xl border p-4 lg:p-5 flex flex-col gap-1"
       style={{
         background: 'linear-gradient(135deg, rgba(255,71,87,0.08), rgba(255,184,0,0.05))',
         borderColor: 'rgba(255,71,87,0.35)',
@@ -415,7 +415,7 @@ function CategoriasChart({ data }: CategoriasChartProps) {
   const sorted = data.slice().sort((a, b) => b.minutos_total - a.minutos_total).slice(0, 8);
 
   return (
-    <div style={{ height: 200 }}>
+    <div style={{ height: 235 }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={sorted}
@@ -475,7 +475,7 @@ function MotivoParetoChart({ data }: MotivoParetoProps) {
   const sorted = data.slice().sort((a, b) => b.minutos_total - a.minutos_total).slice(0, 8);
 
   return (
-    <div style={{ height: 200 }}>
+    <div style={{ height: 235 }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={sorted}
@@ -536,7 +536,7 @@ function AreaBarChart({ data }: AreaChartProps) {
   const sorted = data.slice().sort((a, b) => b.minutos_total - a.minutos_total).slice(0, 8);
 
   return (
-    <div style={{ height: 200 }}>
+    <div style={{ height: 235 }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={sorted}
@@ -590,7 +590,7 @@ function SeriesDiaChart({ data }: SeriesDiaProps) {
   const display = data.map((d) => ({ ...d, label: fmtDate(d.dia) }));
 
   return (
-    <div style={{ height: 160 }}>
+    <div style={{ height: 190 }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={display} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
           <XAxis
@@ -646,9 +646,9 @@ function ParadasTable({ rows }: { rows: ParadaRow[] }) {
   return (
     <div
       className="overflow-auto rounded-xl border"
-      style={{ borderColor: 'var(--border, #1E3A5F)', maxHeight: 280 }}
+      style={{ borderColor: 'var(--border, #1E3A5F)', maxHeight: 360 }}
     >
-      <table className="w-full text-sm min-w-[560px]">
+      <table className="w-full text-sm lg:text-base min-w-[560px]">
         <thead
           className="sticky top-0"
           style={{ background: 'var(--bg-card, #1A2236)', zIndex: 1 }}
@@ -788,7 +788,7 @@ export function ParadasModal({ open: controlledOpen, onClose: controlledClose }:
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 20, opacity: 0, scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-              className="relative w-full max-w-[92vw] lg:max-w-6xl xl:max-w-7xl rounded-2xl overflow-hidden border-2 flex flex-col max-h-[90vh]"
+              className="relative w-full max-w-[94vw] lg:max-w-7xl xl:max-w-[1600px] rounded-2xl overflow-hidden border-2 flex flex-col max-h-[92vh]"
               style={{
                 background:
                   'var(--panel-mesh-1, transparent), var(--panel-mesh-2, transparent), linear-gradient(135deg, var(--surface-panel-from, #111827), var(--surface-panel-to, #1A2236))',

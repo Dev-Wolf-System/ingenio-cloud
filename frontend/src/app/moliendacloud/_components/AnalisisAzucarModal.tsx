@@ -141,17 +141,17 @@ function GlassTip({ active, payload, label, unit = '' }: TipProps) {
 function KpiCard({ label, value, unit, color }: { label: string; value: number | null; unit: string; color: string }) {
   return (
     <div
-      className="flex flex-col gap-1 rounded-xl border p-3"
-      style={{ background: 'var(--bg-card, #1A2236)', borderColor: 'var(--border, #1E3A5F)', minWidth: 100 }}
+      className="flex flex-col gap-1 rounded-xl border p-3 lg:p-4 xl:p-5 shrink-0"
+      style={{ background: 'var(--bg-card, #1A2236)', borderColor: 'var(--border, #1E3A5F)', minWidth: 118 }}
     >
-      <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted, #6B7A9E)' }}>
+      <span className="text-[11px] lg:text-xs font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: 'var(--text-muted, #6B7A9E)' }}>
         {label}
       </span>
-      <span className="text-xl lg:text-2xl xl:text-3xl font-bold tabular-nums" style={{ color }}>
+      <span className="text-2xl lg:text-3xl xl:text-4xl font-bold tabular-nums" style={{ color }}>
         {value != null ? fmtVal(value, value < 10 ? 2 : 0) : '—'}
       </span>
       {unit && (
-        <span className="text-[10px]" style={{ color: 'var(--text-muted, #6B7A9E)' }}>{unit}</span>
+        <span className="text-[10px] lg:text-[11px]" style={{ color: 'var(--text-muted, #6B7A9E)' }}>{unit}</span>
       )}
     </div>
   );
@@ -198,7 +198,7 @@ function EvoChart({ rows, param, procs }: EvoChartProps) {
       <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: param.color }}>
         {param.label} {param.unit ? `(${param.unit})` : ''}
       </p>
-      <ResponsiveContainer width="100%" height={140}>
+      <ResponsiveContainer width="100%" height={170}>
         <LineChart data={series} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
           <XAxis dataKey="hora" tick={{ fontSize: 10, fill: 'var(--text-muted, #6B7A9E)' }} axisLine={false} tickLine={false} />
@@ -345,7 +345,7 @@ export function AnalisisAzucarModal() {
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 20, opacity: 0, scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-              className="relative w-full max-w-[92vw] lg:max-w-6xl xl:max-w-7xl rounded-2xl overflow-hidden border-2 flex flex-col max-h-[90vh]"
+              className="relative w-full max-w-[94vw] lg:max-w-7xl xl:max-w-[1600px] rounded-2xl overflow-hidden border-2 flex flex-col max-h-[92vh]"
               style={{
                 background: 'linear-gradient(135deg, var(--surface-panel-from, #111827), var(--surface-panel-to, #1A2236))',
                 borderColor: 'var(--border-strong, #1E3A5F)',
@@ -454,7 +454,7 @@ export function AnalisisAzucarModal() {
                   ) : azucarRows.length === 0 ? (
                     <EmptyState msg="Sin lecturas para el período seleccionado." />
                   ) : (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-nowrap gap-2.5 lg:gap-3 overflow-x-auto pb-1">
                       {activeParams.map((p) => {
                         const avg = avgField(azucarRows, p.key);
                         return (
@@ -495,7 +495,7 @@ export function AnalisisAzucarModal() {
                     {diaLoading ? (
                       <div className="py-4 text-center text-sm" style={{ color: 'var(--text-muted, #6B7A9E)' }}>Cargando…</div>
                     ) : (
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-nowrap gap-2.5 lg:gap-3 overflow-x-auto pb-1">
                         {PARAMS.filter((p) => hasData(diaRows.filter((r) => AZUCAR_PROCS.includes(r.proceso_codigo)), p.key)).map((p) => {
                           const diaAzucar = diaRows.filter((r) => AZUCAR_PROCS.includes(r.proceso_codigo));
                           const avg = avgField(diaAzucar, p.key);

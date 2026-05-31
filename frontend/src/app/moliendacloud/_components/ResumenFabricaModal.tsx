@@ -148,10 +148,10 @@ function MultiLineChart({ title, unit, data, procs, accentColor = '#00D4FF' }: M
       className="rounded-xl border p-3"
       style={{ background: 'var(--bg-card, #1A2236)', borderColor: 'var(--border, #1E3A5F)' }}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-wider mb-2" style={{ color: accentColor }}>
+      <p className="text-xs lg:text-sm font-semibold uppercase tracking-wider mb-2" style={{ color: accentColor }}>
         {title} {unit ? `(${unit})` : ''}
       </p>
-      <ResponsiveContainer width="100%" height={150}>
+      <ResponsiveContainer width="100%" height={180}>
         <LineChart data={data} margin={{ top: 4, right: 8, left: -10, bottom: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
           <XAxis dataKey="hora" tick={{ fontSize: 10, fill: 'var(--text-muted, #6B7A9E)' }} axisLine={false} tickLine={false} />
@@ -291,7 +291,7 @@ export function ResumenFabricaModal() {
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 20, opacity: 0, scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-              className="relative w-full max-w-[92vw] lg:max-w-6xl xl:max-w-7xl rounded-2xl overflow-hidden border-2 flex flex-col max-h-[90vh]"
+              className="relative w-full max-w-[94vw] lg:max-w-7xl xl:max-w-[1600px] rounded-2xl overflow-hidden border-2 flex flex-col max-h-[92vh]"
               style={{
                 background: 'linear-gradient(135deg, var(--surface-panel-from, #111827), var(--surface-panel-to, #1A2236))',
                 borderColor: 'var(--border-strong, #1E3A5F)',
@@ -358,13 +358,13 @@ export function ResumenFabricaModal() {
                     <section>
                       <SectionHeader title="Promedios del día por proceso" />
                       <div className="overflow-x-auto rounded-xl border" style={{ borderColor: 'var(--border, #1E3A5F)' }}>
-                        <table className="w-full text-sm min-w-[560px]">
+                        <table className="w-full text-sm lg:text-base min-w-[560px]">
                           <thead>
                             <tr style={{ background: 'var(--bg-card, #1A2236)', borderBottom: '1px solid var(--border, #1E3A5F)' }}>
                               {['Proceso', 'Brix °', 'Pol °', 'Pureza %', 'pH', 'Temp °C', 'N'].map((h) => (
                                 <th
                                   key={h}
-                                  className="px-3 py-2.5 text-left text-xs lg:text-sm font-semibold uppercase tracking-wider"
+                                  className="px-3 lg:px-4 py-2.5 lg:py-3 text-left text-xs lg:text-sm font-semibold uppercase tracking-wider"
                                   style={{ color: 'var(--text-muted, #6B7A9E)' }}
                                 >
                                   {h}
@@ -383,25 +383,25 @@ export function ResumenFabricaModal() {
                                     background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
                                   }}
                                 >
-                                  <td className="px-3 py-2.5 font-semibold" style={{ color: PROC_COLORS[s.proceso] ?? 'var(--text-primary, #F0F4FF)' }}>
+                                  <td className="px-3 lg:px-4 py-2.5 lg:py-3 font-semibold" style={{ color: PROC_COLORS[s.proceso] ?? 'var(--text-primary, #F0F4FF)' }}>
                                     {s.proceso}
                                   </td>
-                                  <td className="px-3 py-2.5 tabular-nums font-mono" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
+                                  <td className="px-3 lg:px-4 py-2.5 lg:py-3 tabular-nums font-mono" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
                                     {fmtNum(s.avgBrix)}
                                   </td>
-                                  <td className="px-3 py-2.5 tabular-nums font-mono" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
+                                  <td className="px-3 lg:px-4 py-2.5 lg:py-3 tabular-nums font-mono" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
                                     {fmtNum(s.avgPol)}
                                   </td>
-                                  <td className="px-3 py-2.5 tabular-nums font-mono" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
+                                  <td className="px-3 lg:px-4 py-2.5 lg:py-3 tabular-nums font-mono" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
                                     {fmtNum(s.avgPureza, 1)}
                                   </td>
-                                  <td className="px-3 py-2.5 tabular-nums font-mono" style={{ color: hasPh ? '#00E5A0' : 'var(--text-muted, #6B7A9E)' }}>
+                                  <td className="px-3 lg:px-4 py-2.5 lg:py-3 tabular-nums font-mono" style={{ color: hasPh ? '#00E5A0' : 'var(--text-muted, #6B7A9E)' }}>
                                     {hasPh ? fmtNum(s.avgPh) : '—'}
                                   </td>
-                                  <td className="px-3 py-2.5 tabular-nums font-mono" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
+                                  <td className="px-3 lg:px-4 py-2.5 lg:py-3 tabular-nums font-mono" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
                                     {fmtNum(s.avgTemp, 1)}
                                   </td>
-                                  <td className="px-3 py-2.5">
+                                  <td className="px-3 lg:px-4 py-2.5 lg:py-3">
                                     <span
                                       className="inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold"
                                       style={{ background: 'rgba(0,212,255,0.1)', color: '#00D4FF' }}
