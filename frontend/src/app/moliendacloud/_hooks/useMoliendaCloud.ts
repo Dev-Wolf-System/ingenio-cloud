@@ -20,7 +20,7 @@ export interface MovCanaRow {
   grupo: string | null;
   razon_social: string | null;
   numero_analisis: number | null;
-  peso_bruto: number | null;
+  peso_neto: number | null;
   trash: number | null;
   brix: number | null;
   pol: number | null;
