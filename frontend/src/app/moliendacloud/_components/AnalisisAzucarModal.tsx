@@ -363,14 +363,14 @@ export function AnalisisAzucarModal() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all hover:brightness-110"
+        className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 rounded-lg border text-[11px] sm:text-sm font-medium transition-all hover:brightness-110 whitespace-nowrap shrink-0"
         style={{
           borderColor: 'var(--primary, #00D4FF)',
           color: 'var(--primary-light, #00D4FF)',
           background: 'var(--primary-soft, rgba(0,212,255,0.08))',
         }}
       >
-        <IconFlask size={15} />
+        <IconFlask size={14} />
         Análisis de Azúcar
       </button>
 

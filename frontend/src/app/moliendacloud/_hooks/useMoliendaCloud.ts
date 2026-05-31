@@ -23,6 +23,8 @@ export interface MovCanaRow {
   trash: number | null;
   brix: number | null;
   pol: number | null;
+  pureza: number | null;
+  rendimiento: number | null;
   neto_cana: number | null;
   variedad: string | null;
   salida_at: string | null;

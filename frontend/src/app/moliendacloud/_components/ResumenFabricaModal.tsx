@@ -79,7 +79,7 @@ export function ResumenFabricaModal() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors hover:brightness-110"
+        className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 rounded-lg border text-[11px] sm:text-sm font-medium transition-colors hover:brightness-110 whitespace-nowrap shrink-0"
         style={{
           borderColor: 'var(--accent, #FF6B35)',
           color: 'var(--accent, #FF6B35)',

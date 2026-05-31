@@ -96,7 +96,7 @@ function SectionHeader({ title }: { title: string }) {
   return (
     <div className="flex items-center gap-2 mb-3">
       <span
-        className="text-xs font-bold uppercase tracking-widest"
+        className="text-xs lg:text-sm font-bold uppercase tracking-widest"
         style={{ color: 'var(--primary-light, #00D4FF)' }}
       >
         {title}
@@ -292,7 +292,7 @@ function InsightCard({ insight, loading }: { insight: InsightData | null | undef
       </div>
 
       {/* Resumen */}
-      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
+      <p className="text-sm lg:text-base leading-relaxed" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
         {insight.resumen}
       </p>
 
@@ -309,7 +309,7 @@ function InsightCard({ insight, loading }: { insight: InsightData | null | undef
             {insight.patrones.map((p, i) => (
               <span
                 key={i}
-                className="text-xs px-2 py-0.5 rounded-full border"
+                className="text-xs lg:text-sm px-2 py-0.5 rounded-full border"
                 style={{
                   background: 'rgba(255,184,0,0.08)',
                   borderColor: 'rgba(255,184,0,0.25)',
@@ -341,7 +341,7 @@ function InsightCard({ insight, loading }: { insight: InsightData | null | undef
                 >
                   {i + 1}.
                 </span>
-                <span className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
+                <span className="text-xs lg:text-sm leading-relaxed" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
                   {r}
                 </span>
               </li>
@@ -657,7 +657,7 @@ function ParadasTable({ rows }: { rows: ParadaRow[] }) {
             {['Inicio', 'Fin', 'Duración', 'Área', 'Máquina', 'Motivo'].map((h) => (
               <th
                 key={h}
-                className="px-3 py-2.5 lg:py-3 text-left text-xs lg:text-sm font-semibold uppercase tracking-wider"
+                className="px-3 lg:px-4 py-2.5 lg:py-3 text-left text-xs lg:text-sm font-semibold uppercase tracking-wider"
                 style={{ color: 'var(--text-muted, #6B7A9E)' }}
               >
                 {h}
@@ -788,7 +788,7 @@ export function ParadasModal({ open: controlledOpen, onClose: controlledClose }:
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 20, opacity: 0, scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-              className="relative w-full max-w-[92vw] lg:max-w-5xl xl:max-w-6xl rounded-2xl overflow-hidden border-2 flex flex-col max-h-[90vh]"
+              className="relative w-full max-w-[92vw] lg:max-w-6xl xl:max-w-7xl rounded-2xl overflow-hidden border-2 flex flex-col max-h-[90vh]"
               style={{
                 background:
                   'var(--panel-mesh-1, transparent), var(--panel-mesh-2, transparent), linear-gradient(135deg, var(--surface-panel-from, #111827), var(--surface-panel-to, #1A2236))',

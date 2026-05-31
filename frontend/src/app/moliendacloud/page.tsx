@@ -176,10 +176,10 @@ export default function MoliendaCloudPage() {
         <TopBar plant="Molienda Cloud" />
 
         {/* Header strip */}
-        <div className="flex flex-wrap items-center gap-3 px-3 sm:px-4 pt-2 pb-1">
+        <div className="flex flex-nowrap items-center gap-1.5 sm:gap-3 px-3 sm:px-4 pt-2 pb-1 overflow-x-auto">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border transition-colors"
+            className="inline-flex items-center gap-1 sm:gap-1.5 text-[11px] sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-md border transition-colors whitespace-nowrap shrink-0"
             style={{ color: 'var(--text-muted)', borderColor: 'var(--border)' }}
             onMouseEnter={(e) => {
               (e.currentTarget as HTMLAnchorElement).style.color = 'var(--primary-light)';

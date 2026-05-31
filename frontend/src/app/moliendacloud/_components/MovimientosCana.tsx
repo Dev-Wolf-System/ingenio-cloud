@@ -38,15 +38,17 @@ interface ColDef {
 }
 
 const COLS: ColDef[] = [
-  { header: 'NRO PESADA',    align: 'right', cell: (r) => r.numero_pesada?.toString() ?? '—',  mono: true  },
-  { header: 'GRUPO',         align: 'left',  cell: (r) => r.grupo ?? '—',                       mono: false },
-  { header: 'CAÑERO',        align: 'left',  cell: (r) => truncate(r.razon_social, 20),         mono: false },
-  { header: 'NRO MUESTRA',   align: 'right', cell: (r) => r.numero_analisis?.toString() ?? '—', mono: true  },
-  { header: 'C. BRUTA (t)', align: 'right', cell: (r) => fmtTon(r.peso_bruto),                 mono: true  },
-  { header: 'TRASH (%)',     align: 'right', cell: (r) => fmtPct(r.trash),                      mono: true  },
-  { header: 'BRIX',          align: 'right', cell: (r) => fmtNum(r.brix),                       mono: true  },
-  { header: 'POL',           align: 'right', cell: (r) => fmtNum(r.pol),                        mono: true  },
-  { header: 'VARIEDAD',      align: 'left',  cell: (r) => r.variedad ?? '—',                    mono: false },
+  { header: 'NRO PESADA',  align: 'right', cell: (r) => r.numero_pesada?.toString() ?? '—',  mono: true  },
+  { header: 'GRUPO',       align: 'left',  cell: (r) => r.grupo ?? '—',                       mono: false },
+  { header: 'CAÑERO',      align: 'left',  cell: (r) => truncate(r.razon_social, 22),         mono: false },
+  { header: 'NRO MUESTRA', align: 'right', cell: (r) => r.numero_analisis?.toString() ?? '—', mono: true  },
+  { header: 'CAÑA BRUTA t', align: 'right', cell: (r) => fmtTon(r.peso_bruto),               mono: true  },
+  { header: 'TRASH %',     align: 'right', cell: (r) => fmtPct(r.trash),                      mono: true  },
+  { header: 'BRIX %',      align: 'right', cell: (r) => fmtNum(r.brix),                       mono: true  },
+  { header: 'POL %',       align: 'right', cell: (r) => fmtNum(r.pol),                        mono: true  },
+  { header: 'PUREZA',      align: 'right', cell: (r) => fmtNum(r.pureza),                     mono: true  },
+  { header: 'RENDIMIENTO', align: 'right', cell: (r) => fmtNum(r.rendimiento),                mono: true  },
+  { header: 'T CAÑA',      align: 'right', cell: (r) => fmtTon(r.neto_cana),                  mono: true  },
 ];
 
 // ── component ─────────────────────────────────────────────────────────────────

@@ -33,22 +33,46 @@ function trendDir(actual: number | null, ref: number | null): TrendDir {
   return diff > 0 ? 'up' : 'down';
 }
 
-function TrendChip({ dir, sense }: { dir: TrendDir; sense: TrendSense }) {
-  if (dir === 'neutral' || sense === 'neutral') return null;
+function TrendChip({ dir, sense, pct }: { dir: TrendDir; sense: TrendSense; pct: number | null }) {
+  if (dir === 'neutral' || sense === 'neutral') {
+    // neutral sense: show % in muted grey if available
+    if (pct === null) return null;
+    const sign = pct >= 0 ? '+' : '−';
+    return (
+      <span
+        className="ml-1 text-[10px] font-medium tabular-nums"
+        style={{ color: 'var(--text-muted)' }}
+        aria-hidden
+      >
+        ({sign}{Math.abs(pct).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)
+      </span>
+    );
+  }
   const isGood =
     (sense === 'higher-better' && dir === 'up') ||
     (sense === 'lower-better' && dir === 'down');
   const color = isGood ? 'var(--ok)' : 'var(--danger)';
   const arrow = dir === 'up' ? '↑' : '↓';
+  const pctStr = pct !== null
+    ? (() => {
+        const sign = pct >= 0 ? '+' : '−';
+        return ` (${sign}${Math.abs(pct).toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%)`;
+      })()
+    : '';
   return (
     <span
       className="ml-1 text-[10px] font-bold tabular-nums"
       style={{ color }}
       aria-hidden
     >
-      {arrow}
+      {arrow}{pctStr}
     </span>
   );
+}
+
+function calcPct(actual: number | null, cierre: number | null): number | null {
+  if (actual === null || cierre === null || cierre === 0) return null;
+  return (actual - cierre) / cierre * 100;
 }
 
 // ── row definitions ───────────────────────────────────────────────────────────
@@ -164,9 +188,12 @@ export function ComparativaCana() {
                 const actualVal = data.actual ? row.get(data.actual) : '—';
                 const cierreVal = data.ult_cierre ? row.get(data.ult_cierre) : '—';
                 const acumVal   = data.acumulado ? row.get(data.acumulado) : '—';
+                const actualNum = data.actual ? row.getNum(data.actual) : null;
+                const cierreNum = data.ult_cierre ? row.getNum(data.ult_cierre) : null;
                 const dir = data.actual && data.ult_cierre
-                  ? trendDir(row.getNum(data.actual), row.getNum(data.ult_cierre))
+                  ? trendDir(actualNum, cierreNum)
                   : 'neutral';
+                const pct = calcPct(actualNum, cierreNum);
                 return (
                   <tr
                     key={row.label}
@@ -189,7 +216,7 @@ export function ComparativaCana() {
                       }}
                     >
                       {actualVal}
-                      <TrendChip dir={dir} sense={row.sense} />
+                      <TrendChip dir={dir} sense={row.sense} pct={pct} />
                     </td>
                     {/* ÚLT. CIERRE */}
                     <td
