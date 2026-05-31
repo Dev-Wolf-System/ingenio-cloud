@@ -1,6 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { agregarCana, type CanaRow } from './comparativa';
+import { rangoPeriodo, type Periodo } from '../alerts/analisis/periodo';
+import { reliabilidad } from '../alerts/analisis/aggregate';
+import type { ParadaRow } from '../alerts/analisis/analisis.types';
 
 @Injectable()
 export class MoliendaCloudService {
@@ -83,6 +86,101 @@ export class MoliendaCloudService {
     const { data, error } = await q.limit(2000);
     if (error) { this.logger.warn(`azucar: ${error.message}`); return { stale: true, data: [] }; }
     return { data: data ?? [] };
+  }
+
+  async paradasAnalisis(periodo: Periodo, offset = 0) {
+    const rango = rangoPeriodo(periodo, new Date(), undefined, offset);
+    const spanMin = (rango.hasta.getTime() - rango.desde.getTime()) / 60_000;
+
+    let paradas: ParadaRow[] = [];
+    try {
+      const { data, error } = await this.supabase.sb.rpc('fn_paradas_turno', {
+        ts_inicio: rango.desde.toISOString(),
+        ts_fin: rango.hasta.toISOString(),
+      });
+      if (!error && Array.isArray(data)) {
+        paradas = (
+          data as Array<{
+            fecha_industrial: string;
+            desde_hora: string;
+            hasta_hora: string;
+            motivo: string;
+            maquina: string | null;
+            origen_descripcion: string | null;
+          }>
+        ).map((p) => {
+          const dia = String(p.fecha_industrial).slice(0, 10);
+          const mkTs = (hhmm: string) => {
+            const hh = parseInt(hhmm.slice(0, 2), 10);
+            const d = new Date(`${dia}T${hhmm}-03:00`);
+            if (hh < 8) d.setDate(d.getDate() + 1);
+            return d.toISOString();
+          };
+          const inicio = mkTs(p.desde_hora);
+          const fin = p.hasta_hora ? mkTs(p.hasta_hora) : null;
+          const minutos = fin
+            ? Math.round((new Date(fin).getTime() - new Date(inicio).getTime()) / 60_000)
+            : null;
+          return { inicio, fin, minutos, motivo: p.motivo, maquina: p.maquina, origen: p.origen_descripcion, alertas_relacionadas: [] };
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`paradasAnalisis fetch fail: ${(err as Error).message}`);
+    }
+
+    // fn_paradas_turno filtra grueso por fecha_industrial; recortar a ventana exacta.
+    const desdeMs = rango.desde.getTime();
+    const hastaMs = rango.hasta.getTime();
+    paradas = paradas.filter((p) => {
+      const ini = new Date(p.inicio).getTime();
+      const fin = p.fin ? new Date(p.fin).getTime() : ini;
+      return fin >= desdeMs && ini < hastaMs;
+    });
+
+    const reliab = reliabilidad([], paradas, spanMin);
+
+    const porAreaMap = new Map<string, { n: number; minutos_total: number }>();
+    const porMotivoMap = new Map<string, { n: number; minutos_total: number }>();
+    const porDiaMap = new Map<string, { n: number; minutos: number }>();
+
+    for (const p of paradas) {
+      const area = p.origen ?? 'Sin área';
+      const ea = porAreaMap.get(area) ?? { n: 0, minutos_total: 0 };
+      ea.n++; ea.minutos_total += p.minutos ?? 0;
+      porAreaMap.set(area, ea);
+
+      const em = porMotivoMap.get(p.motivo) ?? { n: 0, minutos_total: 0 };
+      em.n++; em.minutos_total += p.minutos ?? 0;
+      porMotivoMap.set(p.motivo, em);
+
+      const dia = p.inicio.slice(0, 10);
+      const ed = porDiaMap.get(dia) ?? { n: 0, minutos: 0 };
+      ed.n++; ed.minutos += p.minutos ?? 0;
+      porDiaMap.set(dia, ed);
+    }
+
+    const por_area = Array.from(porAreaMap.entries())
+      .map(([area, v]) => ({ area, n: v.n, minutos_total: v.minutos_total }))
+      .sort((a, b) => b.minutos_total - a.minutos_total);
+
+    const por_motivo = Array.from(porMotivoMap.entries())
+      .map(([motivo, v]) => ({ motivo, n: v.n, minutos_total: v.minutos_total }))
+      .sort((a, b) => b.minutos_total - a.minutos_total)
+      .slice(0, 10);
+
+    const series_dia = Array.from(porDiaMap.entries())
+      .map(([dia, v]) => ({ dia, n: v.n, minutos: v.minutos }))
+      .sort((a, b) => a.dia.localeCompare(b.dia));
+
+    return {
+      periodo,
+      rango: { desde: rango.desde.toISOString(), hasta: rango.hasta.toISOString(), etiqueta: rango.etiqueta },
+      reliabilidad: reliab,
+      paradas,
+      por_area,
+      por_motivo,
+      series_dia,
+    };
   }
 
   async lab(procesos: string[], desde?: string, hasta?: string) {

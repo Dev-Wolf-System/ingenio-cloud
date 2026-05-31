@@ -35,6 +35,13 @@ export class MoliendaCloudController {
     return this.svc.movimientosCana(limit ? parseInt(limit, 10) : 100);
   }
 
+  @Get('paradas')
+  paradas(@Query('periodo') periodo?: string, @Query('offset') offset?: string) {
+    const p = (['turno', 'dia', 'zafra'] as const).includes(periodo as never) ? periodo as 'turno' | 'dia' | 'zafra' : 'dia';
+    const off = Math.max(0, Math.min(parseInt(offset ?? '0', 10) || 0, 60));
+    return this.svc.paradasAnalisis(p, off);
+  }
+
   @Get('azucar')
   azucar(
     @Query('desde') desde?: string,
