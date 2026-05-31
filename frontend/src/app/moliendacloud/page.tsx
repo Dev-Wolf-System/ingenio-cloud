@@ -206,7 +206,11 @@ export default function MoliendaCloudPage() {
           className="px-3 sm:px-4 pt-1 pb-2"
           colsClass="grid-cols-1 lg:grid-cols-[1.45fr_2.4fr]"
           left={<ComparativaCana />}
-          right={<MoliendaProduccionHora />}
+          right={
+            <div className="lg:h-full lg:min-h-0 lg:overflow-y-auto">
+              <MoliendaProduccionHora />
+            </div>
+          }
         />
 
         {/* Movimientos de caña — full width (sin max-w, ocupa todo el ancho) */}
