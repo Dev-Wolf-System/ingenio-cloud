@@ -91,13 +91,14 @@ function numOrDash(v: unknown, decimals = 0): string {
 
 function extractCanchonKpis(resumen: CanchonResumen | null | undefined) {
   if (!resumen) return { total: null, esperando: null, espPromedio: null, espMax: null };
-  const k = Object.keys(resumen);
+  const r = resumen;
+  const k = Object.keys(r);
 
   function findNum(...patterns: string[]): number | null {
     for (const p of patterns) {
       for (let i = 0; i < k.length; i++) {
         if (k[i].toLowerCase().includes(p.toLowerCase())) {
-          const v = resumen[k[i]];
+          const v = r[k[i]];
           if (typeof v === 'number' && Number.isFinite(v)) return v;
         }
       }
