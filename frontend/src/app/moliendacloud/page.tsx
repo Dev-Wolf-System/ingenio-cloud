@@ -9,6 +9,7 @@ import { ComparativaCana } from './_components/ComparativaCana';
 import { PromediosMolienda } from './_components/PromediosMolienda';
 import { AnalisisAzucarModal } from './_components/AnalisisAzucarModal';
 import { ResumenFabricaModal } from './_components/ResumenFabricaModal';
+import { ParadasModal } from './_components/ParadasModal';
 import { MovimientosCana } from './_components/MovimientosCana';
 
 export default function MoliendaCloudPage() {
@@ -61,6 +62,7 @@ export default function MoliendaCloudPage() {
           <div className="flex flex-wrap gap-3">
             <AnalisisAzucarModal />
             <ResumenFabricaModal />
+            <ParadasModal />
           </div>
         </div>
       </div>
