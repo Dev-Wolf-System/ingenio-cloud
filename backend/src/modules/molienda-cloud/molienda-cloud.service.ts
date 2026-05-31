@@ -89,7 +89,7 @@ export class MoliendaCloudService {
 
   async movimientosCana(limit = 100) {
     const { data, error } = await this.supabase.schema('production').from('v_mc_muestras_lab')
-      .select('numero_pesada, grupo, razon_social, numero_analisis, peso_bruto, trash, brix, pol, neto_cana, variedad, salida_at')
+      .select('numero_pesada, grupo, razon_social, numero_analisis, peso_bruto, trash, brix, pol, pureza, rendimiento, neto_cana, variedad, salida_at')
       .order('numero_pesada', { ascending: false })
       .limit(limit);
     if (error) { this.logger.warn(`movimientosCana: ${error.message}`); return { stale: true, data: [] }; }
