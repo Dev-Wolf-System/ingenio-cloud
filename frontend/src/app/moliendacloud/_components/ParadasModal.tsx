@@ -486,33 +486,48 @@ function ParadasTable({ rows }: { rows: ParadaRow[] }) {
 
 // ─── Main Modal ───────────────────────────────────────────────────────────────
 
-export function ParadasModal() {
-  const [open, setOpen] = useState(false);
+interface ParadasModalProps {
+  /** Controlled mode: pass open + onClose to let a parent control visibility */
+  open?: boolean;
+  onClose?: () => void;
+}
+
+export function ParadasModal({ open: controlledOpen, onClose: controlledClose }: ParadasModalProps = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const { periodo, setPeriodo, offset, stepBack, stepForward, data, loading } = useParadasMC();
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
 
   const rel = data?.reliabilidad;
   const etiqueta = data?.rango?.etiqueta ?? '…';
 
   function handleClose() {
-    setOpen(false);
+    if (isControlled) {
+      controlledClose?.();
+    } else {
+      setInternalOpen(false);
+    }
   }
 
   return (
     <>
-      {/* Trigger button */}
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all hover:brightness-110"
-        style={{
-          borderColor: '#FF4757',
-          color: '#FF4757',
-          background: 'rgba(255,71,87,0.08)',
-        }}
-      >
-        <IconAlertTriangle size={15} />
-        Paradas del día
-      </button>
+      {/* Trigger button — only rendered in uncontrolled mode */}
+      {!isControlled && (
+        <button
+          type="button"
+          onClick={() => setInternalOpen(true)}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all hover:brightness-110"
+          style={{
+            borderColor: '#FF4757',
+            color: '#FF4757',
+            background: 'rgba(255,71,87,0.08)',
+          }}
+        >
+          <IconAlertTriangle size={15} />
+          Paradas del día
+        </button>
+      )}
 
       <AnimatePresence>
         {open && (
