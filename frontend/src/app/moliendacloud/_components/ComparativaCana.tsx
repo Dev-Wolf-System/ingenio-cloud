@@ -86,12 +86,6 @@ interface RowDef {
 
 const ROWS: RowDef[] = [
   {
-    label: 'MOLIENDA (t)',
-    get: (a) => fmtTon(a.molienda_kg),
-    getNum: (a) => a.molienda_kg,
-    sense: 'higher-better',
-  },
-  {
     label: 'CAÑA BRUTA (t)',
     get: (a) => fmtTon(a.cana_bruta_kg),
     getNum: (a) => a.cana_bruta_kg,
