@@ -28,6 +28,7 @@ import {
   mergeGasHoraEnCurso,
 } from '@/components/industrial/GasEstadoModal';
 import { ParadasModal } from './ParadasModal';
+import { CanchonModal } from './CanchonModal';
 import { useParadasMC } from '../_hooks/useParadasMC';
 
 // ─── Fetchers (same as KpiHero) ───────────────────────────────────────────────
@@ -160,6 +161,7 @@ export function MoliendaHero() {
   const [moliendaModalOpen, setMoliendaModalOpen] = useState(false);
   const [gasModalOpen, setGasModalOpen] = useState(false);
   const [paradasModalOpen, setParadasModalOpen] = useState(false);
+  const [canchonModalOpen, setCanchonModalOpen] = useState(false);
 
   const moliendaBloques = useQuery({
     queryKey: ['guardia', 'molienda-bloques'],
@@ -320,11 +322,12 @@ export function MoliendaHero() {
             precision={0}
             accent={totalCamiones != null && totalCamiones > 0 ? 'primary' : 'warn'}
             size="hero"
+            onClick={() => setCanchonModalOpen(true)}
             hint={
               canchon.isLoading
                 ? 'Consultando…'
                 : totalCamiones != null
-                ? 'Actualiza c/ 30 seg'
+                ? 'Actualiza c/ 30 seg · ver detalle'
                 : 'Sin señal'
             }
           />
@@ -377,6 +380,7 @@ export function MoliendaHero() {
         loading={gasBloques.isLoading}
       />
       <ParadasModal open={paradasModalOpen} onClose={() => setParadasModalOpen(false)} />
+      <CanchonModal open={canchonModalOpen} onClose={() => setCanchonModalOpen(false)} />
     </>
   );
 }

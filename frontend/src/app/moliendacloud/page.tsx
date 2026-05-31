@@ -8,9 +8,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { HeightMatchedGrid } from '@/components/industrial/HeightMatchedGrid';
 import { MoliendaProduccionHora } from '@/components/industrial/MoliendaProduccionHora';
 import { MoliendaHero } from './_components/MoliendaHero';
-import { CanchonHoraChart } from './_components/CanchonHoraChart';
 import { ComparativaCana } from './_components/ComparativaCana';
-import { PromediosMolienda } from './_components/PromediosMolienda';
 import { AnalisisAzucarModal } from './_components/AnalisisAzucarModal';
 import { ResumenFabricaModal } from './_components/ResumenFabricaModal';
 import { MovimientosCana } from './_components/MovimientosCana';
@@ -216,11 +214,6 @@ export default function MoliendaCloudPage() {
           <MovimientosCana />
         </div>
 
-        {/* Additional sections */}
-        <div className="max-w-[1600px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-3 px-3 sm:px-4 pb-4">
-          <CanchonHoraChart />
-          <PromediosMolienda />
-        </div>
       </div>
     </div>
   );

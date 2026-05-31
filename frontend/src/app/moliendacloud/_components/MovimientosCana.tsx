@@ -77,7 +77,7 @@ export function MovimientosCana() {
         </div>
       ) : (
         <div
-          className="overflow-auto rounded-lg max-h-[420px] lg:max-h-[560px]"
+          className="overflow-auto rounded-lg max-h-[300px] lg:max-h-[340px]"
         >
           <table className="w-full text-xs lg:text-sm xl:text-base border-collapse" style={{ minWidth: '640px' }}>
             <thead className="sticky top-0 z-10" style={{ background: 'var(--bg-card)' }}>
