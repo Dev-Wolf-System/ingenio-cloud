@@ -1,14 +1,45 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
+import { AiService } from '../ai/ai.service';
 import { agregarCana, type CanaRow } from './comparativa';
 import { rangoPeriodo, type Periodo } from '../alerts/analisis/periodo';
 import { reliabilidad } from '../alerts/analisis/aggregate';
 import type { ParadaRow } from '../alerts/analisis/analisis.types';
 
+// Cache entrada para paradasAnalisis
+interface ParadasCacheEntry {
+  insight: { resumen: string; patrones: string[]; recomendaciones: string[] } | null;
+  categorias: Record<string, string>;
+  expiraAt: number;
+}
+
+// Heurística origen → categoría (fallback cuando la IA no clasifica)
+const ORIGEN_CATEGORIA: Record<string, string> = {
+  'Trapiche': 'Trapiche',
+  'Calderas': 'Caldera',
+  'Caldera': 'Caldera',
+  'Eléctrica': 'Eléctrica',
+  'Electrica': 'Eléctrica',
+  'Instrumentación': 'Instrumentación',
+  'Instrumentacion': 'Instrumentación',
+  'Proceso': 'Proceso',
+  'Externa': 'Externa',
+  'Programada': 'Programada',
+};
+
+function mapByOrigen(origen: string | null | undefined): string {
+  if (!origen) return 'Otros';
+  for (const [key, cat] of Object.entries(ORIGEN_CATEGORIA)) {
+    if (origen.toLowerCase().includes(key.toLowerCase())) return cat;
+  }
+  return 'Otros';
+}
+
 @Injectable()
 export class MoliendaCloudService {
   private readonly logger = new Logger(MoliendaCloudService.name);
-  constructor(private readonly supabase: SupabaseService) {}
+  private readonly paradasCache = new Map<string, ParadasCacheEntry>();
+  constructor(private readonly supabase: SupabaseService, private readonly ai: AiService) {}
 
   async canchon() {
     const { data, error } = await this.supabase.schema('production').from('v_canchon_resumen').select('*');
@@ -172,6 +203,71 @@ export class MoliendaCloudService {
       .map(([dia, v]) => ({ dia, n: v.n, minutos: v.minutos }))
       .sort((a, b) => a.dia.localeCompare(b.dia));
 
+    // ── Impacto en molienda ────────────────────────────────────────────────
+    let impacto: { prom_t_h: number; toneladas_no_molidas: number } | null = null;
+    try {
+      const bloques = await this.moliendaBloques();
+      const filasBloque = (bloques.data as Array<{ molienda_kg?: number | null; tipo?: string | null }>)
+        .filter((f) => f.tipo === 'dia_corriente' && f.molienda_kg != null);
+      if (filasBloque.length > 0) {
+        const promKgH = filasBloque.reduce((s, f) => s + (f.molienda_kg ?? 0), 0) / filasBloque.length;
+        const promTH = Math.round((promKgH / 1000) * 10) / 10;
+        const downtime = reliab.downtime_total_min;
+        const toneladas_no_molidas = Math.round((downtime / 60) * promTH);
+        impacto = { prom_t_h: promTH, toneladas_no_molidas };
+      }
+    } catch (err) {
+      this.logger.warn(`paradasAnalisis impacto: ${(err as Error).message}`);
+    }
+
+    // ── Insight IA (con cache 60 min) ─────────────────────────────────────
+    const cacheKey = `${periodo}:${offset}`;
+    const now = Date.now();
+    const cached = this.paradasCache.get(cacheKey);
+    let insight: { resumen: string; patrones: string[]; recomendaciones: string[]; cached?: boolean } | null = null;
+    let categorias: Record<string, string> = {};
+
+    if (cached && now < cached.expiraAt) {
+      insight = cached.insight ? { ...cached.insight, cached: true } : null;
+      categorias = cached.categorias;
+    } else if (paradas.length > 0 && this.ai.isAvailable()) {
+      const motivos = [...new Set(paradas.map((p) => p.motivo).filter(Boolean))];
+      const aiResult = await this.ai.analizarParadas({
+        etiqueta: rango.etiqueta,
+        reliabilidad: {
+          paradas_n: reliab.paradas_n,
+          downtime_total_min: reliab.downtime_total_min,
+          mtbf_min: reliab.mtbf_min,
+          mttr_min: reliab.mttr_min,
+        },
+        por_area,
+        por_motivo,
+        motivos,
+      });
+      if (aiResult) {
+        const { categorias: cats, ...rest } = aiResult;
+        insight = { ...rest, cached: false };
+        categorias = cats;
+      }
+      this.paradasCache.set(cacheKey, {
+        insight: aiResult ? { resumen: aiResult.resumen, patrones: aiResult.patrones, recomendaciones: aiResult.recomendaciones } : null,
+        categorias,
+        expiraAt: now + 60 * 60_000,
+      });
+    }
+
+    // ── Por categoría ─────────────────────────────────────────────────────
+    const porCategoriaMap = new Map<string, { n: number; minutos_total: number }>();
+    for (const p of paradas) {
+      const cat = categorias[p.motivo] ?? mapByOrigen(p.origen);
+      const ec = porCategoriaMap.get(cat) ?? { n: 0, minutos_total: 0 };
+      ec.n++; ec.minutos_total += p.minutos ?? 0;
+      porCategoriaMap.set(cat, ec);
+    }
+    const por_categoria = Array.from(porCategoriaMap.entries())
+      .map(([categoria, v]) => ({ categoria, n: v.n, minutos_total: v.minutos_total }))
+      .sort((a, b) => b.minutos_total - a.minutos_total);
+
     return {
       periodo,
       rango: { desde: rango.desde.toISOString(), hasta: rango.hasta.toISOString(), etiqueta: rango.etiqueta },
@@ -179,7 +275,10 @@ export class MoliendaCloudService {
       paradas,
       por_area,
       por_motivo,
+      por_categoria,
       series_dia,
+      impacto,
+      insight,
     };
   }
 
