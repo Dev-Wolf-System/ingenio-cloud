@@ -172,6 +172,26 @@ Mantener mobile usable (base) + agrandar en pantallas grandes.
 `/movimientos-cana` (filas de muestras_lab del día), `/azucar` (especiales por proceso+hora +
 silos + soda_cal + ART). Sin tocar vistas existentes.
 
+## 6.ter — Layout v3 (espejo del dashboard + Paradas)
+
+El layout de Molienda Cloud debe **reflejar el dashboard principal** (reusar sus piezas), con cambios puntuales. **No modificar los componentes del dashboard**: si hay que variar el KpiHero, hacer una **variante propia** en `moliendacloud/` que reuse los tiles, no editar el original.
+
+- **KPI Hero**: mantener los MISMOS tiles del dashboard EXCEPTO el de **Advertencias/alertas**, que se reemplaza por un tile **"Paradas del día corriente"**.
+  - Molienda en curso y Consumo de gas: mantener sus **modales del dashboard** (reuso).
+  - Tile **Paradas** → abre **modal de Paradas** (ver abajo).
+- **Barra de estado del Trapiche** (parado/funcionando) a lo largo, arriba o abajo, igual que en el dashboard (reuso del componente correspondiente).
+- **Debajo del hero**: fila con **Molienda y Producción en tiempo real** (reuso `MoliendaProduccionHora`, **mismo tamaño que en el dashboard**) y, **a la par**, el **Comparativo de caña**. (Usar el patrón `HeightMatchedGrid` del dashboard.)
+- **A lo ancho debajo**: tabla **detalle de movimientos de camiones con caña** (`MovimientosCana`).
+
+### Modal de Paradas (nuevo, inteligente)
+Fuente: paradas vía `fn_paradas_turno(desde,hasta)` (ya usado en el panel de análisis de alertas) + `legacy.lab_general`/`especiales` proceso 'Paradas*'. Contenido:
+- Detalle de paradas del **día corriente** con **gráficos** + análisis **MTBF/MTTR** (reusar la lógica de confiabilidad ya hecha en `backend/.../analisis/aggregate.ts` → `reliabilidad`).
+- **Selector** turno/día/zafra + días/turnos anteriores (offset), igual patrón que el panel de análisis de alertas (`rangoPeriodo`).
+- **Paradas por área/sección**; la **IA clasifica** a qué área/categoría pertenece cada parada + **análisis IA** del período y **gráficos inteligentes** (barras por área, duración, Pareto de motivos, etc.).
+- Estética premium, paleta INDUSTRIAL_DARK, modales como los del dashboard.
+
+Reutilizar al máximo lo construido para el panel de análisis de alertas (`/alertas/analisis`): `rangoPeriodo`, `reliabilidad`, prompts IA de interpretación, componentes de gráficos.
+
 ## 7. Fuera de alcance (ahora)
 - Login / RBAC / niveles de acceso (futuro, solo previsto).
 - Cablear datos cuyo mapeo de negocio no esté confirmado (van como placeholder).
