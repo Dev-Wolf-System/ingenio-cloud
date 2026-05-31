@@ -296,7 +296,7 @@ export class MoliendaCloudService {
 
   async lab(procesos: string[], desde?: string, hasta?: string) {
     let q = this.supabase.schema('production').from('v_mc_lab_general')
-      .select('proceso_codigo, fecha_industrial, hora_lectura, kilos, brix_manual, brix_automatico, pol_manual, pol_automatico, pureza')
+      .select('proceso_codigo, fecha_industrial, hora_lectura, kilos, brix_manual, brix_automatico, pol_manual, pol_automatico, pureza, ph_manual, temperatura_manual')
       .order('hora_lectura', { ascending: true });
     if (procesos.length) q = q.in('proceso_codigo', procesos);
     if (desde) q = q.gte('hora_lectura', desde);
