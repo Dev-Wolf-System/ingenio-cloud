@@ -155,7 +155,9 @@ export class MoliendaCloudService {
           const mkTs = (hhmm: string) => {
             const hh = parseInt(hhmm.slice(0, 2), 10);
             const d = new Date(`${dia}T${hhmm}-03:00`);
-            if (hh < 8) d.setDate(d.getDate() + 1);
+            // Día industrial arranca 05:00 (turnos 05/13/21), igual que inicioDiaIndustrial
+            // en rangoPeriodo: horas < 05 pertenecen al día calendario siguiente.
+            if (hh < 5) d.setDate(d.getDate() + 1);
             return d.toISOString();
           };
           const inicio = mkTs(p.desde_hora);
