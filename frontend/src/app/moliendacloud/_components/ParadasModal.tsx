@@ -66,7 +66,6 @@ interface TipProps {
 
 function GlassTip({ active, payload, label }: TipProps) {
   if (!active || !payload || !payload.length) return null;
-  const entry = payload[0];
   return (
     <div
       style={{
