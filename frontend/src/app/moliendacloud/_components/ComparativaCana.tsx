@@ -140,7 +140,7 @@ export function ComparativaCana() {
             <thead>
               <tr>
                 <th
-                  className="py-2 px-2 lg:px-3 text-left text-[10px] font-semibold tracking-[0.12em] uppercase w-36 lg:w-44"
+                  className="py-2 lg:py-2.5 px-2 lg:px-3 text-left text-[10px] lg:text-xs font-semibold tracking-[0.12em] uppercase w-36 lg:w-44"
                   style={{ color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}
                 >
                   Métrica
@@ -148,7 +148,7 @@ export function ComparativaCana() {
                 {(['ACTUAL', 'ÚLT. CIERRE', 'ACUMULADO'] as const).map((col, ci) => (
                   <th
                     key={col}
-                    className="py-2 px-2 lg:px-3 text-right text-[10px] font-semibold tracking-[0.12em] uppercase"
+                    className="py-2 lg:py-2.5 px-2 lg:px-3 text-right text-[10px] lg:text-xs font-semibold tracking-[0.12em] uppercase"
                     style={{
                       color: ci === 0 ? 'var(--primary-light)' : 'var(--text-muted)',
                       borderBottom: `1px solid ${ci === 0 ? 'var(--primary-light)' : 'var(--border)'}`,
@@ -175,14 +175,14 @@ export function ComparativaCana() {
                     }}
                   >
                     <td
-                      className="py-2 px-2 lg:px-3 text-[10px] lg:text-[11px] font-semibold tracking-[0.10em]"
+                      className="py-2 lg:py-2.5 px-2 lg:px-3 text-[10px] lg:text-xs font-semibold tracking-[0.10em]"
                       style={{ color: 'var(--text-muted)' }}
                     >
                       {row.label}
                     </td>
                     {/* ACTUAL — accent column */}
                     <td
-                      className="py-2 px-2 lg:px-3 text-right tabular-nums font-semibold text-sm"
+                      className="py-2 lg:py-2.5 px-2 lg:px-3 text-right tabular-nums font-semibold text-sm lg:text-base xl:text-lg"
                       style={{
                         color: 'var(--text-primary)',
                         borderLeft: '1px solid color-mix(in srgb, var(--primary-light) 30%, transparent)',
@@ -193,14 +193,14 @@ export function ComparativaCana() {
                     </td>
                     {/* ÚLT. CIERRE */}
                     <td
-                      className="py-2 px-2 lg:px-3 text-right tabular-nums font-medium text-sm"
+                      className="py-2 lg:py-2.5 px-2 lg:px-3 text-right tabular-nums font-medium text-sm lg:text-base"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       {cierreVal}
                     </td>
                     {/* ACUMULADO */}
                     <td
-                      className="py-2 px-2 lg:px-3 text-right tabular-nums font-medium text-sm"
+                      className="py-2 lg:py-2.5 px-2 lg:px-3 text-right tabular-nums font-medium text-sm lg:text-base"
                       style={{ color: 'var(--text-secondary)' }}
                     >
                       {acumVal}

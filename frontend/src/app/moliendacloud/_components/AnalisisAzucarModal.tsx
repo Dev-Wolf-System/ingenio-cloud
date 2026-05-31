@@ -126,7 +126,7 @@ function PivotTable({ rows, loading, emptyMsg }: PivotTableProps) {
         <thead>
           <tr style={{ background: 'var(--bg-card, #1A2236)', borderBottom: '1px solid var(--border, #1E3A5F)' }}>
             <th
-              className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider"
+              className="px-4 py-2.5 lg:py-3 text-left text-xs lg:text-sm font-semibold uppercase tracking-wider"
               style={{ color: 'var(--text-muted, #6B7A9E)' }}
             >
               Parámetro
@@ -134,7 +134,7 @@ function PivotTable({ rows, loading, emptyMsg }: PivotTableProps) {
             {cols.map((col) => (
               <th
                 key={col}
-                className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider"
+                className="px-4 py-2.5 lg:py-3 text-right text-xs lg:text-sm font-semibold uppercase tracking-wider"
                 style={{ color: 'var(--text-muted, #6B7A9E)' }}
               >
                 {TIPO_LABELS[col] ?? col}
@@ -153,7 +153,7 @@ function PivotTable({ rows, loading, emptyMsg }: PivotTableProps) {
                 }}
               >
                 <td
-                  className="px-4 py-2.5 text-xs font-semibold uppercase tracking-wide"
+                  className="px-4 py-2.5 lg:py-3 text-xs lg:text-sm font-semibold uppercase tracking-wide"
                   style={{ color: 'var(--text-secondary, #A0B0C8)' }}
                 >
                   {param.label}
@@ -166,7 +166,7 @@ function PivotTable({ rows, loading, emptyMsg }: PivotTableProps) {
                   return (
                     <td
                       key={col}
-                      className="px-4 py-2.5 text-right tabular-nums font-mono"
+                      className="px-4 py-2.5 lg:py-3 text-right tabular-nums font-mono lg:text-base"
                       style={{
                         color: isCrudo
                           ? 'var(--text-muted, #6B7A9E)'
@@ -201,7 +201,7 @@ function SilosTable({ rows, loading }: { rows: EspRow[]; loading: boolean }) {
             {['Silo', 'Estado / Destino', 'Calidad'].map((h) => (
               <th
                 key={h}
-                className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider"
+                className="px-4 py-2.5 lg:py-3 text-left text-xs lg:text-sm font-semibold uppercase tracking-wider"
                 style={{ color: 'var(--text-muted, #6B7A9E)' }}
               >
                 {h}
@@ -218,13 +218,13 @@ function SilosTable({ rows, loading }: { rows: EspRow[]; loading: boolean }) {
                 background: i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)',
               }}
             >
-              <td className="px-4 py-2.5 font-semibold" style={{ color: 'var(--primary-light, #00D4FF)' }}>
+              <td className="px-4 py-2.5 lg:py-3 font-semibold lg:text-base" style={{ color: 'var(--primary-light, #00D4FF)' }}>
                 {r.silo ?? '—'}
               </td>
-              <td className="px-4 py-2.5" style={{ color: 'var(--text-primary, #F0F4FF)' }}>
+              <td className="px-4 py-2.5 lg:py-3 lg:text-base" style={{ color: 'var(--text-primary, #F0F4FF)' }}>
                 {r.destino ?? '—'}
               </td>
-              <td className="px-4 py-2.5 tabular-nums" style={{ color: 'var(--text-primary, #F0F4FF)' }}>
+              <td className="px-4 py-2.5 lg:py-3 tabular-nums lg:text-base" style={{ color: 'var(--text-primary, #F0F4FF)' }}>
                 {r.calidad != null ? r.calidad.toFixed(2) : '—'}
               </td>
             </tr>
@@ -268,7 +268,7 @@ function SodaCalTable({ rows, loading }: { rows: EspRow[]; loading: boolean }) {
           <thead>
             <tr style={{ background: 'var(--bg-card, #1A2236)', borderBottom: '1px solid var(--border, #1E3A5F)' }}>
               <th
-                className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider"
+                className="px-4 py-2.5 lg:py-3 text-left text-xs lg:text-sm font-semibold uppercase tracking-wider"
                 style={{ color: 'var(--text-muted, #6B7A9E)' }}
               >
                 Hora
@@ -276,7 +276,7 @@ function SodaCalTable({ rows, loading }: { rows: EspRow[]; loading: boolean }) {
               {presentFields.map((k) => (
                 <th
                   key={k as string}
-                  className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wider"
+                  className="px-4 py-2.5 lg:py-3 text-right text-xs lg:text-sm font-semibold uppercase tracking-wider"
                   style={{ color: 'var(--text-muted, #6B7A9E)' }}
                 >
                   {fieldLabels[k as string] ?? (k as string)}
@@ -304,7 +304,7 @@ function SodaCalTable({ rows, loading }: { rows: EspRow[]; loading: boolean }) {
                   return (
                     <td
                       key={k as string}
-                      className="px-4 py-2.5 text-right tabular-nums font-mono"
+                      className="px-4 py-2.5 lg:py-3 text-right tabular-nums font-mono lg:text-base"
                       style={{ color: 'var(--text-primary, #F0F4FF)' }}
                     >
                       {typeof v === 'number' ? v.toFixed(2) : '—'}
@@ -390,7 +390,7 @@ export function AnalisisAzucarModal() {
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 20, opacity: 0, scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-              className="relative w-full max-w-[92vw] xl:max-w-5xl rounded-2xl overflow-hidden border-2 flex flex-col max-h-[90vh]"
+              className="relative w-full max-w-[92vw] lg:max-w-5xl xl:max-w-6xl rounded-2xl overflow-hidden border-2 flex flex-col max-h-[90vh]"
               style={{
                 background:
                   'var(--panel-mesh-1, transparent), var(--panel-mesh-2, transparent), linear-gradient(135deg, var(--surface-panel-from, #111827), var(--surface-panel-to, #1A2236))',

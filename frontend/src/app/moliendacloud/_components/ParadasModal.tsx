@@ -129,11 +129,11 @@ function KpiTile({ label, value, sub, color = '#00D4FF', icon }: KpiTileProps) {
           {label}
         </span>
       </div>
-      <span className="text-xl font-bold tabular-nums" style={{ color }}>
+      <span className="text-xl lg:text-2xl xl:text-3xl font-bold tabular-nums" style={{ color }}>
         {value}
       </span>
       {sub && (
-        <span className="text-[11px]" style={{ color: 'var(--text-muted, #6B7A9E)' }}>
+        <span className="text-[11px] lg:text-xs" style={{ color: 'var(--text-muted, #6B7A9E)' }}>
           {sub}
         </span>
       )}
@@ -381,10 +381,10 @@ function ImpactoKpiTile({ impacto }: { impacto: ImpactoData | null | undefined }
           Impacto molienda
         </span>
       </div>
-      <span className="text-xl font-bold tabular-nums" style={{ color: '#FF6B35' }}>
+      <span className="text-xl lg:text-2xl xl:text-3xl font-bold tabular-nums" style={{ color: '#FF6B35' }}>
         {tons != null ? `${tons.toFixed(1)} t` : '—'}
       </span>
-      <span className="text-[11px]" style={{ color: 'var(--text-muted, #6B7A9E)' }}>
+      <span className="text-[11px] lg:text-xs" style={{ color: 'var(--text-muted, #6B7A9E)' }}>
         no molidas (estimado)
         {promTh != null && (
           <span className="ml-1" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
@@ -657,7 +657,7 @@ function ParadasTable({ rows }: { rows: ParadaRow[] }) {
             {['Inicio', 'Fin', 'Duración', 'Área', 'Máquina', 'Motivo'].map((h) => (
               <th
                 key={h}
-                className="px-3 py-2.5 text-left text-xs font-semibold uppercase tracking-wider"
+                className="px-3 py-2.5 lg:py-3 text-left text-xs lg:text-sm font-semibold uppercase tracking-wider"
                 style={{ color: 'var(--text-muted, #6B7A9E)' }}
               >
                 {h}
@@ -675,19 +675,19 @@ function ParadasTable({ rows }: { rows: ParadaRow[] }) {
               }}
             >
               <td
-                className="px-3 py-2 tabular-nums font-mono text-xs"
+                className="px-3 py-2 lg:py-2.5 tabular-nums font-mono text-xs lg:text-sm"
                 style={{ color: 'var(--text-secondary, #A0B0C8)' }}
               >
                 {fmtTs(row.inicio)}
               </td>
               <td
-                className="px-3 py-2 tabular-nums font-mono text-xs"
+                className="px-3 py-2 lg:py-2.5 tabular-nums font-mono text-xs lg:text-sm"
                 style={{ color: row.fin ? 'var(--text-secondary, #A0B0C8)' : '#FFB800' }}
               >
                 {row.fin ? fmtTs(row.fin) : 'En curso'}
               </td>
               <td
-                className="px-3 py-2 tabular-nums font-semibold text-xs"
+                className="px-3 py-2 lg:py-2.5 tabular-nums font-semibold text-xs lg:text-sm"
                 style={{
                   color:
                     row.minutos == null
@@ -702,19 +702,19 @@ function ParadasTable({ rows }: { rows: ParadaRow[] }) {
                 {fmtMin(row.minutos)}
               </td>
               <td
-                className="px-3 py-2 text-xs"
+                className="px-3 py-2 lg:py-2.5 text-xs lg:text-sm"
                 style={{ color: 'var(--text-secondary, #A0B0C8)' }}
               >
                 {row.origen ?? '—'}
               </td>
               <td
-                className="px-3 py-2 text-xs"
+                className="px-3 py-2 lg:py-2.5 text-xs lg:text-sm"
                 style={{ color: 'var(--text-muted, #6B7A9E)' }}
               >
                 {row.maquina ?? '—'}
               </td>
               <td
-                className="px-3 py-2 text-xs font-medium"
+                className="px-3 py-2 lg:py-2.5 text-xs lg:text-sm font-medium"
                 style={{ color: 'var(--text-primary, #F0F4FF)' }}
               >
                 {row.motivo}
@@ -788,7 +788,7 @@ export function ParadasModal({ open: controlledOpen, onClose: controlledClose }:
               animate={{ y: 0, opacity: 1, scale: 1 }}
               exit={{ y: 20, opacity: 0, scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-              className="relative w-full max-w-[92vw] xl:max-w-5xl rounded-2xl overflow-hidden border-2 flex flex-col max-h-[90vh]"
+              className="relative w-full max-w-[92vw] lg:max-w-5xl xl:max-w-6xl rounded-2xl overflow-hidden border-2 flex flex-col max-h-[90vh]"
               style={{
                 background:
                   'var(--panel-mesh-1, transparent), var(--panel-mesh-2, transparent), linear-gradient(135deg, var(--surface-panel-from, #111827), var(--surface-panel-to, #1A2236))',

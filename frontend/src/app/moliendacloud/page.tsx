@@ -1,7 +1,9 @@
 'use client';
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { IconLayoutDashboard, IconCircle } from '@tabler/icons-react';
+import { m, AnimatePresence } from 'motion/react';
+import { IconLayoutDashboard } from '@tabler/icons-react';
+import { cn } from '@/lib/utils/cn';
 import { TopBar } from '@/components/layout/TopBar';
 import { HeightMatchedGrid } from '@/components/industrial/HeightMatchedGrid';
 import { MoliendaProduccionHora } from '@/components/industrial/MoliendaProduccionHora';
@@ -57,7 +59,28 @@ function deriveEstadoFromVaporVg1(energia: Map<string, DashboardItem>): EstadoTr
   return null;
 }
 
-// ─── Slim trapiche estado bar ─────────────────────────────────────────────────
+// ─── Trapiche estado config (same as TrapichePanel) ──────────────────────────
+
+const ESTADO_CONFIG = {
+  funcionando: {
+    label: 'Funcionando',
+    color: 'var(--ok)',
+    bg: 'var(--ok-soft)',
+    border: 'var(--ok)',
+    glow: '0 0 28px var(--ok-soft), inset 0 0 16px var(--ok-soft)',
+    pulse: true,
+  },
+  parado: {
+    label: 'Parado',
+    color: 'var(--danger)',
+    bg: 'var(--danger-soft)',
+    border: 'var(--danger)',
+    glow: '0 0 24px var(--danger-soft), inset 0 0 14px var(--danger-soft)',
+    pulse: false,
+  },
+} as const;
+
+// ─── Trapiche estado bar ──────────────────────────────────────────────────────
 
 function TrapicheEstadoBar() {
   const trapiche = useDashboardData('trapiche');
@@ -71,30 +94,65 @@ function TrapicheEstadoBar() {
     return 'parado';
   }, [trapiche, energia]);
 
-  const isFuncionando = estado === 'funcionando';
+  const config = ESTADO_CONFIG[estado];
 
   return (
-    <div
-      className="mx-3 sm:mx-4 my-2 flex items-center gap-2.5 px-4 py-2.5 rounded-lg border text-sm font-medium"
-      style={{
-        background: isFuncionando
-          ? 'rgba(0,229,160,0.07)'
-          : 'rgba(255,71,87,0.07)',
-        borderColor: isFuncionando
-          ? 'rgba(0,229,160,0.25)'
-          : 'rgba(255,71,87,0.25)',
-        color: isFuncionando ? 'var(--success)' : 'var(--danger)',
-      }}
-    >
-      <IconCircle
-        size={10}
-        fill={isFuncionando ? 'var(--success)' : 'var(--danger)'}
-        stroke="none"
-        className={isFuncionando ? 'animate-pulse' : ''}
-      />
-      <span>
-        Trapiche — {isFuncionando ? 'Funcionando' : 'Parado'}
-      </span>
+    <div className="max-w-[1600px] mx-auto w-full px-3 sm:px-4 my-2">
+      <AnimatePresence mode="wait">
+        <m.div
+          key={estado}
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+          className="relative flex items-center justify-center gap-4 px-6 py-3.5 lg:py-4 rounded-xl border-2 overflow-hidden"
+          style={{
+            background: `linear-gradient(90deg, ${config.bg} 0%, var(--bg-inset) 50%, ${config.bg} 100%)`,
+            borderColor: config.border,
+            boxShadow: config.glow,
+          }}
+        >
+          <div
+            aria-hidden
+            className="absolute inset-0 opacity-30"
+            style={{
+              background: `radial-gradient(ellipse at center, ${config.bg}, transparent 70%)`,
+              animation: config.pulse ? 'pulse 2.5s ease-in-out infinite' : undefined,
+            }}
+          />
+
+          <span className="text-2xs uppercase tracking-[0.22em] text-text-muted font-medium relative">
+            Estado actual
+          </span>
+
+          <span
+            className={cn(
+              'relative flex items-center justify-center w-4 h-4 lg:w-5 lg:h-5 rounded-full',
+              config.pulse && 'animate-pulse',
+            )}
+            style={{ background: config.color, boxShadow: `0 0 20px ${config.color}` }}
+          >
+            {config.pulse && (
+              <span
+                aria-hidden
+                className="absolute inset-0 rounded-full animate-ping"
+                style={{ background: config.color, opacity: 0.65 }}
+              />
+            )}
+          </span>
+
+          <span
+            className="text-2xl lg:text-3xl font-extrabold uppercase tracking-[0.18em] relative"
+            style={{
+              color: config.color,
+              textShadow: `0 0 10px ${config.bg}`,
+              fontFamily: 'var(--font-body)',
+            }}
+          >
+            {config.label}
+          </span>
+        </m.div>
+      </AnimatePresence>
     </div>
   );
 }
@@ -142,7 +200,7 @@ export default function MoliendaCloudPage() {
         {/* Hero — KPI tiles with Paradas tile */}
         <MoliendaHero />
 
-        {/* Trapiche estado bar */}
+        {/* Trapiche estado bar — exact design from TrapichePanel EstadoBanner */}
         <TrapicheEstadoBar />
 
         {/* Main grid: ComparativaCana (left) + MoliendaProduccionHora real-time (right) */}
