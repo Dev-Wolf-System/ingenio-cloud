@@ -69,28 +69,6 @@ function fmtVal(v: number | null, dec: number): string {
   return v.toLocaleString('es-AR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
 }
 
-/** Group rows by hora (HH) and average param per hour */
-function buildHourSeries(
-  rows: EspRow[],
-  key: keyof EspRow,
-): Array<{ hora: string; value: number | null }> {
-  const map: Record<string, number[]> = {};
-  for (let i = 0; i < rows.length; i++) {
-    const r = rows[i];
-    const v = r[key];
-    if (typeof v !== 'number') continue;
-    const hora = r.hora_lectura ? r.hora_lectura.slice(0, 2) : '??';
-    if (!map[hora]) map[hora] = [];
-    map[hora].push(v);
-  }
-  const keys = Object.keys(map).sort();
-  return keys.map((h) => {
-    const vals = map[h];
-    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-    return { hora: `${h}:00`, value: avg };
-  });
-}
-
 /** Multi-proc series: group by hora, avg per proc */
 function buildMultiProcSeries(
   rows: EspRow[],
