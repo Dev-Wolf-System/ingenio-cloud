@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AiService } from '../ai/ai.service';
-import { agregarCana, type CanaRow } from './comparativa';
+import type { CanaAgg } from './comparativa';
 import { rangoPeriodo, type Periodo } from '../alerts/analisis/periodo';
 import { reliabilidad } from '../alerts/analisis/aggregate';
 import type { ParadaRow } from '../alerts/analisis/analisis.types';
@@ -68,23 +68,34 @@ export class MoliendaCloudService {
   }
 
   async comparativaCana() {
-    const { data, error } = await this.supabase.schema('production').from('v_mc_muestras_lab')
-      .select('peso_bruto, neto_cana, trash, pol, brix, pureza, rendimiento, fecha_industrial, nrocierre')
-      .order('fecha_industrial', { ascending: false })
-      .limit(5000);
+    // Lógica de períodos en la vista production.v_mc_comparativa_cana (espeja v_molienda_bloques):
+    //   actual = día corriente (dia_obj, borde 08:00): tonelaje desde balanza + calidad lab parcial
+    //   ult_cierre = día anterior (dia_obj-1): solo lab (último día cerrado)
+    //   acumulado = zafra del año en curso (lab) + balanza del día corriente
+    const { data, error } = await this.supabase.schema('production').from('v_mc_comparativa_cana')
+      .select('periodo, cana_bruta_kg, cana_neta_kg, trash_kg, trash_pond, rto_pond, brix_pond, pol_pond, pureza_pond, n');
     if (error) { this.logger.warn(`comparativaCana: ${error.message}`); return { stale: true, actual: null, ult_cierre: null, acumulado: null }; }
 
-    const rows = (data ?? []) as Array<CanaRow & { fecha_industrial: string | null; nrocierre: number | null }>;
-    if (!rows.length) return { actual: null, ult_cierre: null, acumulado: null };
+    const rows = (data ?? []) as Array<Record<string, unknown>>;
+    const num = (v: unknown): number => (v == null ? 0 : Number(v));
+    const numN = (v: unknown): number | null => (v == null ? null : Number(v));
+    const pick = (p: string): CanaAgg | null => {
+      const r = rows.find((x) => x.periodo === p);
+      if (!r) return null;
+      return {
+        cana_bruta_kg: num(r.cana_bruta_kg),
+        cana_neta_kg: num(r.cana_neta_kg),
+        trash_kg: num(r.trash_kg),
+        trash_pond: numN(r.trash_pond),
+        rto_pond: numN(r.rto_pond),
+        brix_pond: numN(r.brix_pond),
+        pol_pond: numN(r.pol_pond),
+        pureza_pond: numN(r.pureza_pond),
+        n: num(r.n),
+      };
+    };
 
-    const maxFecha = rows.reduce((m, r) => (r.fecha_industrial && r.fecha_industrial > m ? r.fecha_industrial : m), '');
-    const maxCierre = rows.reduce((m, r) => (r.nrocierre != null && r.nrocierre > m ? r.nrocierre : m), 0);
-
-    const actual = agregarCana(rows.filter((r) => r.fecha_industrial === maxFecha));
-    const ult_cierre = agregarCana(rows.filter((r) => r.nrocierre === maxCierre));
-    const acumulado = agregarCana(rows);
-
-    return { actual, ult_cierre, acumulado };
+    return { actual: pick('actual'), ult_cierre: pick('ult_cierre'), acumulado: pick('acumulado') };
   }
 
   async movimientosCana(limit = 100) {
