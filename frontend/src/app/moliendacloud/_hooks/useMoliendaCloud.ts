@@ -59,6 +59,35 @@ export function useMovimientosCana() {
   return useQuery({ queryKey: ['mc', 'mov-cana'], queryFn: () => get<{ data: MovCanaRow[] }>('movimientos-cana?limit=100'), refetchInterval: 30_000 });
 }
 
+export interface EspRow {
+  proceso_codigo: string;
+  fecha_industrial: string;
+  hora_lectura: string | null;
+  color_icumsa: number | null;
+  turbidez: number | null;
+  humedad: number | null;
+  cenizas: number | null;
+  sediment_test: number | null;
+  so2_ppm: number | null;
+  granulometria_20: number | null;
+  granulometria_30: number | null;
+  calidad: number | null;
+  silo: string | null;
+  destino: string | null;
+}
+
+export function useAzucar(desde?: string, hasta?: string) {
+  const qs = new URLSearchParams();
+  if (desde) qs.set('desde', desde);
+  if (hasta) qs.set('hasta', hasta);
+  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+  return useQuery({
+    queryKey: ['mc', 'azucar', desde ?? '', hasta ?? ''],
+    queryFn: () => get<{ data: EspRow[] }>(`azucar${suffix}`),
+    refetchInterval: 60_000,
+  });
+}
+
 export function useLab(procesos: string[], desde?: string, hasta?: string) {
   const params = new URLSearchParams({ procesos: procesos.join(',') });
   if (desde) params.set('desde', desde);
