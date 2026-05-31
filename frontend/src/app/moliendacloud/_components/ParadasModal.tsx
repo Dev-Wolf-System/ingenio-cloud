@@ -19,6 +19,10 @@ import {
   IconClock,
   IconActivity,
   IconTool,
+  IconBrain,
+  IconBulb,
+  IconSparkles,
+  IconWaveSine,
 } from '@tabler/icons-react';
 import { useParadasMC } from '../_hooks/useParadasMC';
 
@@ -211,6 +215,246 @@ function PeriodSelector({ periodo, offset, etiqueta, setPeriodo, stepBack, stepF
           <IconChevronRight size={16} />
         </button>
       </div>
+    </div>
+  );
+}
+
+// ─── InsightCard ─────────────────────────────────────────────────────────────
+
+interface InsightData {
+  resumen: string;
+  patrones: string[];
+  recomendaciones: string[];
+  cached: boolean;
+}
+
+function InsightCard({ insight, loading }: { insight: InsightData | null | undefined; loading: boolean }) {
+  if (loading) {
+    return (
+      <div
+        className="rounded-xl border p-4 space-y-2 animate-pulse"
+        style={{ background: 'rgba(0,212,255,0.04)', borderColor: 'rgba(0,212,255,0.20)' }}
+      >
+        <div className="h-4 rounded" style={{ background: 'var(--border, #1E3A5F)', width: '60%' }} />
+        <div className="h-3 rounded" style={{ background: 'var(--border, #1E3A5F)', width: '90%' }} />
+        <div className="h-3 rounded" style={{ background: 'var(--border, #1E3A5F)', width: '75%' }} />
+        <div className="h-3 rounded" style={{ background: 'var(--border, #1E3A5F)', width: '80%' }} />
+      </div>
+    );
+  }
+
+  if (!insight) {
+    return (
+      <div
+        className="rounded-xl border p-4 flex items-center gap-3"
+        style={{ background: 'var(--bg-card, #1A2236)', borderColor: 'var(--border, #1E3A5F)' }}
+      >
+        <IconBrain size={18} style={{ color: 'var(--text-muted, #6B7A9E)', flexShrink: 0 }} />
+        <span className="text-sm" style={{ color: 'var(--text-muted, #6B7A9E)' }}>
+          Análisis IA no disponible para este período.
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="rounded-xl border p-4 space-y-3"
+      style={{
+        background: 'linear-gradient(135deg, rgba(0,212,255,0.06), rgba(255,107,53,0.04))',
+        borderColor: 'rgba(0,212,255,0.25)',
+        boxShadow: '0 0 24px rgba(0,212,255,0.07)',
+      }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ background: 'rgba(0,212,255,0.12)', color: '#00D4FF' }}
+          >
+            <IconBrain size={16} />
+          </div>
+          <span
+            className="text-xs font-bold uppercase tracking-widest"
+            style={{ color: '#00D4FF' }}
+          >
+            Análisis IA · Paradas
+          </span>
+        </div>
+        {insight.cached && (
+          <span
+            className="text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide"
+            style={{ background: 'rgba(107,122,158,0.18)', color: 'var(--text-muted, #6B7A9E)' }}
+          >
+            en caché
+          </span>
+        )}
+      </div>
+
+      {/* Resumen */}
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
+        {insight.resumen}
+      </p>
+
+      {/* Patrones */}
+      {insight.patrones.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <IconWaveSine size={12} style={{ color: '#FFB800' }} />
+            <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#FFB800' }}>
+              Patrones detectados
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {insight.patrones.map((p, i) => (
+              <span
+                key={i}
+                className="text-xs px-2 py-0.5 rounded-full border"
+                style={{
+                  background: 'rgba(255,184,0,0.08)',
+                  borderColor: 'rgba(255,184,0,0.25)',
+                  color: '#FFB800',
+                }}
+              >
+                {p}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recomendaciones */}
+      {insight.recomendaciones.length > 0 && (
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <IconBulb size={12} style={{ color: '#00E5A0' }} />
+            <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: '#00E5A0' }}>
+              Recomendaciones
+            </span>
+          </div>
+          <ol className="space-y-1">
+            {insight.recomendaciones.map((r, i) => (
+              <li key={i} className="flex items-start gap-2">
+                <span
+                  className="text-[10px] font-bold mt-0.5 w-4 shrink-0 text-right tabular-nums"
+                  style={{ color: '#00E5A0' }}
+                >
+                  {i + 1}.
+                </span>
+                <span className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
+                  {r}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Impacto KPI ─────────────────────────────────────────────────────────────
+
+interface ImpactoData {
+  prom_t_h: number | null;
+  toneladas_no_molidas: number | null;
+}
+
+function ImpactoKpiTile({ impacto }: { impacto: ImpactoData | null | undefined }) {
+  const tons = impacto?.toneladas_no_molidas ?? null;
+  const promTh = impacto?.prom_t_h ?? null;
+
+  return (
+    <div
+      className="flex-1 min-w-[140px] rounded-xl border p-3.5 flex flex-col gap-1"
+      style={{
+        background: 'linear-gradient(135deg, rgba(255,71,87,0.08), rgba(255,184,0,0.05))',
+        borderColor: 'rgba(255,71,87,0.35)',
+      }}
+    >
+      <div className="flex items-center gap-1.5 mb-0.5">
+        <IconSparkles size={13} style={{ color: '#FF6B35' }} />
+        <span
+          className="text-[10px] font-semibold uppercase tracking-wider"
+          style={{ color: 'var(--text-muted, #6B7A9E)' }}
+        >
+          Impacto molienda
+        </span>
+      </div>
+      <span className="text-xl font-bold tabular-nums" style={{ color: '#FF6B35' }}>
+        {tons != null ? `${tons.toFixed(1)} t` : '—'}
+      </span>
+      <span className="text-[11px]" style={{ color: 'var(--text-muted, #6B7A9E)' }}>
+        no molidas (estimado)
+        {promTh != null && (
+          <span className="ml-1" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
+            · {promTh.toFixed(1)} t/h
+          </span>
+        )}
+      </span>
+    </div>
+  );
+}
+
+// ─── Gráfico por categoría ────────────────────────────────────────────────────
+
+const CATEGORIA_COLORS = ['#00D4FF', '#FF6B35', '#00E5A0', '#FFB800', '#7C6AFA', '#F43F5E', '#0EA5E9', '#F59E0B'];
+
+interface CategoriasChartProps {
+  data: Array<{ categoria: string; n: number; minutos_total: number }>;
+}
+
+function CategoriasChart({ data }: CategoriasChartProps) {
+  if (!data || !data.length) {
+    return (
+      <div className="h-40 flex items-center justify-center text-sm" style={{ color: 'var(--text-muted, #6B7A9E)' }}>
+        Sin datos por categoría
+      </div>
+    );
+  }
+  const sorted = data.slice().sort((a, b) => b.minutos_total - a.minutos_total).slice(0, 8);
+
+  return (
+    <div style={{ height: 200 }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={sorted}
+          layout="vertical"
+          margin={{ top: 4, right: 16, left: 0, bottom: 0 }}
+        >
+          <XAxis
+            type="number"
+            tick={{ fontSize: 11, fill: 'var(--text-muted, #6B7A9E)' }}
+            axisLine={false}
+            tickLine={false}
+            unit=" min"
+          />
+          <YAxis
+            type="category"
+            dataKey="categoria"
+            width={100}
+            tick={{ fontSize: 11, fill: 'var(--text-secondary, #A0B0C8)' }}
+            axisLine={false}
+            tickLine={false}
+          />
+          <Tooltip
+            cursor={{ fill: 'rgba(255,255,255,0.04)' }}
+            content={(props) => (
+              <GlassTip
+                active={props.active}
+                payload={props.payload as unknown as TooltipEntry[]}
+                label={props.label as string | undefined}
+              />
+            )}
+          />
+          <Bar dataKey="minutos_total" name="Minutos" radius={[0, 4, 4, 0]} isAnimationActive={false}>
+            {sorted.map((_, i) => (
+              <Cell key={i} fill={CATEGORIA_COLORS[i % CATEGORIA_COLORS.length]} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 }
@@ -609,6 +853,9 @@ export function ParadasModal({ open: controlledOpen, onClose: controlledClose }:
                   stepForward={stepForward}
                 />
 
+                {/* ── Insight IA (siempre visible) ── */}
+                <InsightCard insight={data?.insight} loading={loading} />
+
                 {loading ? (
                   <div className="py-20 text-center text-sm" style={{ color: 'var(--text-muted, #6B7A9E)' }}>
                     Cargando datos de paradas…
@@ -658,20 +905,36 @@ export function ParadasModal({ open: controlledOpen, onClose: controlledClose }:
                           color="#7C6AFA"
                           icon={<IconActivity size={13} />}
                         />
+                        <ImpactoKpiTile impacto={data.impacto} />
                       </div>
                     </section>
 
                     {/* ── Gráficos ── */}
-                    <section>
-                      <SectionHeader title="Pareto por motivo (top 8)" />
-                      <div
-                        className="rounded-xl border p-4"
-                        style={{
-                          background: 'var(--bg-card, #1A2236)',
-                          borderColor: 'var(--border, #1E3A5F)',
-                        }}
-                      >
-                        <MotivoParetoChart data={data.por_motivo} />
+                    <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <SectionHeader title="Pareto por motivo (top 8)" />
+                        <div
+                          className="rounded-xl border p-4"
+                          style={{
+                            background: 'var(--bg-card, #1A2236)',
+                            borderColor: 'var(--border, #1E3A5F)',
+                          }}
+                        >
+                          <MotivoParetoChart data={data.por_motivo} />
+                        </div>
+                      </div>
+
+                      <div>
+                        <SectionHeader title="Por categoría (top 8)" />
+                        <div
+                          className="rounded-xl border p-4"
+                          style={{
+                            background: 'var(--bg-card, #1A2236)',
+                            borderColor: 'var(--border, #1E3A5F)',
+                          }}
+                        >
+                          <CategoriasChart data={data.por_categoria} />
+                        </div>
                       </div>
                     </section>
 

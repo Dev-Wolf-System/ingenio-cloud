@@ -28,6 +28,14 @@ export interface ParadasResp {
   por_area: Array<{ area: string; n: number; minutos_total: number }>;
   por_motivo: Array<{ motivo: string; n: number; minutos_total: number }>;
   series_dia: Array<{ dia: string; n: number; minutos: number }>;
+  por_categoria: Array<{ categoria: string; n: number; minutos_total: number }>;
+  impacto: { prom_t_h: number | null; toneladas_no_molidas: number | null } | null;
+  insight: {
+    resumen: string;
+    patrones: string[];
+    recomendaciones: string[];
+    cached: boolean;
+  } | null;
 }
 
 export function useParadasMC() {
