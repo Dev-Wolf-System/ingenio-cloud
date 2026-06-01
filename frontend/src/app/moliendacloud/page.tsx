@@ -171,7 +171,7 @@ export default function MoliendaCloudPage() {
       />
 
       <div className="relative z-10 flex flex-col flex-1">
-        <TopBar plant="Molienda Cloud" />
+        <TopBar plant="Molienda Cloud" showAlertas={false} showResumenTurno={false} />
 
         {/* Header strip */}
         <div className="flex flex-nowrap items-center gap-1.5 sm:gap-3 px-3 sm:px-4 pt-2 pb-1 overflow-x-auto">

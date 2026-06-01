@@ -454,7 +454,7 @@ export function AnalisisAzucarModal() {
                   ) : azucarRows.length === 0 ? (
                     <EmptyState msg="Sin lecturas para el período seleccionado." />
                   ) : (
-                    <div className="flex flex-nowrap gap-2.5 lg:gap-3 overflow-x-auto pb-1">
+                    <div className="flex flex-nowrap justify-center gap-2.5 lg:gap-3 overflow-x-auto pb-1">
                       {activeParams.map((p) => {
                         const avg = avgField(azucarRows, p.key);
                         return (
@@ -495,7 +495,7 @@ export function AnalisisAzucarModal() {
                     {diaLoading ? (
                       <div className="py-4 text-center text-sm" style={{ color: 'var(--text-muted, #6B7A9E)' }}>Cargando…</div>
                     ) : (
-                      <div className="flex flex-nowrap gap-2.5 lg:gap-3 overflow-x-auto pb-1">
+                      <div className="flex flex-nowrap justify-center gap-2.5 lg:gap-3 overflow-x-auto pb-1">
                         {PARAMS.filter((p) => hasData(diaRows.filter((r) => AZUCAR_PROCS.includes(r.proceso_codigo)), p.key)).map((p) => {
                           const diaAzucar = diaRows.filter((r) => AZUCAR_PROCS.includes(r.proceso_codigo));
                           const avg = avgField(diaAzucar, p.key);

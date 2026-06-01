@@ -20,11 +20,13 @@ export class MoliendaCloudController {
   @Get('lab')
   lab(
     @Query('procesos') procesos?: string,
-    @Query('desde') desde?: string,
-    @Query('hasta') hasta?: string,
+    @Query('periodo') periodo?: string,
+    @Query('offset') offset?: string,
   ) {
     const list = (procesos ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-    return this.svc.lab(list, desde, hasta);
+    const p = periodo === 'zafra' ? 'zafra' : 'dia';
+    const off = Math.max(0, Math.min(parseInt(offset ?? '0', 10) || 0, 60));
+    return this.svc.lab(list, p, off);
   }
 
   @Get('comparativa-cana')

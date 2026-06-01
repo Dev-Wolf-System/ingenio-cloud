@@ -91,13 +91,11 @@ export function useAzucar(desde?: string, hasta?: string) {
   });
 }
 
-export function useLab(procesos: string[], desde?: string, hasta?: string) {
-  const params = new URLSearchParams({ procesos: procesos.join(',') });
-  if (desde) params.set('desde', desde);
-  if (hasta) params.set('hasta', hasta);
+export function useLab(procesos: string[], periodo: 'dia' | 'zafra' = 'dia', offset = 0) {
+  const params = new URLSearchParams({ procesos: procesos.join(','), periodo, offset: String(offset) });
   return useQuery({
-    queryKey: ['mc', 'lab', procesos, desde, hasta],
-    queryFn: () => get<{ data: LabRow[] }>(`lab?${params.toString()}`),
+    queryKey: ['mc', 'lab', procesos, periodo, offset],
+    queryFn: () => get<{ data: LabRow[]; fecha?: string }>(`lab?${params.toString()}`),
     refetchInterval: 30_000,
   });
 }

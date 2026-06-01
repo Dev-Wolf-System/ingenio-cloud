@@ -11,7 +11,7 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from 'recharts';
-import { IconX, IconBuildingFactory2 } from '@tabler/icons-react';
+import { IconX, IconBuildingFactory2, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { useLab } from '../_hooks/useMoliendaCloud';
 import type { LabRow } from '../_types';
 
@@ -241,9 +241,17 @@ function buildStats(rows: LabRow[]): ProcStats[] {
 
 export function ResumenFabricaModal() {
   const [open, setOpen] = useState(false);
+  const [periodo, setPeriodo] = useState<'dia' | 'zafra'>('dia');
+  const [offset, setOffset] = useState(0);
 
-  const { data: res, isLoading } = useLab(PROCESOS_FABRICA);
+  const { data: res, isLoading } = useLab(PROCESOS_FABRICA, periodo, offset);
   const rows: LabRow[] = res?.data ?? [];
+
+  const etiqueta =
+    periodo === 'zafra' ? 'Zafra'
+    : offset === 0 ? 'Día actual'
+    : offset === 1 ? 'Día anterior'
+    : `Día −${offset}`;
 
   const stats = buildStats(rows)
     .filter((s) => PROCESOS_FABRICA.includes(s.proceso))
@@ -343,6 +351,68 @@ export function ResumenFabricaModal() {
 
               {/* Body */}
               <div className="px-5 sm:px-6 pb-6 overflow-y-auto flex-1 space-y-5">
+
+                {/* Selector cápsula: Día (con días anteriores) · Zafra */}
+                <div
+                  className="flex flex-wrap items-center gap-3 rounded-xl border p-3"
+                  style={{ background: 'var(--bg-card, #1A2236)', borderColor: 'var(--border, #1E3A5F)' }}
+                >
+                  <div className="flex rounded-lg overflow-hidden border" style={{ borderColor: 'var(--border, #1E3A5F)' }}>
+                    {([['dia', 'Día'], ['zafra', 'Zafra']] as const).map(([key, label]) => {
+                      const active = key === periodo;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => { setPeriodo(key); setOffset(0); }}
+                          className="px-3 py-1.5 text-xs lg:text-sm font-semibold transition-all"
+                          style={{
+                            background: active ? 'var(--accent, #FF6B35)' : 'transparent',
+                            color: active ? '#0A0E1A' : 'var(--text-muted, #6B7A9E)',
+                          }}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {periodo === 'dia' && (
+                    <div className="flex items-center gap-1.5 ml-auto">
+                      <button
+                        type="button"
+                        onClick={() => setOffset((o) => Math.min(o + 1, 60))}
+                        disabled={offset >= 60}
+                        className="p-1 rounded-md transition-colors disabled:opacity-30"
+                        style={{ color: 'var(--text-muted, #6B7A9E)' }}
+                        aria-label="Día anterior"
+                      >
+                        <IconChevronLeft size={16} />
+                      </button>
+                      <span
+                        className="text-xs lg:text-sm font-medium tabular-nums px-2 py-0.5 rounded min-w-[90px] text-center"
+                        style={{ color: 'var(--text-primary, #F0F4FF)', background: 'var(--bg-base, #0A0E1A)' }}
+                      >
+                        {etiqueta}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setOffset((o) => Math.max(o - 1, 0))}
+                        disabled={offset <= 0}
+                        className="p-1 rounded-md transition-colors disabled:opacity-30"
+                        style={{ color: 'var(--text-muted, #6B7A9E)' }}
+                        aria-label="Día siguiente"
+                      >
+                        <IconChevronRight size={16} />
+                      </button>
+                    </div>
+                  )}
+                  {periodo === 'zafra' && (
+                    <span className="text-xs lg:text-sm font-medium ml-auto px-2 py-0.5" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
+                      Acumulado de la zafra
+                    </span>
+                  )}
+                </div>
 
                 {isLoading ? (
                   <div className="py-20 text-center text-sm" style={{ color: 'var(--text-muted, #6B7A9E)' }}>
