@@ -100,16 +100,13 @@ export class MoliendaCloudService {
   }
 
   async movimientosCana(limit = 100) {
-    // Lee de v_mc_movimientos_cana = legacy.movimientos (LIVE, trae la última pesada real)
-    // LEFT JOIN lab para calidad (brix/pol null en las pesadas más nuevas hasta que cargue lab).
-    // Filtra el día corriente industrial (borde 07:00) y ordena por numero_pesada desc.
-    const n = new Date(); // contenedor TZ=ART
-    const diaObj = new Date(n);
-    if (n.getHours() < 7) diaObj.setDate(diaObj.getDate() - 1);
-    const diaStr = `${diaObj.getFullYear()}-${String(diaObj.getMonth() + 1).padStart(2, '0')}-${String(diaObj.getDate()).padStart(2, '0')}`;
+    // Lee de v_mc_movimientos_cana = legacy.movimientos (LIVE, trae la última pesada real,
+    // ej. 493053) LEFT JOIN lab para calidad. NO se filtra al día corriente porque el lab
+    // rezaga ~1 día: las pesadas de hoy aún no tienen brix/pol. Mostrando las últimas por
+    // numero_pesada desc, arriba quedan las más nuevas (calidad pendiente) y debajo las ya
+    // analizadas con brix/pol/pureza/rendimiento.
     const { data, error } = await this.supabase.schema('production').from('v_mc_movimientos_cana')
       .select('numero_pesada, grupo, razon_social, numero_analisis, peso_neto, trash, brix, pol, pureza, rendimiento, neto_cana, variedad, salida_at')
-      .eq('dia_ind', diaStr)
       .order('numero_pesada', { ascending: false })
       .limit(limit);
     if (error) { this.logger.warn(`movimientosCana: ${error.message}`); return { stale: true, data: [] }; }
