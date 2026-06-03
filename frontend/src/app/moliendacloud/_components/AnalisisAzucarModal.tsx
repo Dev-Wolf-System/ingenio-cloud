@@ -72,7 +72,8 @@ function buildMultiProcSeries(rows: EspRow[], procs: string[], key: keyof EspRow
     if (!byProcHora[r.proceso_codigo][hora]) byProcHora[r.proceso_codigo][hora] = [];
     byProcHora[r.proceso_codigo][hora].push(v);
   }
-  return Array.from(horasSet).sort().map((h) => {
+  const diaIndHour = (h: string) => { const n = parseInt(h.slice(0, 2), 10); return n < 8 ? n + 24 : n; };
+  return Array.from(horasSet).sort((a, b) => diaIndHour(a) - diaIndHour(b)).map((h) => {
     const point: Record<string, unknown> = { hora: h };
     for (const p of procs) {
       const vals = byProcHora[p]?.[h];
