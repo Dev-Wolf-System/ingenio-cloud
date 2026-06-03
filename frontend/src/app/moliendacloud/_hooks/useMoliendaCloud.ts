@@ -105,7 +105,8 @@ export function useAnalisCana(zafra?: number) {
     queryKey: ['mc', 'analis-cana', zafra],
     queryFn: () => get<AnalisCanaData>(`analisis-cana${params}`),
     staleTime: 4 * 60_000,
-    refetchInterval: 5 * 60_000,
+    // Si no hay insight todavía, refetch en 12s para recoger AI del backend
+    refetchInterval: (query) => (!query.state.data?.insight ? 12_000 : 5 * 60_000),
   });
 }
 

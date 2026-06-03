@@ -213,12 +213,20 @@ export class MoliendaCloudService {
     const por_cañero = Array.from(cañeroMap.entries()).map(toCañero).sort((a, b) => b.ton_neta - a.ton_neta);
 
     const stats = { camiones: (rows ?? []).length, ton_neta: round2(sum_neto_total / 1000), rto_avg: round2(rto_avg), fincas_count: fincaMap.size };
-
-    const insight = await this.ai.analizarCana({ zafra: zafraAnio, stats, por_finca });
-
-    const result: AnalisCanaResult = { zafras, stats, por_finca, por_cañero, insight };
     const ttl = zafraInfo.fecha_fin ? 24 * 3600_000 : 30 * 60_000;
-    this.canaCache.set(zafraAnio, { data: result, expiraAt: Date.now() + ttl });
+
+    // Devolver datos inmediatamente sin esperar AI
+    const result: AnalisCanaResult = { zafras, stats, por_finca, por_cañero, insight: null };
+    this.canaCache.set(zafraAnio, { data: result, expiraAt: Date.now() + 15_000 }); // TTL corto: 15s para que la 2da llamada traiga AI
+
+    // AI en background — actualiza cache cuando termina
+    this.ai.analizarCana({ zafra: zafraAnio, stats, por_finca }).then((insight) => {
+      if (insight) {
+        const withInsight: AnalisCanaResult = { ...result, insight };
+        this.canaCache.set(zafraAnio, { data: withInsight, expiraAt: Date.now() + ttl });
+      }
+    }).catch(() => {});
+
     return result;
   }
 
