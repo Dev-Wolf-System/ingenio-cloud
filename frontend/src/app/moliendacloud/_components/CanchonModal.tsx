@@ -8,7 +8,6 @@ import {
 import {
   IconX, IconTruck, IconClock, IconUsers, IconActivity,
   IconBuildingWarehouse, IconLeaf, IconBrain, IconAlertTriangle,
-  IconChevronLeft, IconChevronRight,
 } from '@tabler/icons-react';
 import { useCanchon, useAnalisCana } from '../_hooks/useMoliendaCloud';
 import type { CanchonResumen } from '../_types';
