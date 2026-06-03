@@ -325,6 +325,18 @@ export function CanchonModal({ open, onClose }: CanchonModalProps) {
                 </div>
               )}
 
+              {/* Error / empty state */}
+              {analis.isError && (
+                <div className="rounded-xl border p-4 text-sm" style={{ background: 'rgba(255,71,87,0.06)', borderColor: 'rgba(255,71,87,0.3)', color: '#FF4757' }}>
+                  Error al cargar análisis cañero. Verificá la conexión con el backend.
+                </div>
+              )}
+              {!analis.isLoading && !analis.isError && !stats && (
+                <div className="rounded-xl border p-4 text-sm" style={{ background: 'var(--bg-card,#1A2236)', borderColor: 'var(--border,#1E3A5F)', color: 'var(--text-muted,#6B7A9E)' }}>
+                  Sin datos de zafra disponibles. El endpoint podría no estar activo — reconstruí el backend.
+                </div>
+              )}
+
               {/* Charts: finca por volumen + finca por rendimiento */}
               {por_finca.length > 0 && (
                 <div>
