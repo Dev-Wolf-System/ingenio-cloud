@@ -30,6 +30,7 @@ export interface MovCanaRow {
   variedad: string | null;
   tipo_cana: string | null;
   salida_at: string | null;
+  codigo_finca: string | null;
 }
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL!;

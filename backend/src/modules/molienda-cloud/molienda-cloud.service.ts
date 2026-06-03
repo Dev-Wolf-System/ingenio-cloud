@@ -106,7 +106,7 @@ export class MoliendaCloudService {
     // numero_pesada desc, arriba quedan las más nuevas (calidad pendiente) y debajo las ya
     // analizadas con brix/pol/pureza/rendimiento.
     const { data, error } = await this.supabase.schema('production').from('v_mc_movimientos_cana')
-      .select('numero_pesada, grupo, razon_social, numero_analisis, peso_neto, trash, brix, pol, pureza, rendimiento, neto_cana, variedad, tipo_cana, salida_at')
+      .select('numero_pesada, grupo, razon_social, numero_analisis, peso_neto, trash, brix, pol, pureza, rendimiento, neto_cana, variedad, tipo_cana, salida_at, codigo_finca')
       .order('numero_pesada', { ascending: false })
       .limit(limit);
     if (error) { this.logger.warn(`movimientosCana: ${error.message}`); return { stale: true, data: [] }; }

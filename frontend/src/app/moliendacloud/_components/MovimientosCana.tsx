@@ -50,6 +50,7 @@ const COLS: ColDef[] = [
   { header: 'PUREZA',      align: 'right', cell: (r) => fmtNum(r.pureza),                     mono: true  },
   { header: 'RENDIMIENTO', align: 'right', cell: (r) => fmtNum(r.rendimiento),                mono: true  },
   { header: 'T CAÑA',      align: 'right', cell: (r) => fmtTon(r.neto_cana),                  mono: true  },
+  { header: 'FINCA',       align: 'left',  cell: (r) => r.codigo_finca ?? '—',                mono: false },
 ];
 
 // ── component ─────────────────────────────────────────────────────────────────
