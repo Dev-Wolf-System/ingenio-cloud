@@ -100,7 +100,7 @@ function FincaBarChart({ data, avg, dataKey, unit, label }: { data: FincaAnalisR
           <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-muted,#6B7A9E)' }} axisLine={false} tickLine={false} />
           <YAxis type="category" dataKey="label" width={130} tick={{ fontSize: 10, fill: 'var(--text-muted,#6B7A9E)' }} axisLine={false} tickLine={false} />
           {dataKey === 'rto' && <ReferenceLine x={avg} stroke="rgba(255,255,255,0.25)" strokeDasharray="4 3" />}
-          <Tooltip content={(p) => <GlassTip active={p.active} payload={p.payload as TipEntry[] | undefined} label={p.label} unit={unit} />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+          <Tooltip content={(p) => <GlassTip active={p.active} payload={p.payload as unknown as TipEntry[] | undefined} label={p.label} unit={unit} />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
           <Bar dataKey={dataKey} name={label} radius={[0, 4, 4, 0]} maxBarSize={20} isAnimationActive={false}>
             {chartData.map((f, i) => (
               <Cell key={i} fill={dataKey === 'rto' ? rtoColor(f.rto, avg) : '#00D4FF'} fillOpacity={0.85} />
@@ -124,7 +124,7 @@ function CañeroChart({ data }: { data: CañeroAnalisRow[] }) {
         <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 32, left: 0, bottom: 0 }}>
           <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-muted,#6B7A9E)' }} axisLine={false} tickLine={false} />
           <YAxis type="category" dataKey="label" width={150} tick={{ fontSize: 10, fill: 'var(--text-muted,#6B7A9E)' }} axisLine={false} tickLine={false} />
-          <Tooltip content={(p) => <GlassTip active={p.active} payload={p.payload as TipEntry[] | undefined} label={p.label} unit="t" />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+          <Tooltip content={(p) => <GlassTip active={p.active} payload={p.payload as unknown as TipEntry[] | undefined} label={p.label} unit="t" />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
           <Bar dataKey="ton_neta" name="Ton neta" fill="#7C6AFA" fillOpacity={0.85} radius={[0, 4, 4, 0]} maxBarSize={20} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
