@@ -115,7 +115,9 @@ function buildHourSeries(
     if (!byProcHora[r.proceso_codigo][hora]) byProcHora[r.proceso_codigo][hora] = [];
     byProcHora[r.proceso_codigo][hora].push(v);
   }
-  const horas = Array.from(horasSet).sort();
+  // Orden día industrial: 08:00 → 23:00 → 00:00 → 07:00 (corte 07:00 ART)
+  const diaIndHour = (h: string) => { const n = parseInt(h.slice(0, 2), 10); return n < 8 ? n + 24 : n; };
+  const horas = Array.from(horasSet).sort((a, b) => diaIndHour(a) - diaIndHour(b));
   return horas.map((h) => {
     const point: Record<string, unknown> = { hora: h };
     for (let i = 0; i < procs.length; i++) {
