@@ -48,4 +48,10 @@ export class MoliendaCloudController {
   azucar(@Query('offset') offset?: string) {
     return this.svc.azucar(offset ? parseInt(offset, 10) : 0);
   }
+
+  @Get('analisis-cana')
+  analisCana(@Query('zafra') zafra?: string) {
+    const anio = zafra ? parseInt(zafra, 10) : new Date().getFullYear();
+    return this.svc.analisCana(isNaN(anio) ? new Date().getFullYear() : anio);
+  }
 }

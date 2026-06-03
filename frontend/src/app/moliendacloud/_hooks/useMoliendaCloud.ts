@@ -89,6 +89,26 @@ export function useAzucar(offset = 0) {
   });
 }
 
+export interface FincaAnalisRow { finca: string; camiones: number; ton_neta: number; rto: number; vs_avg: number }
+export interface CañeroAnalisRow { cañero: string; camiones: number; ton_neta: number; rto: number }
+export interface AnalisCanaData {
+  zafras: Array<{ anio: number; label: string }>;
+  stats: { camiones: number; ton_neta: number; rto_avg: number; fincas_count: number } | null;
+  por_finca: FincaAnalisRow[];
+  por_cañero: CañeroAnalisRow[];
+  insight: { resumen: string; alertas: string[]; recomendaciones: string[] } | null;
+}
+
+export function useAnalisCana(zafra?: number) {
+  const params = zafra ? `?zafra=${zafra}` : '';
+  return useQuery({
+    queryKey: ['mc', 'analis-cana', zafra],
+    queryFn: () => get<AnalisCanaData>(`analisis-cana${params}`),
+    staleTime: 4 * 60_000,
+    refetchInterval: 5 * 60_000,
+  });
+}
+
 export function useLab(procesos: string[], periodo: 'dia' | 'zafra' = 'dia', offset = 0) {
   const params = new URLSearchParams({ procesos: procesos.join(','), periodo, offset: String(offset) });
   return useQuery({

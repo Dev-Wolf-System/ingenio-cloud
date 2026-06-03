@@ -13,6 +13,17 @@ interface ParadasCacheEntry {
   expiraAt: number;
 }
 
+export interface FincaAnalisRow { finca: string; camiones: number; ton_neta: number; rto: number; vs_avg: number }
+export interface CañeroAnalisRow { cañero: string; camiones: number; ton_neta: number; rto: number }
+export interface AnalisCanaResult {
+  zafras: Array<{ anio: number; label: string }>;
+  stats: { camiones: number; ton_neta: number; rto_avg: number; fincas_count: number } | null;
+  por_finca: FincaAnalisRow[];
+  por_cañero: CañeroAnalisRow[];
+  insight: { resumen: string; alertas: string[]; recomendaciones: string[] } | null;
+}
+interface CanaCacheEntry { data: AnalisCanaResult; expiraAt: number }
+
 // Heurística origen → categoría (fallback cuando la IA no clasifica)
 const ORIGEN_CATEGORIA: Record<string, string> = {
   'Trapiche': 'Trapiche',
@@ -39,6 +50,7 @@ function mapByOrigen(origen: string | null | undefined): string {
 export class MoliendaCloudService {
   private readonly logger = new Logger(MoliendaCloudService.name);
   private readonly paradasCache = new Map<string, ParadasCacheEntry>();
+  private readonly canaCache = new Map<number, CanaCacheEntry>();
   constructor(private readonly supabase: SupabaseService, private readonly ai: AiService) {}
 
   async canchon() {
@@ -136,6 +148,78 @@ export class MoliendaCloudService {
 
     if (error) { this.logger.warn(`azucar: ${error.message}`); return { stale: true, data: [] }; }
     return { data: data ?? [], fecha: fechaLabel };
+  }
+
+  async analisCana(zafraAnio: number): Promise<AnalisCanaResult> {
+    const { data: zafrasData } = await this.supabase.schema('production').from('zafras')
+      .select('anio, fecha_inicio, fecha_fin').order('anio', { ascending: false });
+
+    const zafras = (zafrasData ?? []).map((z) => ({ anio: z.anio as number, label: `Zafra ${z.anio}` }));
+    const zafraInfo = (zafrasData ?? []).find((z) => z.anio === zafraAnio);
+    if (!zafraInfo) return { zafras, stats: null, por_finca: [], por_cañero: [], insight: null };
+
+    const cached = this.canaCache.get(zafraAnio);
+    if (cached && cached.expiraAt > Date.now()) return { ...cached.data, zafras };
+
+    const desde = zafraInfo.fecha_inicio as string;
+    const hasta = (zafraInfo.fecha_fin as string | null) ?? new Date().toISOString();
+
+    const { data: rows, error } = await this.supabase.schema('production')
+      .from('v_mc_movimientos_cana')
+      .select('codigo_finca, razon_social, peso_neto, neto_cana, rendimiento, salida_at')
+      .gte('salida_at', desde).lte('salida_at', hasta)
+      .not('rendimiento', 'is', null)
+      .limit(10000);
+
+    if (error) { this.logger.warn(`analisCana: ${error.message}`); return { zafras, stats: null, por_finca: [], por_cañero: [], insight: null }; }
+
+    type Agg = { camiones: number; sum_neto: number; sum_rto_w: number; sum_w: number };
+    const fincaMap = new Map<string, Agg>();
+    const cañeroMap = new Map<string, Agg>();
+    let sum_neto_total = 0, sum_rto_w_total = 0, sum_w_total = 0;
+
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+
+    for (const row of rows ?? []) {
+      const finca = String(row.codigo_finca ?? '(Sin finca)');
+      const cañero = String(row.razon_social ?? '(Sin cañero)');
+      const neto = Number(row.neto_cana ?? 0);
+      const rto = Number(row.rendimiento ?? 0);
+
+      sum_neto_total += neto;
+      if (neto > 0) { sum_rto_w_total += rto * neto; sum_w_total += neto; }
+
+      const upd = (m: Map<string, Agg>, k: string) => {
+        const a = m.get(k) ?? { camiones: 0, sum_neto: 0, sum_rto_w: 0, sum_w: 0 };
+        a.camiones++; a.sum_neto += neto;
+        if (neto > 0) { a.sum_rto_w += rto * neto; a.sum_w += neto; }
+        m.set(k, a);
+      };
+      upd(fincaMap, finca);
+      upd(cañeroMap, cañero);
+    }
+
+    const rto_avg = sum_w_total > 0 ? sum_rto_w_total / sum_w_total : 0;
+
+    const toFinca = ([finca, a]: [string, Agg]): FincaAnalisRow => {
+      const rto = a.sum_w > 0 ? round2(a.sum_rto_w / a.sum_w) : 0;
+      return { finca, camiones: a.camiones, ton_neta: round2(a.sum_neto / 1000), rto, vs_avg: round2(rto - rto_avg) };
+    };
+    const toCañero = ([cañero, a]: [string, Agg]): CañeroAnalisRow => ({
+      cañero, camiones: a.camiones, ton_neta: round2(a.sum_neto / 1000), rto: a.sum_w > 0 ? round2(a.sum_rto_w / a.sum_w) : 0,
+    });
+
+    const por_finca = Array.from(fincaMap.entries()).map(toFinca).sort((a, b) => b.ton_neta - a.ton_neta);
+    const por_cañero = Array.from(cañeroMap.entries()).map(toCañero).sort((a, b) => b.ton_neta - a.ton_neta);
+
+    const stats = { camiones: (rows ?? []).length, ton_neta: round2(sum_neto_total / 1000), rto_avg: round2(rto_avg), fincas_count: fincaMap.size };
+
+    const insight = await this.ai.analizarCana({ zafra: zafraAnio, stats, por_finca });
+
+    const result: AnalisCanaResult = { zafras, stats, por_finca, por_cañero, insight };
+    const ttl = zafraInfo.fecha_fin ? 24 * 3600_000 : 30 * 60_000;
+    this.canaCache.set(zafraAnio, { data: result, expiraAt: Date.now() + ttl });
+    return result;
   }
 
   async paradasAnalisis(periodo: Periodo, offset = 0) {

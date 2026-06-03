@@ -503,6 +503,66 @@ Interpretá el estado de mantenimiento/confiabilidad y clasificá cada motivo.`;
     }
   }
 
+  async analizarCana(payload: {
+    zafra: number;
+    stats: { camiones: number; ton_neta: number; rto_avg: number; fincas_count: number };
+    por_finca: Array<{ finca: string; camiones: number; ton_neta: number; rto: number; vs_avg: number }>;
+  }): Promise<{ resumen: string; alertas: string[]; recomendaciones: string[] } | null> {
+    if (!this.client) return null;
+
+    const sorted_rto = [...payload.por_finca].sort((a, b) => a.rto - b.rto);
+    const bottom5 = sorted_rto.slice(0, 5);
+    const top5vol = payload.por_finca.slice(0, 5);
+
+    const systemPrompt = `Sos un ingeniero agrónomo senior especialista en caña de azúcar (Ingenio La Corona, Tucumán, Argentina).
+Analizás el rendimiento de fincas proveedoras durante la zafra.
+Detectá fincas con rendimiento bajo, interpretá posibles causas agronómicas y dá recomendaciones concretas y priorizadas.
+Tono: técnico, directo, en español rioplatense.
+Salida JSON estricto:
+{ "resumen": "2-3 oraciones del panorama general", "alertas": ["finca X: causa y riesgo"], "recomendaciones": ["accion concreta priorizada"] }
+alertas: 2-4 items, solo fincas preocupantes. recomendaciones: 2-3 items accionables.`;
+
+    const userPrompt = `Zafra: ${payload.zafra}
+Total: ${payload.stats.camiones} camiones · ${payload.stats.ton_neta} t neta · ${payload.stats.fincas_count} fincas · Rto promedio: ${payload.stats.rto_avg}%
+
+Top 5 fincas (mayor volumen):
+${top5vol.map((f) => `  ${f.finca}: ${f.camiones} camiones, ${f.ton_neta}t, rto=${f.rto}% (${f.vs_avg >= 0 ? '+' : ''}${f.vs_avg}% vs avg)`).join('\n')}
+
+Bottom 5 fincas (menor rendimiento):
+${bottom5.map((f) => `  ${f.finca}: ${f.camiones} camiones, ${f.ton_neta}t, rto=${f.rto}% (${f.vs_avg >= 0 ? '+' : ''}${f.vs_avg}% vs avg)`).join('\n')}
+
+Analizá el estado de la zafra, identificá fincas problemáticas y recomendá acciones.`;
+
+    try {
+      const res = await this.client.chat.completions.create({
+        model: this.model,
+        response_format: { type: 'json_object' },
+        temperature: 0.4,
+        max_tokens: 600,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      });
+      const content = res.choices[0]?.message?.content ?? '';
+      if (!content.trim()) return null;
+      let c = content.trim();
+      if (c.startsWith('```')) c = c.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+      const s = c.indexOf('{'); const e = c.lastIndexOf('}');
+      if (s === -1 || e === -1) return null;
+      const p = JSON.parse(c.slice(s, e + 1)) as { resumen?: string; alertas?: string[]; recomendaciones?: string[] };
+      this.logger.log(`analizarCana OK · tokens=${res.usage?.total_tokens ?? '?'}`);
+      return {
+        resumen: p.resumen ?? 'Sin análisis disponible.',
+        alertas: Array.isArray(p.alertas) ? p.alertas : [],
+        recomendaciones: Array.isArray(p.recomendaciones) ? p.recomendaciones : [],
+      };
+    } catch (err) {
+      this.logger.error(`analizarCana failed: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
   async analizarAlertaCausa(alert: {
     id: string;
     severity: string;
