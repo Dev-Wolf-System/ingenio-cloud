@@ -113,31 +113,29 @@ export class MoliendaCloudService {
     return { data: data ?? [] };
   }
 
-  async azucar(desde?: string, hasta?: string) {
-    // Máx fecha_industrial SIN pasar de hoy (hay filas con fecha futura, ej. Soda_Cal a 06-05,
-    // que ensombrecían el día real y dejaban el modal vacío).
-    const n = new Date();
-    const hoyStr = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
-    const { data: fechaData, error: fechaError } = await this.supabase.schema('production').from('v_mc_especiales')
-      .select('fecha_industrial')
-      .lte('fecha_industrial', hoyStr)
-      .order('fecha_industrial', { ascending: false })
-      .limit(1);
-    if (fechaError) { this.logger.warn(`azucar (fecha): ${fechaError.message}`); return { stale: true, data: [] }; }
+  async azucar(offset = 0) {
+    // fecha_industrial se almacena como timestamptz = medianoche ART (03:00 UTC).
+    // Calculamos el día industrial en ART (corte 07:00) y restamos offset días.
+    const n = new Date(); // container TZ = ART
+    const diaInd = new Date(n);
+    if (n.getHours() < 7) diaInd.setDate(diaInd.getDate() - 1);
+    diaInd.setDate(diaInd.getDate() - offset);
 
-    const maxFecha = (fechaData ?? [])[0]?.fecha_industrial ?? null;
-    if (!maxFecha) return { data: [] };
+    const yyyy = diaInd.getFullYear();
+    const mm = String(diaInd.getMonth() + 1).padStart(2, '0');
+    const dd = String(diaInd.getDate()).padStart(2, '0');
+    // Medianoche ART = 03:00 UTC
+    const targetTs = `${yyyy}-${mm}-${dd}T03:00:00.000Z`;
+    const fechaLabel = `${dd}/${mm}/${yyyy}`;
 
-    let q = this.supabase.schema('production').from('v_mc_especiales')
+    const { data, error } = await this.supabase.schema('production').from('v_mc_especiales')
       .select('proceso_codigo, fecha_industrial, hora_lectura, color_icumsa, turbidez, humedad, cenizas, sediment_test, so2_ppm, granulometria_20, granulometria_30, calidad, silo, destino')
-      .eq('fecha_industrial', maxFecha)
-      .order('hora_lectura', { ascending: true });
-    if (desde) q = q.gte('hora_lectura', desde);
-    if (hasta) q = q.lte('hora_lectura', hasta);
+      .eq('fecha_industrial', targetTs)
+      .order('hora_lectura', { ascending: true })
+      .limit(2000);
 
-    const { data, error } = await q.limit(2000);
     if (error) { this.logger.warn(`azucar: ${error.message}`); return { stale: true, data: [] }; }
-    return { data: data ?? [] };
+    return { data: data ?? [], fecha: fechaLabel };
   }
 
   async paradasAnalisis(periodo: Periodo, offset = 0) {

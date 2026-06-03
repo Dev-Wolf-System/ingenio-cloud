@@ -45,10 +45,7 @@ export class MoliendaCloudController {
   }
 
   @Get('azucar')
-  azucar(
-    @Query('desde') desde?: string,
-    @Query('hasta') hasta?: string,
-  ) {
-    return this.svc.azucar(desde, hasta);
+  azucar(@Query('offset') offset?: string) {
+    return this.svc.azucar(offset ? parseInt(offset, 10) : 0);
   }
 }

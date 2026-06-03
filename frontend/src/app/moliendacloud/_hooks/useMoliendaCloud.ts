@@ -81,14 +81,10 @@ export interface EspRow {
   destino: string | null;
 }
 
-export function useAzucar(desde?: string, hasta?: string) {
-  const qs = new URLSearchParams();
-  if (desde) qs.set('desde', desde);
-  if (hasta) qs.set('hasta', hasta);
-  const suffix = qs.toString() ? `?${qs.toString()}` : '';
+export function useAzucar(offset = 0) {
   return useQuery({
-    queryKey: ['mc', 'azucar', desde ?? '', hasta ?? ''],
-    queryFn: () => get<{ data: EspRow[] }>(`azucar${suffix}`),
+    queryKey: ['mc', 'azucar', offset],
+    queryFn: () => get<{ data: EspRow[]; fecha?: string }>(`azucar?offset=${offset}`),
     refetchInterval: 30_000,
   });
 }
