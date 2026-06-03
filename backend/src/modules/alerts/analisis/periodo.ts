@@ -48,5 +48,5 @@ export function rangoPeriodo(periodo: Periodo, ref = new Date(), zafraInicio?: D
     return { desde, hasta, prevDesde, prevHasta: desde, etiqueta: offset === 0 ? 'Día actual' : offset === 1 ? 'Día anterior' : `Día −${offset}` };
   }
   const desde = zafraInicio ?? new Date(ref.getFullYear(), 0, 1);
-  return { desde, hasta: ref, prevDesde: null, prevHasta: null, etiqueta: 'Zafra' };
+  return { desde, hasta: ref, prevDesde: null, prevHasta: null, etiqueta: `Zafra ${ref.getFullYear()}` };
 }

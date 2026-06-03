@@ -40,6 +40,7 @@ interface ColDef {
 const COLS: ColDef[] = [
   { header: 'NRO PESADA',  align: 'right', cell: (r) => r.numero_pesada?.toString() ?? '—',  mono: true  },
   { header: 'GRUPO',       align: 'left',  cell: (r) => r.grupo ?? '—',                       mono: false },
+  { header: 'TIPO CAÑA',   align: 'left',  cell: (r) => r.tipo_cana ?? '—',                   mono: false },
   { header: 'CAÑERO',      align: 'left',  cell: (r) => truncate(r.razon_social, 22),         mono: false },
   { header: 'NRO MUESTRA', align: 'right', cell: (r) => r.numero_analisis?.toString() ?? '—', mono: true  },
   { header: 'CAÑA BRUTA t', align: 'right', cell: (r) => fmtTon(r.peso_neto),                mono: true  },

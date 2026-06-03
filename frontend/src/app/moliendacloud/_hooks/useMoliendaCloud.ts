@@ -28,6 +28,7 @@ export interface MovCanaRow {
   rendimiento: number | null;
   neto_cana: number | null;
   variedad: string | null;
+  tipo_cana: string | null;
   salida_at: string | null;
 }
 
