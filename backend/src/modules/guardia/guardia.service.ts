@@ -878,20 +878,48 @@ export class GuardiaService {
       }>;
 
       const toNum = (v: number | null) => (v != null && Number.isFinite(v) ? v : null);
+      const pad2 = (n: number) => String(n).padStart(2, '0');
 
-      const filas = rows.map((r) => ({
-        periodo: r.periodo,
-        molienda_t: r.molienda_kg != null ? Number((r.molienda_kg / 1000).toFixed(2)) : null,
-        molienda_estimada: r.molienda_es_estimado ?? false,
-        gas_m3: toNum(r.gas_consumo),
-        gas_estimado: r.gas_es_estimado ?? false,
-        bolsas_azucar: toNum(r.bolsas_azucar),
-        bagazo_humedad: toNum(r.bagazo_humedad),
-        bagazo_pol: toNum(r.bagazo_pol),
-        cachaza_pol: toNum(r.cachaza_pol),
-        color_azucar: toNum(r.color_azucar),
-        alcohol_gl: null,
-      }));
+      // Gas en tiempo real: horas cerradas + hora en curso (parcial)
+      const [influxHorasCerradas, influxHoraEnCurso] = await Promise.allSettled([
+        this.influxGas.fetchGasPorHora(),
+        this.getGasHoraEnCurso(),
+      ]);
+
+      // Map close_label("HH:00") → m3 para relleno de horas sin dato de lab
+      const influxGasMap = new Map<string, { m3: number; parcial: boolean }>();
+      if (influxHorasCerradas.status === 'fulfilled') {
+        for (const h of influxHorasCerradas.value) {
+          const label = `${pad2(h.ts_cierre.getHours())}:00`;
+          influxGasMap.set(label, { m3: Number(h.m3_estimado.toFixed(0)), parcial: false });
+        }
+      }
+      if (influxHoraEnCurso.status === 'fulfilled' && influxHoraEnCurso.value) {
+        const cur = influxHoraEnCurso.value;
+        const closeArt = new Date(cur.ts_inicio_art.getTime() + 3600_000);
+        const label = `${pad2(closeArt.getHours())}:00`;
+        influxGasMap.set(label, { m3: Number(cur.m3_parcial.toFixed(0)), parcial: true });
+      }
+
+      const filas = rows.map((r) => {
+        const gas_lab = toNum(r.gas_consumo);
+        // Extraer hora de cierre del periodo "HH:MM-HH:MM"
+        const closeLabel = (r.periodo ?? '').split('-')[1] ?? '';
+        const influx = gas_lab == null ? influxGasMap.get(closeLabel) : undefined;
+        return {
+          periodo: r.periodo,
+          molienda_t: r.molienda_kg != null ? Number((r.molienda_kg / 1000).toFixed(2)) : null,
+          molienda_estimada: r.molienda_es_estimado ?? false,
+          gas_m3: gas_lab ?? (influx?.m3 ?? null),
+          gas_estimado: gas_lab != null ? (r.gas_es_estimado ?? false) : influx != null,
+          bolsas_azucar: toNum(r.bolsas_azucar),
+          bagazo_humedad: toNum(r.bagazo_humedad),
+          bagazo_pol: toNum(r.bagazo_pol),
+          cachaza_pol: toNum(r.cachaza_pol),
+          color_azucar: toNum(r.color_azucar),
+          alcohol_gl: null,
+        };
+      });
 
       // Acumulados y promedios
       const conMol = filas.filter((f) => f.molienda_t != null).map((f) => f.molienda_t!);
