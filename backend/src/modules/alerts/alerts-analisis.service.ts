@@ -18,7 +18,15 @@ export class AlertsAnalisisService {
   constructor(private readonly supabase: SupabaseService, private readonly ai: AiService) {}
 
   async analisis(periodo: Periodo, refresh = false, offset = 0): Promise<AnalisisResponse> {
-    const rango = rangoPeriodo(periodo, new Date(), undefined, offset);
+    let zafraInicio: Date | undefined;
+    if (periodo === 'zafra') {
+      const anio = new Date().getFullYear();
+      const { data: zf } = await this.supabase.schema('production').from('zafras')
+        .select('fecha_inicio').eq('anio', anio).limit(1);
+      const fi = (zf ?? [])[0]?.fecha_inicio as string | undefined;
+      if (fi) zafraInicio = new Date(fi);
+    }
+    const rango = rangoPeriodo(periodo, new Date(), zafraInicio, offset);
     const alertsSchema = this.supabase.schema('alerts');
 
     const fetchAlerts = async (desde: Date, hasta: Date): Promise<AlertaRow[]> => {
@@ -61,7 +69,8 @@ export class AlertsAnalisisService {
           const mkTs = (hhmm: string) => {
             const hh = parseInt(hhmm.slice(0, 2), 10);
             const d = new Date(`${dia}T${hhmm}-03:00`);
-            if (hh < 8) d.setDate(d.getDate() + 1);
+            // Día industrial 07-07: horas < 07 son madrugada del día siguiente
+            if (hh < 7) d.setDate(d.getDate() + 1);
             return d.toISOString();
           };
           const inicio = mkTs(p.desde_hora);

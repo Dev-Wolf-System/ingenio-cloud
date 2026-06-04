@@ -423,6 +423,146 @@ Paradas y alertas cercanas: ${payload.paradas.map((p) => `${p.motivo} (${p.minut
     }
   }
 
+  async analizarParadas(payload: {
+    etiqueta: string;
+    reliabilidad: { paradas_n: number; downtime_total_min: number; mtbf_min: number | null; mttr_min: number | null };
+    por_area: Array<{ area: string; n: number; minutos_total: number }>;
+    por_motivo: Array<{ motivo: string; n: number; minutos_total: number }>;
+    motivos: string[];
+  }): Promise<{ resumen: string; patrones: string[]; recomendaciones: string[]; categorias: Record<string, string> } | null> {
+    if (!this.client) return null;
+
+    const systemPrompt = `Sos un ingeniero senior de MANTENIMIENTO y CONFIABILIDAD de ingenio azucarero (Ingenio La Corona, Tucumán, Argentina).
+Tu trabajo: INTERPRETÁ (no listes) los datos de paradas. Conectá causas y efectos.
+Analizá: MTBF/MTTR (qué dicen de la estabilidad y respuesta), el motivo/área crítico, recurrencia y dá recomendaciones priorizadas y concretas.
+ADEMÁS clasificá cada motivo recibido en UNA categoría de: 'Mecánica','Eléctrica','Proceso','Trapiche','Caldera','Instrumentación','Externa','Programada','Otros'.
+Español rioplatense, técnico y directo.
+Salida JSON estricto:
+{ "resumen": "3-4 oraciones interpretativas", "patrones": ["hallazgo1","hallazgo2",...], "recomendaciones": ["accion1 (prioridad)","accion2",...], "categorias": { "<motivo>": "<categoria>" } }
+patrones: 3-5 items. recomendaciones: 2-4 priorizadas. categorias: una entrada por cada motivo recibido.`;
+
+    const r = payload.reliabilidad;
+    const userPrompt = `Período: ${payload.etiqueta}
+Confiabilidad: ${r.paradas_n} paradas · downtime ${r.downtime_total_min}min · MTBF ${r.mtbf_min ?? '—'}min · MTTR ${r.mttr_min ?? '—'}min
+
+Por área (desc por minutos):
+${payload.por_area.map((a) => `  ${a.area}: ${a.n} paradas, ${a.minutos_total}min`).join('\n') || '  (sin datos)'}
+
+Por motivo (top, desc por minutos):
+${payload.por_motivo.map((m) => `  "${m.motivo}": ${m.n}x, ${m.minutos_total}min`).join('\n') || '  (sin datos)'}
+
+Motivos a clasificar (todos los distintos):
+${payload.motivos.map((m) => `  "${m}"`).join('\n') || '  (ninguno)'}
+
+Interpretá el estado de mantenimiento/confiabilidad y clasificá cada motivo.`;
+
+    try {
+      const res = await this.client.chat.completions.create({
+        model: this.model,
+        response_format: { type: 'json_object' },
+        temperature: 0.4,
+        max_tokens: 800,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      });
+
+      const content = res.choices[0]?.message?.content ?? '';
+      if (!content.trim()) {
+        this.logger.warn('analizarParadas: LLM devolvió contenido vacío');
+        return null;
+      }
+
+      let c = content.trim();
+      if (c.startsWith('```')) c = c.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+      const s = c.indexOf('{'); const e = c.lastIndexOf('}');
+      if (s === -1 || e === -1) {
+        this.logger.warn(`analizarParadas: no se encontró JSON. Raw: "${c.slice(0, 300)}"`);
+        return null;
+      }
+
+      let parsed: { resumen?: string; patrones?: string[]; recomendaciones?: string[]; categorias?: Record<string, string> };
+      try {
+        parsed = JSON.parse(c.slice(s, e + 1)) as typeof parsed;
+      } catch (parseErr) {
+        this.logger.warn(`analizarParadas: JSON parse falló: ${(parseErr as Error).message}`);
+        return null;
+      }
+
+      this.logger.log(`analizarParadas OK · tokens=${res.usage?.total_tokens ?? '?'}`);
+      return {
+        resumen: parsed.resumen ?? 'Sin análisis disponible.',
+        patrones: Array.isArray(parsed.patrones) ? parsed.patrones : [],
+        recomendaciones: Array.isArray(parsed.recomendaciones) ? parsed.recomendaciones : [],
+        categorias: (parsed.categorias && typeof parsed.categorias === 'object') ? parsed.categorias : {},
+      };
+    } catch (err) {
+      this.logger.error(`analizarParadas failed: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
+  async analizarCana(payload: {
+    zafra: number;
+    stats: { camiones: number; ton_neta: number; rto_avg: number; fincas_count: number };
+    por_finca: Array<{ finca: string; camiones: number; ton_neta: number; rto: number; vs_avg: number }>;
+  }): Promise<{ resumen: string; alertas: string[]; recomendaciones: string[] } | null> {
+    if (!this.client) return null;
+
+    const sorted_rto = [...payload.por_finca].sort((a, b) => a.rto - b.rto);
+    const bottom5 = sorted_rto.slice(0, 5);
+    const top5vol = payload.por_finca.slice(0, 5);
+
+    const systemPrompt = `Sos un ingeniero agrónomo senior especialista en caña de azúcar (Ingenio La Corona, Tucumán, Argentina).
+Analizás el rendimiento de fincas proveedoras durante la zafra.
+Detectá fincas con rendimiento bajo, interpretá posibles causas agronómicas y dá recomendaciones concretas y priorizadas.
+Tono: técnico, directo, en español rioplatense.
+Salida JSON estricto:
+{ "resumen": "2-3 oraciones del panorama general", "alertas": ["finca X: causa y riesgo"], "recomendaciones": ["accion concreta priorizada"] }
+alertas: 2-4 items, solo fincas preocupantes. recomendaciones: 2-3 items accionables.`;
+
+    const userPrompt = `Zafra: ${payload.zafra}
+Total: ${payload.stats.camiones} camiones · ${payload.stats.ton_neta} t neta · ${payload.stats.fincas_count} fincas · Rto promedio: ${payload.stats.rto_avg}%
+
+Top 5 fincas (mayor volumen):
+${top5vol.map((f) => `  ${f.finca}: ${f.camiones} camiones, ${f.ton_neta}t, rto=${f.rto}% (${f.vs_avg >= 0 ? '+' : ''}${f.vs_avg}% vs avg)`).join('\n')}
+
+Bottom 5 fincas (menor rendimiento):
+${bottom5.map((f) => `  ${f.finca}: ${f.camiones} camiones, ${f.ton_neta}t, rto=${f.rto}% (${f.vs_avg >= 0 ? '+' : ''}${f.vs_avg}% vs avg)`).join('\n')}
+
+Analizá el estado de la zafra, identificá fincas problemáticas y recomendá acciones.`;
+
+    try {
+      const res = await this.client.chat.completions.create({
+        model: this.model,
+        response_format: { type: 'json_object' },
+        temperature: 0.4,
+        max_tokens: 600,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      });
+      const content = res.choices[0]?.message?.content ?? '';
+      if (!content.trim()) return null;
+      let c = content.trim();
+      if (c.startsWith('```')) c = c.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+      const s = c.indexOf('{'); const e = c.lastIndexOf('}');
+      if (s === -1 || e === -1) return null;
+      const p = JSON.parse(c.slice(s, e + 1)) as { resumen?: string; alertas?: string[]; recomendaciones?: string[] };
+      this.logger.log(`analizarCana OK · tokens=${res.usage?.total_tokens ?? '?'}`);
+      return {
+        resumen: p.resumen ?? 'Sin análisis disponible.',
+        alertas: Array.isArray(p.alertas) ? p.alertas : [],
+        recomendaciones: Array.isArray(p.recomendaciones) ? p.recomendaciones : [],
+      };
+    } catch (err) {
+      this.logger.error(`analizarCana failed: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
   async analizarAlertaCausa(alert: {
     id: string;
     severity: string;

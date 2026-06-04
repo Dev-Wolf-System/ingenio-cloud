@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { IconScale, IconFlame, IconDroplet, IconWaveSine, IconTable, IconPackage, IconFlask } from '@tabler/icons-react';
 import { PremiumPanel } from './PremiumPanel';
 import { formatNumber } from '@/lib/utils/format';
+import { useAlcoholDia } from '@/app/moliendacloud/_hooks/useMoliendaCloud';
 
 interface Fila {
   periodo: string;
@@ -16,7 +17,6 @@ interface Fila {
   bagazo_pol: number | null;
   cachaza_pol: number | null;
   color_azucar: number | null;
-  alcohol_gl: number | null;
 }
 
 interface Stats {
@@ -101,6 +101,10 @@ export function MoliendaProduccionHora() {
     staleTime: 30_000,
   });
 
+  const alcohol = useAlcoholDia(0);
+  // periodo = "HH:00-HH:00", alcohol.hora = "HH:00" (cierre del bucket)
+  const alcoholMap = new Map((alcohol.data?.horas ?? []).map((h) => [h.hora, h.litros]));
+
   const filas = q.data?.filas ?? [];
   const stats = q.data?.stats ?? null;
   const hayDatos = filas.some(
@@ -170,7 +174,7 @@ export function MoliendaProduccionHora() {
             />
             <StatCard
               label="Alcohol Ind."
-              value={null}
+              value={alcohol.data?.dia_litros ?? null}
               unit="L"
               decimals={0}
               sublabel="acumulado del día"
@@ -278,7 +282,7 @@ export function MoliendaProduccionHora() {
                       <TableCell value={f.bagazo_humedad} decimals={1} />
                       <TableCell value={f.bagazo_pol} decimals={2} />
                       <TableCell value={f.cachaza_pol} decimals={2} />
-                      <TableCell value={f.alcohol_gl} decimals={1} />
+                      <TableCell value={alcoholMap.get(f.periodo.split('-')[1] ?? '') ?? null} decimals={0} unit="L" />
                     </tr>
                   ))}
                 </tbody>

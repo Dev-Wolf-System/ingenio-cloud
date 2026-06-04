@@ -11,7 +11,11 @@ import { useShift } from '@/lib/hooks/useShift';
 import { formatTime } from '@/lib/utils/format';
 import { ThemeToggle } from './ThemeToggle';
 
-export function TopBar({ plant = 'Sala de Monitoreo' }: { plant?: string }) {
+export function TopBar({
+  plant = 'Sala de Monitoreo',
+  showAlertas = true,
+  showResumenTurno = true,
+}: { plant?: string; showAlertas?: boolean; showResumenTurno?: boolean }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const now = useClock();
@@ -109,14 +113,16 @@ export function TopBar({ plant = 'Sala de Monitoreo' }: { plant?: string }) {
         </div>
 
         {/* Ver resumen de recibimiento del turno */}
-        <button
-          onClick={openBanner}
-          className="p-2 rounded-md hover:bg-bg-hover transition-colors text-text-muted hover:text-primary-light"
-          aria-label="Ver resumen de recibimiento del turno"
-          title="Ver resumen de recibimiento del turno"
-        >
-          <IconClipboardText size={17} />
-        </button>
+        {showResumenTurno && (
+          <button
+            onClick={openBanner}
+            className="p-2 rounded-md hover:bg-bg-hover transition-colors text-text-muted hover:text-primary-light"
+            aria-label="Ver resumen de recibimiento del turno"
+            title="Ver resumen de recibimiento del turno"
+          >
+            <IconClipboardText size={17} />
+          </button>
+        )}
 
         {/* Toggle bloqueo kanban (drag-drop tiles) */}
         <button
@@ -132,14 +138,16 @@ export function TopBar({ plant = 'Sala de Monitoreo' }: { plant?: string }) {
         <ThemeToggle />
 
         {/* Configurar alertas */}
-        <Link
-          href="/alertas"
-          className="p-2 rounded-md hover:bg-bg-hover transition-colors text-text-muted hover:text-warn"
-          aria-label="Configurar alertas"
-          title="Configurar alertas (mín/máx)"
-        >
-          <IconBell size={17} />
-        </Link>
+        {showAlertas && (
+          <Link
+            href="/alertas"
+            className="p-2 rounded-md hover:bg-bg-hover transition-colors text-text-muted hover:text-warn"
+            aria-label="Configurar alertas"
+            title="Configurar alertas (mín/máx)"
+          >
+            <IconBell size={17} />
+          </Link>
+        )}
 
         {/* Fullscreen */}
         <button

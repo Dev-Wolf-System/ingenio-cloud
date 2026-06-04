@@ -20,10 +20,11 @@ function inicioTurno(d: Date): Date {
 }
 
 function inicioDiaIndustrial(d: Date): Date {
+  // Día industrial abre y cierra a las 07:00 (convención del ingenio / dashboard).
   const base = new Date(d);
   base.setMinutes(0, 0, 0);
-  if (d.getHours() < 5) base.setDate(base.getDate() - 1);
-  base.setHours(5);
+  if (d.getHours() < 7) base.setDate(base.getDate() - 1);
+  base.setHours(7);
   return base;
 }
 
@@ -47,5 +48,5 @@ export function rangoPeriodo(periodo: Periodo, ref = new Date(), zafraInicio?: D
     return { desde, hasta, prevDesde, prevHasta: desde, etiqueta: offset === 0 ? 'Día actual' : offset === 1 ? 'Día anterior' : `Día −${offset}` };
   }
   const desde = zafraInicio ?? new Date(ref.getFullYear(), 0, 1);
-  return { desde, hasta: ref, prevDesde: null, prevHasta: null, etiqueta: 'Zafra' };
+  return { desde, hasta: ref, prevDesde: null, prevHasta: null, etiqueta: `Zafra ${ref.getFullYear()}` };
 }

@@ -15,6 +15,7 @@ import { AiModule } from './modules/ai/ai.module';
 import { ReportesModule } from './modules/reportes/reportes.module';
 import { InfluxModule } from './modules/influx/influx.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { MoliendaCloudModule } from './modules/molienda-cloud/molienda-cloud.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     ReportesModule,
     InfluxModule,
     NotificationsModule,
+    MoliendaCloudModule,
   ],
 })
 export class AppModule {}
