@@ -109,6 +109,22 @@ export function useAnalisCana(zafra?: number) {
   });
 }
 
+export interface AlcoholHoraRow { hora: string; litros: number; caudal_avg: number }
+export interface AlcoholDiaData {
+  horas: AlcoholHoraRow[];
+  dia_litros: number;
+  caudal_actual: number | null;
+  fecha: string;
+}
+
+export function useAlcoholDia(offset = 0) {
+  return useQuery({
+    queryKey: ['mc', 'alcohol-dia', offset],
+    queryFn: () => get<AlcoholDiaData>(`alcohol-dia?offset=${offset}`),
+    refetchInterval: 60_000,
+  });
+}
+
 export function useLab(procesos: string[], periodo: 'dia' | 'zafra' = 'dia', offset = 0) {
   const params = new URLSearchParams({ procesos: procesos.join(','), periodo, offset: String(offset) });
   return useQuery({

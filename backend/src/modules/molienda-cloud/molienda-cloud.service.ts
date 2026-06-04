@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { AiService } from '../ai/ai.service';
+import { InfluxAlcoholService } from '../influx/influx-alcohol.service';
 import type { CanaAgg } from './comparativa';
 import { rangoPeriodo, type Periodo } from '../alerts/analisis/periodo';
 import { reliabilidad } from '../alerts/analisis/aggregate';
@@ -51,7 +52,11 @@ export class MoliendaCloudService {
   private readonly logger = new Logger(MoliendaCloudService.name);
   private readonly paradasCache = new Map<string, ParadasCacheEntry>();
   private readonly canaCache = new Map<number, CanaCacheEntry>();
-  constructor(private readonly supabase: SupabaseService, private readonly ai: AiService) {}
+  constructor(
+    private readonly supabase: SupabaseService,
+    private readonly ai: AiService,
+    private readonly influxAlcohol: InfluxAlcoholService,
+  ) {}
 
   async canchon() {
     const { data, error } = await this.supabase.schema('production').from('v_canchon_resumen').select('*');
@@ -370,6 +375,10 @@ export class MoliendaCloudService {
       impacto,
       insight,
     };
+  }
+
+  async alcoholDia(offset = 0) {
+    return this.influxAlcohol.alcoholDia(offset);
   }
 
   async lab(procesos: string[], periodo: 'dia' | 'zafra' = 'dia', offset = 0) {

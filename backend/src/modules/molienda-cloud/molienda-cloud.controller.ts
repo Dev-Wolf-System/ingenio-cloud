@@ -49,6 +49,12 @@ export class MoliendaCloudController {
     return this.svc.azucar(offset ? parseInt(offset, 10) : 0);
   }
 
+  @Get('alcohol-dia')
+  alcoholDia(@Query('offset') offset?: string) {
+    const off = Math.max(0, Math.min(parseInt(offset ?? '0', 10) || 0, 60));
+    return this.svc.alcoholDia(off);
+  }
+
   @Get('analisis-cana')
   analisCana(@Query('zafra') zafra?: string) {
     const anio = zafra ? parseInt(zafra, 10) : new Date().getFullYear();
