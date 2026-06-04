@@ -86,9 +86,10 @@ export class InfluxAlcoholService {
     ]);
 
     const toRow = (r: { hora_utc: string; caudal_avg: number; litros: number }): AlcoholHoraRow => {
+      // utcToArt embeds ART hours in UTC bytes → use toISOString, not getHours (TZ=ART container)
       const art = new Date(parseInfluxUtc(r.hora_utc).getTime() + ART_OFFSET_MS);
       return {
-        hora: `${pad(art.getHours())}:00`,
+        hora: `${art.toISOString().slice(11, 13)}:00`,
         litros: Math.round(r.litros ?? 0),
         caudal_avg: Math.round((r.caudal_avg ?? 0) * 100) / 100,
       };
