@@ -132,7 +132,7 @@ function KpiCard({ label, value, unit, dec, color, refValue }: KpiCardProps) {
   const up = delta != null && delta > 0;
 
   return (
-    <div className="flex flex-col gap-1 rounded-xl border p-3 lg:p-4 shrink-0" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)', minWidth: 118 }}>
+    <div className="flex flex-col gap-1 rounded-xl border p-3 lg:p-4 lg:min-w-[130px] lg:flex-1" style={{ background: 'var(--bg-card)', borderColor: 'var(--border)' }}>
       <span className="text-[11px] lg:text-xs font-semibold uppercase tracking-wider whitespace-nowrap" style={{ color: 'var(--text-muted)' }}>{label}</span>
       <span className="text-2xl lg:text-3xl font-bold tabular-nums" style={{ color }}>
         {value != null ? fmtVal(value, dec) : '—'}
@@ -333,7 +333,7 @@ export function AnalisisAzucarModal() {
                   ) : azucarSel.length === 0 ? (
                     <EmptyState msg="Sin lecturas para el período seleccionado." />
                   ) : (
-                    <div className="flex flex-nowrap justify-center gap-2.5 lg:gap-3 overflow-x-auto pb-1">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap gap-3 lg:gap-4 xl:gap-5">
                       {activeParams.map((p) => (
                         <KpiCard
                           key={p.key as string}
