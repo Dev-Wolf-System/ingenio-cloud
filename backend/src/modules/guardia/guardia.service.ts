@@ -888,16 +888,18 @@ export class GuardiaService {
 
       // Map close_label("HH:00") → m3 para relleno de horas sin dato de lab
       const influxGasMap = new Map<string, { m3: number; parcial: boolean }>();
+      // utcToArt() codifica hora ART en bytes UTC del Date → usar .toISOString() no .getHours()
       if (influxHorasCerradas.status === 'fulfilled') {
         for (const h of influxHorasCerradas.value) {
-          const label = `${pad2(h.ts_cierre.getHours())}:00`;
+          const label = `${h.ts_cierre.toISOString().slice(11, 13)}:00`;
           influxGasMap.set(label, { m3: Number(h.m3_estimado.toFixed(0)), parcial: false });
         }
       }
       if (influxHoraEnCurso.status === 'fulfilled' && influxHoraEnCurso.value) {
         const cur = influxHoraEnCurso.value;
-        const closeArt = new Date(cur.ts_inicio_art.getTime() + 3600_000);
-        const label = `${pad2(closeArt.getHours())}:00`;
+        // ts_inicio_art es utcToArt(UTC) → sumar 1h y leer con toISOString
+        const closeDate = new Date(cur.ts_inicio_art.getTime() + 3600_000);
+        const label = `${closeDate.toISOString().slice(11, 13)}:00`;
         influxGasMap.set(label, { m3: Number(cur.m3_parcial.toFixed(0)), parcial: true });
       }
 
