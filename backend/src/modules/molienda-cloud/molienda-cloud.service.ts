@@ -164,56 +164,22 @@ export class MoliendaCloudService {
     const desde = zafraInfo.fecha_inicio as string;
     const hasta = (zafraInfo.fecha_fin as string | null) ?? new Date().toISOString();
 
-    const { data: rows, error } = await this.supabase.schema('production')
-      .from('v_mc_movimientos_cana')
-      .select('codigo_finca, razon_social, peso_neto, neto_cana, rendimiento, salida_at')
-      .gte('salida_at', desde).lte('salida_at', hasta)
-      .not('rendimiento', 'is', null)
-      .limit(10000);
+    const { data: agg, error } = await this.supabase.schema('production')
+      .rpc('fn_analis_cana', { p_desde: desde, p_hasta: hasta });
 
     if (error) { this.logger.warn(`analisCana: ${error.message}`); return { zafras, stats: null, por_finca: [], por_cañero: [], insight: null }; }
 
-    type Agg = { camiones: number; sum_neto: number; sum_rto_w: number; sum_w: number };
-    const fincaMap = new Map<string, Agg>();
-    const cañeroMap = new Map<string, Agg>();
-    let sum_neto_total = 0, sum_rto_w_total = 0, sum_w_total = 0;
+    const raw = agg as { stats: { camiones: number; ton_neta: number; rto_avg: number; fincas_count: number }; por_finca: Array<{ finca: string; camiones: number; ton_neta: number; rto: number }>; por_cañero: CañeroAnalisRow[] } | null;
+    if (!raw?.stats) return { zafras, stats: null, por_finca: [], por_cañero: [], insight: null };
 
+    const { stats, por_cañero } = raw;
+    const rto_avg = stats.rto_avg ?? 0;
     const round2 = (n: number) => Math.round(n * 100) / 100;
+    const por_finca: FincaAnalisRow[] = (raw.por_finca ?? []).map((f) => ({
+      ...f, vs_avg: round2((f.rto ?? 0) - rto_avg),
+    }));
 
-    for (const row of rows ?? []) {
-      const finca = String(row.codigo_finca ?? '(Sin finca)');
-      const cañero = String(row.razon_social ?? '(Sin cañero)');
-      const neto = Number(row.neto_cana ?? 0);
-      const rto = Number(row.rendimiento ?? 0);
-
-      sum_neto_total += neto;
-      if (neto > 0) { sum_rto_w_total += rto * neto; sum_w_total += neto; }
-
-      const upd = (m: Map<string, Agg>, k: string) => {
-        const a = m.get(k) ?? { camiones: 0, sum_neto: 0, sum_rto_w: 0, sum_w: 0 };
-        a.camiones++; a.sum_neto += neto;
-        if (neto > 0) { a.sum_rto_w += rto * neto; a.sum_w += neto; }
-        m.set(k, a);
-      };
-      upd(fincaMap, finca);
-      upd(cañeroMap, cañero);
-    }
-
-    const rto_avg = sum_w_total > 0 ? sum_rto_w_total / sum_w_total : 0;
-
-    const toFinca = ([finca, a]: [string, Agg]): FincaAnalisRow => {
-      const rto = a.sum_w > 0 ? round2(a.sum_rto_w / a.sum_w) : 0;
-      return { finca, camiones: a.camiones, ton_neta: round2(a.sum_neto / 1000), rto, vs_avg: round2(rto - rto_avg) };
-    };
-    const toCañero = ([cañero, a]: [string, Agg]): CañeroAnalisRow => ({
-      cañero, camiones: a.camiones, ton_neta: round2(a.sum_neto / 1000), rto: a.sum_w > 0 ? round2(a.sum_rto_w / a.sum_w) : 0,
-    });
-
-    const por_finca = Array.from(fincaMap.entries()).map(toFinca).sort((a, b) => b.ton_neta - a.ton_neta);
-    const por_cañero = Array.from(cañeroMap.entries()).map(toCañero).sort((a, b) => b.ton_neta - a.ton_neta);
-
-    const stats = { camiones: (rows ?? []).length, ton_neta: round2(sum_neto_total / 1000), rto_avg: round2(rto_avg), fincas_count: fincaMap.size };
-    const ttl = zafraInfo.fecha_fin ? 24 * 3600_000 : 30 * 60_000;
+    const ttl = zafraInfo.fecha_fin ? 24 * 3600_000 : 2 * 60_000; // zafra activa: 2 min
 
     // Devolver datos inmediatamente sin esperar AI
     const result: AnalisCanaResult = { zafras, stats, por_finca, por_cañero, insight: null };
