@@ -55,17 +55,20 @@ export class ThresholdEvaluatorService {
     const industrial = this.supabase.schema('industrial');
     const alerts = this.supabase.schema('alerts');
 
-    // 1. Cargar thresholds activos
+    // 1. Cargar TODOS los thresholds (enabled y disabled) para poder resolver huérfanos
     const { data: thresholds, error: tErr } = await industrial
       .from('alert_thresholds')
-      .select('id, area, key, min_value, max_value, enabled, severity, notes, escalate_after_min, escalate_drift_pct, escalate_enabled')
-      .eq('enabled', true);
+      .select('id, area, key, min_value, max_value, enabled, severity, notes, escalate_after_min, escalate_drift_pct, escalate_enabled');
     if (tErr) {
       this.logger.warn(`thresholds load failed: ${tErr.message}`);
       return;
     }
-    const rules = (thresholds ?? []) as Threshold[];
-    if (rules.length === 0) return;
+    const allThresholds = (thresholds ?? []) as Threshold[];
+    const rules = allThresholds.filter((t) => t.enabled);
+    // Sources de umbrales deshabilitados — sus alertas abiertas se resolverán
+    const disabledSources = new Set(
+      allThresholds.filter((t) => !t.enabled).map((t) => `threshold::${t.area}::${t.key}`),
+    );
 
     // 2. Cargar snapshot dashboard
     const { data: snapshot, error: dErr } = await industrial
@@ -186,6 +189,13 @@ export class ThresholdEvaluatorService {
             severity: open.severity,
           });
         }
+      }
+    }
+
+    // 4b. Resolver alertas de umbrales deshabilitados (huérfanos)
+    for (const [source, open] of openMap) {
+      if (disabledSources.has(source) && !toResolve.includes(open.id)) {
+        toResolve.push(open.id);
       }
     }
 
