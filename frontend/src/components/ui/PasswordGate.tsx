@@ -8,7 +8,7 @@ interface Props {
   isOpen: boolean;
   onSuccess: () => void;
   onClose: () => void;
-  unlock: (pwd: string) => boolean;
+  unlock: (pwd: string) => Promise<boolean> | boolean;
   title?: string;
   description?: string;
 }
@@ -24,11 +24,14 @@ export function PasswordGate({
   const [value, setValue] = useState('');
   const [showPwd, setShowPwd] = useState(false);
   const [error, setError] = useState(false);
+  const [checking, setChecking] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const ok = unlock(value);
+    setChecking(true);
+    const ok = await unlock(value);
+    setChecking(false);
     if (ok) {
       setValue('');
       setError(false);
@@ -101,11 +104,13 @@ export function PasswordGate({
                     <input
                       ref={inputRef}
                       autoFocus
+                      autoComplete="current-password"
                       type={showPwd ? 'text' : 'password'}
                       value={value}
                       onChange={(e) => { setValue(e.target.value); setError(false); }}
                       placeholder="••••••••"
-                      className={`w-full bg-white/5 border rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 outline-none transition-colors pr-10
+                      disabled={checking}
+                      className={`w-full bg-white/5 border rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 outline-none transition-colors pr-10 disabled:opacity-50
                         ${error
                           ? 'border-red-500/60 focus:border-red-500'
                           : 'border-white/10 focus:border-primary/50'
@@ -134,10 +139,10 @@ export function PasswordGate({
                   </button>
                   <button
                     type="submit"
-                    disabled={!value}
+                    disabled={!value || checking}
                     className="flex-1 px-4 py-2.5 rounded-lg bg-primary/80 hover:bg-primary text-sm font-medium text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
-                    Desbloquear
+                    {checking ? 'Verificando…' : 'Desbloquear'}
                   </button>
                 </div>
 

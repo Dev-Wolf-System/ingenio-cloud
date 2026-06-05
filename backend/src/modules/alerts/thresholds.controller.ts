@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import { ThresholdsService, type ThresholdArea, type ThresholdRow } from './thresholds.service';
 
 @Controller('alerts/thresholds')
@@ -21,5 +21,18 @@ export class ThresholdsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.svc.remove(id);
+  }
+
+  /**
+   * POST /api/alerts/thresholds/config/verify
+   * Verifica la contraseña de configuración sin exponerla en el bundle del cliente.
+   * La contraseña vive solo en CONFIG_PASSWORD (env del servidor).
+   */
+  @Post('config/verify')
+  @HttpCode(200)
+  verifyConfigPassword(@Body() body: { password?: string }): { ok: boolean } {
+    const expected = process.env.CONFIG_PASSWORD;
+    if (!expected) return { ok: false };
+    return { ok: body.password === expected };
   }
 }

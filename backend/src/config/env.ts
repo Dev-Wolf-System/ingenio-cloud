@@ -67,6 +67,9 @@ const envSchema = z.object({
   REPORTE_TURNO_RETRY_INTERVAL_MINUTES: z.coerce.number().default(1),
   REPORTE_TURNO_RETRY_MAX_HOURS: z.coerce.number().default(4),
 
+  // Contraseña de configuración (panel alertas) — nunca exponer en frontend
+  CONFIG_PASSWORD: z.string().optional(),
+
   // Defaults
   DEFAULT_TENANT_SLUG: z.string().default('lacorona'),
   DEFAULT_PLANT_SLUG: z.string().default('planta-sur'),

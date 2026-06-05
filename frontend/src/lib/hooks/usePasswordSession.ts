@@ -3,13 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 
 const SESSION_KEY = 'alerts_config_unlocked_until';
-const PASSWORD = 'balitec$';
 const TTL_MS = 30 * 60_000; // 30 min
 
 export function usePasswordSession() {
   const [unlocked, setUnlocked] = useState(false);
 
-  // Al mount: verificar si hay sesión activa
   useEffect(() => {
     try {
       const until = Number(sessionStorage.getItem(SESSION_KEY) ?? 0);
@@ -19,15 +17,29 @@ export function usePasswordSession() {
     }
   }, []);
 
-  const unlock = useCallback((pwd: string): boolean => {
-    if (pwd !== PASSWORD) return false;
+  const unlock = useCallback(async (pwd: string): Promise<boolean> => {
     try {
-      sessionStorage.setItem(SESSION_KEY, String(Date.now() + TTL_MS));
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/alerts/thresholds/config/verify`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pwd }),
+        },
+      );
+      if (!res.ok) return false;
+      const data = (await res.json()) as { ok: boolean };
+      if (!data.ok) return false;
+      try {
+        sessionStorage.setItem(SESSION_KEY, String(Date.now() + TTL_MS));
+      } catch {
+        // ignore
+      }
+      setUnlocked(true);
+      return true;
     } catch {
-      // ignore
+      return false;
     }
-    setUnlocked(true);
-    return true;
   }, []);
 
   const lock = useCallback(() => {
