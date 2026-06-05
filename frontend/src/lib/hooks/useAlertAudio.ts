@@ -140,6 +140,9 @@ export function useAlertAudio(alerts: AudioAlert[]) {
   const repeatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const alertsRef = useRef<AudioAlert[]>(alerts);
   const [audioBlocked, setAudioBlocked] = useState(false);
+  // Primer render: inicializar prevIds con las alertas ya presentes para no
+  // tratarlas como "nuevas" (evita beep al volver al dashboard con alertas activas).
+  const initializedRef = useRef(false);
 
   // Coalesce: acumula alertas detectadas casi-simultáneas antes de disparar
   const pendingAlertsRef = useRef<Map<string, AudioAlert>>(new Map());
@@ -278,6 +281,17 @@ export function useAlertAudio(alerts: AudioAlert[]) {
   useEffect(() => {
     const currentIds = new Set(alerts.map((a) => a.id));
     const currentMap = new Map(alerts.map((a) => [a.id, a]));
+
+    // Primer render: inicializar silenciosamente para no disparar beep por alertas
+    // preexistentes (pasa al navegar al dashboard con alertas ya activas).
+    if (!initializedRef.current) {
+      initializedRef.current = true;
+      prevIdsRef.current = currentIds;
+      prevAlertsRef.current = currentMap;
+      // Aun así programar repeat si hay alertas activas (sin disparar audio inmediato)
+      if (alerts.length > 0) scheduleRepeat();
+      return;
+    }
 
     const newAlerts = alerts.filter((a) => !prevIdsRef.current.has(a.id));
     const resolvedAlerts = prevIdsRef.current.size > 0
