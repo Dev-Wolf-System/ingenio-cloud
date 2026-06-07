@@ -320,6 +320,7 @@ export class GuardiaService {
       let paradasDetalle: ParadaDetalle[] = row.paradas_detalle ?? [];
       let paradasCount = toNum(row.paradas_count) ?? 0;
       let paradasMinutos = row.paradas_minutos ?? 0;
+      let paradaEnCurso: { inicio_sensor: string; duracion_horas: number } | null = null;
       try {
         const { data: inferidas } = await this.supabase.schema('production')
           .from('paradas_inferidas')
@@ -327,13 +328,14 @@ export class GuardiaService {
           .is('fin', null);
         for (const inf of (inferidas ?? []) as Array<{ id: number; inicio_sensor: string; fin: null }>) {
           const iniDate = new Date(inf.inicio_sensor);
-          // Convertir a hora ART local para mostrar HH:MM
           const artOffset = -3 * 60; // ART = UTC-3
           const localMs = iniDate.getTime() + artOffset * 60_000;
           const localDate = new Date(localMs);
           const hh = String(localDate.getUTCHours()).padStart(2, '0');
           const mm = String(localDate.getUTCMinutes()).padStart(2, '0');
           const minutosTranscurridos = Math.round((Date.now() - iniDate.getTime()) / 60_000);
+          const duracionHoras = Math.round(minutosTranscurridos / 60 * 10) / 10;
+          paradaEnCurso = { inicio_sensor: inf.inicio_sensor, duracion_horas: duracionHoras };
           const already = paradasDetalle.some((p) => p.estado === 'abierta' && p.motivo === 'En curso (sensor)');
           if (!already) {
             paradasDetalle = [
@@ -365,6 +367,7 @@ export class GuardiaService {
         paradas_count: paradasCount,
         paradas_minutos: paradasMinutos,
         paradas_detalle: paradasDetalle,
+        parada_en_curso: paradaEnCurso,
       };
     } catch (err) {
       this.logger.warn(`resumen-turno-previo exception: ${(err as Error).message}`);
@@ -778,6 +781,7 @@ export class GuardiaService {
 
   /** Huella de los datos que alimentan la IA — si no cambia, no se regenera */
   private fingerprintResumen(resumen: Record<string, unknown>): string {
+    const pec = resumen['parada_en_curso'] as { duracion_horas?: number } | null | undefined;
     const rel = {
       turno: resumen['turno'] ?? null,
       molienda: resumen['molienda_avg_t_h'] ?? null,
@@ -786,6 +790,8 @@ export class GuardiaService {
       paradas_count: resumen['paradas_count'] ?? null,
       paradas_min: resumen['paradas_minutos'] ?? null,
       paradas: resumen['paradas_detalle'] ?? [],
+      // Granularidad 4h para no regenerar en cada llamada; si la parada se cierra → cambia
+      parada_en_curso_bloque: pec ? Math.floor((pec.duracion_horas ?? 0) / 4) : null,
     };
     return createHash('sha1').update(JSON.stringify(rel)).digest('hex');
   }

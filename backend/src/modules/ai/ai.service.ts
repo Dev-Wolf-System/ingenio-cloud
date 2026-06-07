@@ -43,6 +43,7 @@ export class AiService implements OnModuleInit {
       maquina?: string;
       minutos_neto?: number | null;
     }>;
+    parada_en_curso?: { inicio_sensor: string; duracion_horas: number } | null;
   }): Promise<{
     resumen: string;
     estado: 'normal' | 'atencion' | 'critico';
@@ -75,6 +76,10 @@ Salida JSON estricto con campos:
           .join('\n')
       : '(sin paradas registradas)';
 
+    const paradaEnCursoFmt = payload.parada_en_curso
+      ? `\n⚠️ ESTADO ACTUAL DE FÁBRICA: EL TRAPICHE ESTÁ PARADO desde hace ${payload.parada_en_curso.duracion_horas} horas (parada continua detectada por sensor, aún sin cierre). Esta parada arranca de antes del turno analizado y sigue abierta al momento de este análisis. Mencioná este estado en tu análisis.`
+      : '';
+
     const userPrompt = `Turno: ${payload.turno ?? '—'}
 Periodo: ${payload.turno_inicio ?? '?'} → ${payload.turno_fin ?? '?'}
 
@@ -84,7 +89,7 @@ Paradas: ${payload.paradas_count ?? 0} evento(s), ${payload.paradas_minutos ?? 0
 
 Detalle de paradas:
 ${paradasFmt}
-
+${paradaEnCursoFmt}
 Analizá el desempeño del turno considerando los motivos de paradas.`;
 
     const messages = [
