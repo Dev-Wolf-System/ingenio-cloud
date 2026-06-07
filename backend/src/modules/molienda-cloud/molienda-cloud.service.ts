@@ -329,30 +329,18 @@ export class MoliendaCloudService {
       .sort((a, b) => a.dia.localeCompare(b.dia));
 
     // ── Impacto en molienda ────────────────────────────────────────────────
+    // Usa promedio zafra (días con >500 t producidos = fábrica funcionando).
+    // Más estable que el día corriente, que es muy variable hora a hora.
     let impacto: { prom_t_h: number; toneladas_no_molidas: number } | null = null;
     try {
       const bloques = await this.moliendaBloques();
       type BloqueRow = { molienda_kg?: number | string | null; bloque?: string | null };
       const toKg = (v: number | string | null | undefined): number => (v == null ? 0 : Number(v));
-      const all = bloques.data as BloqueRow[];
-
-      // 1° preferencia: promedio horario del día corriente
-      const diasCorriente = all.filter((f) => f.bloque === 'dia_corriente' && toKg(f.molienda_kg) > 0);
-      let promTH: number | null = null;
-      if (diasCorriente.length > 0) {
-        const promKgH = diasCorriente.reduce((s, f) => s + toKg(f.molienda_kg), 0) / diasCorriente.length;
-        promTH = Math.round((promKgH / 1000) * 10) / 10;
-      } else {
-        // Fallback: promedio zafra (filas = totales diarios; ÷24 → t/h).
-        // Solo días con producción significativa (>500 t/día = fábrica funcionando).
-        const zafraFilas = all.filter((f) => f.bloque === 'zafra' && toKg(f.molienda_kg) > 500_000);
-        if (zafraFilas.length > 0) {
-          const avgKgDia = zafraFilas.reduce((s, f) => s + toKg(f.molienda_kg), 0) / zafraFilas.length;
-          promTH = Math.round((avgKgDia / 1000 / 24) * 10) / 10;
-        }
-      }
-
-      if (promTH != null && promTH > 0) {
+      const zafraFilas = (bloques.data as BloqueRow[])
+        .filter((f) => f.bloque === 'zafra' && toKg(f.molienda_kg) > 500_000);
+      if (zafraFilas.length > 0) {
+        const avgKgDia = zafraFilas.reduce((s, f) => s + toKg(f.molienda_kg), 0) / zafraFilas.length;
+        const promTH = Math.round((avgKgDia / 1000 / 24) * 10) / 10;
         const toneladas_no_molidas = Math.round((reliab.downtime_total_min / 60) * promTH);
         impacto = { prom_t_h: promTH, toneladas_no_molidas };
       }
