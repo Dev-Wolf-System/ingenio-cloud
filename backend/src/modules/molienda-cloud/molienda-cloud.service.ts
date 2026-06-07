@@ -329,20 +329,38 @@ export class MoliendaCloudService {
       .sort((a, b) => a.dia.localeCompare(b.dia));
 
     // ── Impacto en molienda ────────────────────────────────────────────────
-    // Usa promedio zafra (días con >500 t producidos = fábrica funcionando).
-    // Más estable que el día corriente, que es muy variable hora a hora.
+    // Promedio zafra hasta el ÚLTIMO día con producción plena (>3000 t/día).
+    // Excluye días de parada/startup al final de la serie para que el promedio
+    // no se diluya si la fábrica lleva varios días detenida.
     let impacto: { prom_t_h: number; toneladas_no_molidas: number } | null = null;
     try {
       const bloques = await this.moliendaBloques();
-      type BloqueRow = { molienda_kg?: number | string | null; bloque?: string | null };
+      type BloqueRow = { molienda_kg?: number | string | null; bloque?: string | null; hora?: string | null };
       const toKg = (v: number | string | null | undefined): number => (v == null ? 0 : Number(v));
-      const zafraFilas = (bloques.data as BloqueRow[])
-        .filter((f) => f.bloque === 'zafra' && toKg(f.molienda_kg) > 500_000);
-      if (zafraFilas.length > 0) {
-        const avgKgDia = zafraFilas.reduce((s, f) => s + toKg(f.molienda_kg), 0) / zafraFilas.length;
-        const promTH = Math.round((avgKgDia / 1000 / 24) * 10) / 10;
-        const toneladas_no_molidas = Math.round((reliab.downtime_total_min / 60) * promTH);
-        impacto = { prom_t_h: promTH, toneladas_no_molidas };
+
+      // Ordenar días de zafra por fecha asc
+      const zafraOrdenada = (bloques.data as BloqueRow[])
+        .filter((f) => f.bloque === 'zafra')
+        .sort((a, b) => (a.hora ?? '').localeCompare(b.hora ?? ''));
+
+      // Índice del último día con producción plena (>3000 t = fábrica funcionando bien)
+      const PLENA_KG = 3_000_000;
+      let lastPlenaIdx = -1;
+      for (let i = 0; i < zafraOrdenada.length; i++) {
+        if (toKg(zafraOrdenada[i].molienda_kg) >= PLENA_KG) lastPlenaIdx = i;
+      }
+
+      if (lastPlenaIdx >= 0) {
+        // Usar solo días hasta lastPlenaIdx con >500 t (excluye días de startup/arranque parcial)
+        const diasValidos = zafraOrdenada
+          .slice(0, lastPlenaIdx + 1)
+          .filter((f) => toKg(f.molienda_kg) > 500_000);
+        if (diasValidos.length > 0) {
+          const avgKgDia = diasValidos.reduce((s, f) => s + toKg(f.molienda_kg), 0) / diasValidos.length;
+          const promTH = Math.round((avgKgDia / 1000 / 24) * 10) / 10;
+          const toneladas_no_molidas = Math.round((reliab.downtime_total_min / 60) * promTH);
+          impacto = { prom_t_h: promTH, toneladas_no_molidas };
+        }
       }
     } catch (err) {
       this.logger.warn(`paradasAnalisis impacto: ${(err as Error).message}`);
