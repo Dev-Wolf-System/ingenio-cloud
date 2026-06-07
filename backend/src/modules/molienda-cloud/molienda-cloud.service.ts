@@ -263,6 +263,36 @@ export class MoliendaCloudService {
       return ini >= desdeMs && ini < hastaMs;
     });
 
+    // Complementar con paradas_inferidas abiertas (sensor, sin motivo oficial en MSSQL).
+    // Solo se incluyen si su inicio_sensor cae dentro del período; la parada EN CURSO
+    // siempre se incluye (inicio dentro del período O el período incluye "ahora").
+    try {
+      const { data: inferidas } = await this.supabase.schema('production')
+        .from('paradas_inferidas')
+        .select('id, inicio_sensor, inicio_confirmado, fin')
+        .is('fin', null);
+      const nowMs = Date.now();
+      for (const inf of (inferidas ?? []) as Array<{ id: number; inicio_sensor: string; inicio_confirmado: string | null; fin: null }>) {
+        const iniMs = new Date(inf.inicio_sensor).getTime();
+        // Incluir si la parada empezó dentro del período O si sigue abierta y el período llega hasta ahora
+        const dentroDelPeriodo = iniMs >= desdeMs && iniMs < hastaMs;
+        const abarcaAhora = iniMs <= nowMs && hastaMs >= nowMs;
+        if (!dentroDelPeriodo && !abarcaAhora) continue;
+        const minutos = Math.round((nowMs - iniMs) / 60_000);
+        paradas.push({
+          inicio: inf.inicio_sensor,
+          fin: null,
+          minutos,
+          motivo: 'En curso (sensor)',
+          maquina: null,
+          origen: 'Trapiche',
+          alertas_relacionadas: [],
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`paradasAnalisis inferidas fail: ${(err as Error).message}`);
+    }
+
     const reliab = reliabilidad([], paradas, spanMin);
 
     const porAreaMap = new Map<string, { n: number; minutos_total: number }>();

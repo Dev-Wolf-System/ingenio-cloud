@@ -316,6 +316,45 @@ export class GuardiaService {
         if (/[zZ]$|[+-]\d{2}:?\d{2}$/.test(s)) return s; // ya tiene zona
         return s.replace(' ', 'T') + '-03:00';
       };
+      // Complementar con paradas_inferidas abiertas (sensor, sin registro en MSSQL aún)
+      let paradasDetalle: ParadaDetalle[] = row.paradas_detalle ?? [];
+      let paradasCount = toNum(row.paradas_count) ?? 0;
+      let paradasMinutos = row.paradas_minutos ?? 0;
+      try {
+        const { data: inferidas } = await this.supabase.schema('production')
+          .from('paradas_inferidas')
+          .select('id, inicio_sensor, fin')
+          .is('fin', null);
+        for (const inf of (inferidas ?? []) as Array<{ id: number; inicio_sensor: string; fin: null }>) {
+          const iniDate = new Date(inf.inicio_sensor);
+          // Convertir a hora ART local para mostrar HH:MM
+          const artOffset = -3 * 60; // ART = UTC-3
+          const localMs = iniDate.getTime() + artOffset * 60_000;
+          const localDate = new Date(localMs);
+          const hh = String(localDate.getUTCHours()).padStart(2, '0');
+          const mm = String(localDate.getUTCMinutes()).padStart(2, '0');
+          const minutosTranscurridos = Math.round((Date.now() - iniDate.getTime()) / 60_000);
+          const already = paradasDetalle.some((p) => p.estado === 'abierta' && p.motivo === 'En curso (sensor)');
+          if (!already) {
+            paradasDetalle = [
+              {
+                desde: `${hh}:${mm}`,
+                hasta: 'abierta',
+                estado: 'abierta',
+                motivo: 'En curso (sensor)',
+                origen: 'Trapiche',
+                minutos_neto: minutosTranscurridos,
+              },
+              ...paradasDetalle,
+            ];
+            paradasCount += 1;
+            paradasMinutos += minutosTranscurridos;
+          }
+        }
+      } catch (err) {
+        this.logger.warn(`resumen-turno-previo inferidas: ${(err as Error).message}`);
+      }
+
       return {
         turno: row.turno ?? null,
         turno_inicio: tagART(row.turno_inicio),
@@ -323,9 +362,9 @@ export class GuardiaService {
         molienda_avg_t_h: toNum(row.molienda_avg_t_h),
         gas_total_m3: toNum(row.gas_total_m3),
         gas_avg_m3_h: toNum(row.gas_avg_m3_h),
-        paradas_count: toNum(row.paradas_count),
-        paradas_minutos: row.paradas_minutos ?? 0,
-        paradas_detalle: row.paradas_detalle ?? [],
+        paradas_count: paradasCount,
+        paradas_minutos: paradasMinutos,
+        paradas_detalle: paradasDetalle,
       };
     } catch (err) {
       this.logger.warn(`resumen-turno-previo exception: ${(err as Error).message}`);
