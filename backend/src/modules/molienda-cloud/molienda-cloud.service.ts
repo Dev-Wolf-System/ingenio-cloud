@@ -242,7 +242,14 @@ export class MoliendaCloudService {
             return d.toISOString();
           };
           const inicio = mkTs(p.desde_hora);
-          const fin = p.hasta_hora ? mkTs(p.hasta_hora) : null;
+          let fin = p.hasta_hora ? mkTs(p.hasta_hora) : null;
+          // Si fin quedó antes que inicio (ej: hasta_hora=07:00 con hh===7 no suma +1 día),
+          // la parada cruzó medianoche → sumar 1 día al fin. Mismo criterio que el SQL de la vista.
+          if (fin && new Date(fin) <= new Date(inicio)) {
+            const d = new Date(fin);
+            d.setDate(d.getDate() + 1);
+            fin = d.toISOString();
+          }
           const minutos = fin
             ? Math.round((new Date(fin).getTime() - new Date(inicio).getTime()) / 60_000)
             : null;
