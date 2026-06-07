@@ -134,7 +134,7 @@ async function fetchParadaAbierta(): Promise<{ id: number; inicio_sensor: string
   try {
     const res = await fetch(
       `${url}/rest/v1/paradas_inferidas?fin=is.null&order=inicio_sensor.desc&limit=1&select=id,inicio_sensor`,
-      { headers: { apikey: key, Authorization: `Bearer ${key}` } },
+      { headers: { apikey: key, Authorization: `Bearer ${key}`, 'Accept-Profile': 'production' } },
     );
     if (!res.ok) return null;
     const rows = (await res.json()) as { id: number; inicio_sensor: string }[];
