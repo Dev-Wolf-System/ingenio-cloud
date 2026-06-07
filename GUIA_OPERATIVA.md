@@ -552,10 +552,24 @@ MSSQL_TRUST_SERVER_CERTIFICATE=true
 MOLIENDA_HTTP_URL=<URL real>
 MOLIENDA_HTTP_AUTH=<si aplica>
 
-# IA APIs (Sprint 1+)
-OPENAI_API_KEY=
-ANTHROPIC_API_KEY=
-GOOGLE_AI_API_KEY=
+# IA APIs
+OPENAI_API_KEY=sk-...
+
+# InfluxDB 3
+INFLUX_URL=http://influxdb3:8181        # interno Docker; Tailscale dev: http://100.114.203.70:18181
+INFLUX_TOKEN=...
+INFLUX_DATABASE=corona2026
+
+# Reportes de turno (cron 05:30/13:30/21:30 ART)
+REPORTE_TURNO_ENABLED=true
+REPORTE_TURNO_RETRY_MAX_HOURS=2
+REPORTE_TURNO_WEBHOOK_URL=...
+REPORTE_TURNO_WEBHOOK_SECRET=...
+
+# Web Push VAPID
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:alerts@ingenio.com
 
 # Comms
 EVOLUTION_API_URL=http://evolution-api:8080
@@ -580,6 +594,9 @@ NEXT_PUBLIC_DEFAULT_PLANT_SLUG=planta-sur
 
 NEXT_PUBLIC_COPILOT_ENABLED=false
 NEXT_PUBLIC_TV_AUTO_FULLSCREEN=true
+
+# Web Push (debe coincidir con VAPID_PUBLIC_KEY del backend — se hornea en build)
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=...
 ```
 
 ### 7.3 Docker Compose VPS (`.env` raíz monorepo)
@@ -590,7 +607,10 @@ Variables clave a llenar:
 - `DOMAIN_NAME=ingcloud.srv878399.hstgr.cloud`
 - `DB_PASSWORD`, `SUPABASE_*`, `JWT_SECRET`, `N8N_WEBHOOK_SECRET`, `MILL_SPEED_WEBHOOK_SECRET`
 - `MSSQL_PASSWORD`, `MOLIENDA_HTTP_URL`
-- `OPENAI_API_KEY`, `EVOLUTION_API_KEY`
+- `OPENAI_API_KEY`
+- `INFLUX_URL`, `INFLUX_TOKEN`, `INFLUX_DATABASE`
+- `REPORTE_TURNO_ENABLED`, `REPORTE_TURNO_WEBHOOK_URL`, `REPORTE_TURNO_WEBHOOK_SECRET`
+- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
 
 ---
 
@@ -638,11 +658,19 @@ docker network inspect supabase_network
 ```bash
 # Local
 curl http://localhost:3001/api/health
+curl http://localhost:3001/api/health/influx   # estado InfluxDB 3
 curl http://localhost:3000
 
 # Producción
 curl https://api.ingcloud.srv878399.hstgr.cloud/api/health
+curl https://api.ingcloud.srv878399.hstgr.cloud/api/health/influx
 curl -I https://ingcloud.srv878399.hstgr.cloud
+
+# Canchón
+curl -s https://api.ingcloud.srv878399.hstgr.cloud/api/metrics/canchon | jq
+
+# Preview reporte turno (sin enviar)
+curl -s https://api.ingcloud.srv878399.hstgr.cloud/api/reportes/turno/preview | jq
 ```
 
 ### 8.4 Supabase via MCP

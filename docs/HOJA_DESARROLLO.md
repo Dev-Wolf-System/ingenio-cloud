@@ -1,7 +1,7 @@
 # Ingenio Cloud — Hoja de Desarrollo
 
 > Documento vivo. Estado real del proyecto + arquitectura + endpoints + roadmap.
-> Última actualización: 2026-05-22 · Modales desglose energia · Fix timezone turno · Potencia unificada · Polish texto/favicon
+> Última actualización: 2026-06-07 · Módulo molienda-cloud · Reportes cron · InfluxDB 3 · Alertas inteligentes · Paradas inferidas · Canchón fix
 
 ---
 
@@ -50,6 +50,53 @@
 - **ShiftWelcomeBanner**: títulos y texto más grandes; modal a `sm:max-w-3xl`
 - **AnalisisIA**: texto escalado responsive (`text-sm sm:text-base`, resumen `sm:text-lg`)
 - **Fix timezone turno previo**: `tagART()` helper en `guardia.service.ts` — appends `-03:00` a timestamps sin TZ de `v_resumen_turno_previo` (PostgREST serializa `timestamp without time zone` sin sufijo, causaba -3h en frontend)
+- **TrapichePanel EstadoBanner** muestra duración de parada abierta (`⏱ Xd Xh Xmin`) debajo de "PARADO" — lee `production.paradas_inferidas` via Supabase REST directo (no pasa por backend)
+- **SortableGroup / SortableTile / useTileOrder / useKanbanLock**: drag-and-drop de paneles en dashboard principal con `@dnd-kit`; orden persistido en `localStorage`
+- **AlertasModalAuto**: modal auto-emergente con alertas activas (ver DEVLOG.md)
+- **PasswordGate / usePasswordSession**: lock de 30 min para acciones sensibles; password `balitec$`
+
+#### Módulo molienda-cloud (backend)
+- Nuevo módulo NestJS `molienda-cloud` con 11 endpoints bajo `/api/molienda-cloud/*`
+- Fuentes: Supabase `production.canchon_snapshot`, `legacy.*`, InfluxDB 3, RPC Supabase
+- Lee **solo de Supabase** — nunca directamente de MSSQL CORONA
+
+#### Módulo reportes (backend)
+- Cron `ReportesCronService` — dispara 30min después del cierre de cada turno (05:30 / 13:30 / 21:30 ART)
+- Retry cada 1 min hasta que haya datos completos; stop por `REPORTE_TURNO_RETRY_MAX_HOURS`
+- Envía webhook al destino configurado y registra en `production.reportes_turno_enviados`
+- Habilitado con `REPORTE_TURNO_ENABLED=true` (default)
+- Endpoints manuales: `GET /api/reportes/turno/preview`, `POST /api/reportes/turno/enviar`, `GET /api/reportes/turno/historico`
+
+#### Módulo influx (backend)
+- `InfluxQueryService`: cliente genérico InfluxDB 3 via `/api/v3/query_sql` — timeout configurable, database override
+- `InfluxGasService`: promedio horario gas del día industrial (08:00 ART) — escribe en Supabase `industrial.hxh_gas`
+- `InfluxVaporService`: ídem para vapor
+- `InfluxAlcoholService`: estimado diario alcohol
+- `GET /api/health/influx`: estado de conexión + latencia + lista de tablas
+
+#### Módulo notifications (backend)
+- `POST /api/notifications/subscribe`: registra suscripción Web Push en `industrial.push_subscriptions`
+- Web Push driver con VAPID — envía notificaciones push al celular al saltar alerta warn/critical
+
+#### Sistema paradas inferidas
+- Tabla `production.paradas_inferidas` (`id`, `inicio_sensor`, `inicio_confirmado`, `fin`) — TRUNCATE imposible, historia persistente
+- Flow Node-RED `docs/flow_paradas_inferidas.json` — lee `Trapiche_Estado`, espera 60s de estado=0 antes de registrar parada; cierra al volver estado=1
+- TrapichePanel `fetchParadaAbierta()` — consulta row con `fin=is.null` y calcula duración en tiempo real
+- RLS: `service_role` INSERT/PATCH; `anon` SELECT (para frontend)
+
+#### Página `/moliendacloud`
+- Análisis producción: canchón en tiempo real, balanza por hora, movimientos tipo, molienda bloques, lab (Pol/Brix/Pureza), comparativa caña, movimientos individuales, paradas, análisis azúcar, alcohol diario, análisis caña zafra
+- Hook `useMoliendaCloud.ts` + `useParadasMC.ts`
+- Selector `Día / Zafra` + navegación por offset de días
+- Datos 100% desde Supabase (legacy, production, influx vía backend)
+
+#### Página `/alertas/analisis`
+- KPIs de confiabilidad: MTBF, MTTR, MTTF, alertas por turno, tendencia diaria
+- Heatmap de alertas por hora × día
+- Top sensores por frecuencia de alerta
+- Comparativa entre períodos + correlaciones alertas/paradas
+- Selector turno / día / zafra con offset
+- Análisis IA del período (requiere OpenAI key)
 
 #### Supabase self-hosted stack
 - PostgreSQL 15 + PostgREST v14.6 + Realtime + Kong gateway + Studio + Auth
@@ -126,19 +173,24 @@ ingenio-cloud/
 │       └── modules/
 │           ├── supabase/        (cliente service_role)
 │           ├── webhooks/        (legacy endpoints n8n)
-│           ├── guardia/         (resumen turno + IA)
-│           ├── metrics/         (snapshot live + canchón)
+│           ├── guardia/         (resumen turno + IA + POST ingest desde Node-RED)
+│           ├── metrics/         (snapshot live + canchón + color-cinta-larga)
 │           ├── alerts/
-│           │   ├── alerts.service.ts          (listActive resiliente)
-│           │   ├── thresholds.service.ts      (CRUD umbrales)
+│           │   ├── alerts.service.ts              (listActive, listHistory, analisisCausa, TTS voz)
+│           │   ├── alerts-analisis.service.ts     (KPIs confiabilidad, heatmap, correlaciones, IA período)
+│           │   ├── thresholds.service.ts          (CRUD umbrales)
 │           │   ├── thresholds.controller.ts
-│           │   └── threshold-evaluator.service.ts  (cron 30s engine)
-│           ├── ai/              (OpenAI client)
+│           │   └── threshold-evaluator.service.ts (cron 30s + escalado por tiempo/drift)
+│           ├── molienda-cloud/  (11 endpoints análisis producción desde Supabase + Influx)
+│           ├── reportes/        (cron 05:30/13:30/21:30 ART + retry + envío webhook turno)
+│           ├── influx/          (InfluxDB 3 client: gas, vapor, alcohol, health endpoint)
+│           ├── notifications/   (web-push VAPID — suscripciones push al celular)
+│           ├── ai/              (OpenAI: análisis guardia, triage alertas, TTS nova)
 │           ├── realtime/
 │           │   ├── realtime.gateway.ts   (Energia/Produccion/Trapiche/Molino WS)
-│           │   └── realtime.service.ts   (ingest + normalize)
+│           │   └── realtime.service.ts   (ingest + normalize + KPIs derivados energía)
 │           ├── scheduler/       (cron guardia pull)
-│           └── health/          (status checks)
+│           └── health/          (status checks + GET /health/influx)
 ├── frontend/
 │   ├── Dockerfile               (Node 20 alpine, Next standalone)
 │   └── src/
@@ -148,7 +200,9 @@ ingenio-cloud/
 │       │   ├── template.tsx     (page transition fade-up)
 │       │   ├── globals.css      (dual theme: Dark Cosmos + Light Blueprint)
 │       │   ├── page.tsx         (Dashboard principal)
-│       │   ├── alertas/page.tsx (Configurador umbrales)
+│       │   ├── alertas/page.tsx (Configurador umbrales + historial + config avisos)
+│       │   ├── alertas/analisis/page.tsx (Análisis estadístico: KPIs, heatmap, correlaciones, IA)
+│       │   ├── moliendacloud/page.tsx    (Análisis producción: canchón, lab, balanza, paradas...)
 │       │   └── error.tsx        (boundary global)
 │       ├── components/
 │       │   ├── layout/
@@ -163,14 +217,29 @@ ingenio-cloud/
 │       │       ├── AnimatedNumber.tsx    (CountUp motion)
 │       │       ├── EnergyPanel.tsx
 │       │       ├── ProductionPanel.tsx
-│       │       ├── TrapichePanel.tsx     (whitelist slots + EstadoBanner)
+│       │       ├── TrapichePanel.tsx     (whitelist + EstadoBanner con duración parada)
 │       │       ├── ShiftSummaryPanel.tsx (resumen turno previo)
 │       │       ├── MillSpeedChart.tsx
+│       │       ├── MoliendaHoraChart.tsx (gráfica molienda hora a hora)
+│       │       ├── MoliendaProduccionHora.tsx
 │       │       ├── AnalisisIA.tsx
-│       │       ├── DesgloceModal.tsx         (modal genérico rows+total, reutilizable)
+│       │       ├── DesgloceModal.tsx     (modal genérico rows+total, reutilizable)
 │       │       ├── ParadasDetalleModal.tsx
+│       │       ├── MoliendaEstadoModal.tsx
+│       │       ├── GasEstadoModal.tsx
+│       │       ├── VaporConsumoModal.tsx
 │       │       ├── ShiftWelcomeBanner.tsx
-│       │       └── CopilotBanner.tsx
+│       │       ├── ShiftTimeline.tsx
+│       │       ├── AlertasModalAuto.tsx  (modal auto-emergente + orquesta audio)
+│       │       ├── AlertGroup.tsx
+│       │       ├── CopilotBanner.tsx
+│       │       ├── HealthScore.tsx
+│       │       ├── BloquesKpiStats.tsx
+│       │       ├── LevelBar.tsx
+│       │       ├── MetricTile.tsx
+│       │       ├── HeightMatchedGrid.tsx
+│       │       ├── SortableGroup.tsx     (dnd-kit drag container)
+│       │       └── SortableTile.tsx     (dnd-kit drag item)
 │       ├── lib/
 │       │   ├── hooks/
 │       │   │   ├── useDashboardData.ts   (Realtime + polling fallback)
@@ -217,9 +286,32 @@ ingenio-cloud/
 | GET | `/api/guardia/vel-molino` | Velocidad molino turno previo |
 | GET | `/api/guardia/analisis-ia` | Análisis IA del turno previo (con flag `ia_available`) |
 | POST | `/api/guardia/analisis-ia/refresh` | Disparar análisis IA manual ahora (sincrónico, retorna error detallado) |
-| GET | `/api/guardia/turno-previo` | **NUEVO** — Resumen turno previo desde `public.v_resumen_turno_previo` (legacy.lab_general direct) |
+| GET | `/api/guardia/turno-previo` | Resumen turno previo desde `public.v_resumen_turno_previo` (legacy.lab_general direct) |
+| POST | `/api/guardia/ingest` | Webhook Node-RED → ingest resumen turno anterior en `shift_kpis_cache`; header `x-webhook-secret` |
 | GET | `/api/metrics/color-cinta-larga` | Color ICUMSA + humedad última lectura cinta larga (legacy.especiales, refresh 10 min) |
 | GET | `/api/metrics/canchon` | Total camiones canchón (production.v_canchon_resumen) |
+| GET | `/api/alerts/history` | Historial alertas resueltas (`resolved_at IS NOT NULL`); `?limit=&offset=` |
+| GET | `/api/alerts/history/resumen` | Resumen IA del historial de alertas |
+| GET | `/api/alerts/analisis` | Análisis estadístico alertas; `?periodo=turno\|dia\|zafra&offset=&refresh=1` |
+| GET | `/api/alerts/:id/analisis-causa` | Análisis IA causa raíz de alerta específica (cache 5 min) |
+| POST | `/api/alerts/voice` | Genera audio TTS con alertas activas indicadas (`{ alertIds: string[] }`); retorna `audio/mpeg` |
+| POST | `/api/alerts/voice-text` | Genera audio TTS desde texto libre; retorna `audio/mpeg` |
+| POST | `/api/notifications/subscribe` | Registra suscripción Web Push (`{ endpoint, keys, role? }`) |
+| GET | `/api/molienda-cloud/canchon` | Estado canchón en tiempo real desde `production.v_canchon_resumen` |
+| GET | `/api/molienda-cloud/balanza-hora` | Pesadas por hora del día industrial actual |
+| GET | `/api/molienda-cloud/movimientos-tipo` | Conteo movimientos por tipo (caña/azúcar/etc) |
+| GET | `/api/molienda-cloud/molienda-bloques` | Molienda por bloques horarios del turno |
+| GET | `/api/molienda-cloud/lab` | Lab pol/brix/pureza; `?procesos=&periodo=dia\|zafra&offset=` |
+| GET | `/api/molienda-cloud/comparativa-cana` | Comparativa caña hoy vs ayer vs semana |
+| GET | `/api/molienda-cloud/movimientos-cana` | Movimientos individuales caña; `?limit=` |
+| GET | `/api/molienda-cloud/paradas` | Análisis paradas; `?periodo=turno\|dia\|zafra&offset=` |
+| GET | `/api/molienda-cloud/azucar` | Lab azúcar ICUMSA + humedad; `?offset=` |
+| GET | `/api/molienda-cloud/alcohol-dia` | Alcohol diario estimado; `?offset=` |
+| GET | `/api/molienda-cloud/analisis-cana` | Análisis caña por zafra; `?zafra=YYYY` |
+| GET | `/api/reportes/turno/preview` | Preview payload turno cerrado sin enviar; `?ahora=ISO` |
+| POST | `/api/reportes/turno/enviar` | Forzar envío de turno específico; body `{ turno, fecha_industrial }` |
+| GET | `/api/reportes/turno/historico` | Últimos N intentos; `?limit=50` |
+| GET | `/api/health/influx` | Estado conexión InfluxDB 3 + latencia + tablas |
 
 **Patrón resiliente**: todos los GET devuelven `{ data: [...], stale?: true }` con HTTP 200 incluso cuando Supabase rechaza (en lugar de propagar 500).
 
@@ -351,9 +443,9 @@ Variables expuestas en `globals.css`:
 
 ---
 
-## 7. Database schema (`industrial`)
+## 7. Database schemas
 
-### Tablas
+### Schema `industrial` — tablas
 
 | Tabla | Filas típicas | RLS | Realtime |
 |---|---|---|---|
@@ -363,7 +455,60 @@ Variables expuestas en `globals.css`:
 | `shift_kpis_cache` | 4 KPIs × 3 turnos × días | ❌ | ✅ |
 | `metrics_history_2026_MM` | particionado por mes | ❌ | ❌ |
 | `alert_thresholds` | 1 por regla configurada | ✅ | ✅ |
-| `alerts.active` | abiertas + resueltas | ✅ | ✅ |
+| `push_subscriptions` | suscripciones web push | ❌ | ❌ |
+| `hxh_gas` | promedio gas por hora (Influx sync) | ❌ | ❌ |
+
+`alert_thresholds` columnas extra (requieren migración):
+```sql
+ALTER TABLE industrial.alert_thresholds
+  ADD COLUMN IF NOT EXISTS escalate_after_min  integer,
+  ADD COLUMN IF NOT EXISTS escalate_drift_pct  numeric,
+  ADD COLUMN IF NOT EXISTS escalate_enabled    boolean NOT NULL DEFAULT true;
+```
+**`escalate_enabled` es obligatoria** — sin ella el evaluador lanza error en cada ciclo.
+
+### Schema `alerts` — tablas
+
+| Tabla | Descripción | RLS | Realtime |
+|---|---|---|---|
+| `active` | todas las alertas: `resolved_at IS NULL` = activa | ✅ | ✅ |
+
+### Schema `production` — tablas y vistas
+
+| Objeto | Tipo | Descripción |
+|---|---|---|
+| `canchon_snapshot` | tabla | Snapshot camiones en canchón (TRUNCATE+INSERT por Node-RED cada 1 min) |
+| `paradas_inferidas` | tabla | Paradas detectadas por sensor (`inicio_sensor`, `inicio_confirmado`, `fin`) — NO truncar |
+| `zafras` | tabla | Metadatos por año (`anio`, `fecha_inicio`, `fecha_fin`) |
+| `reportes_turno_enviados` | tabla | Audit de reportes de turno enviados |
+| `v_canchon_resumen` | vista | Agrega canchon_snapshot con `DISTINCT ON (patente, chofer)` — fuente KpiHero canchón |
+| `v_camiones_canchon` | vista | Detalle individual camiones en canchón |
+
+Grants requeridos para `service_role`:
+```sql
+GRANT SELECT, INSERT, UPDATE ON production.reportes_turno_enviados TO service_role;
+GRANT USAGE, SELECT ON SEQUENCE production.reportes_turno_enviados_id_seq TO service_role;
+```
+
+### Schema `legacy` — tablas históricas CORONA
+
+| Tabla | Filas (zafra 2024+2025) | Descripción |
+|---|---|---|
+| `lab_general` | ~620k | Datos laboratorio general (pr_ezi_laboratorio_gral) |
+| `especiales` | ~38k | Datos especiales laboratorio |
+| `muestras_lab` | ~100k | Muestras laboratorio v2+v3 |
+| `destileria_cubas` | ~189k | Datos destilería cubas |
+| `lecturas_polbrix` | ~46k | Lecturas pol/brix |
+| `individuales_v2` | ~8k | Movimientos individuales v2 |
+| `etl_runs` | audit | Log de ejecuciones ETL Node-RED |
+| `sync_watermarks` | 1 por tabla | Watermark de sincronización incremental |
+
+RPC pública (SECURITY DEFINER):
+```sql
+-- Paradas por ventana de tiempo (para reportes y alertas análisis)
+public.fn_paradas_turno(ts_inicio timestamptz, ts_fin timestamptz)
+-- Requiere search_path = legacy, solo service_role tiene EXECUTE
+```
 
 ### Defaults críticos
 
@@ -390,10 +535,11 @@ ALTER TABLE alerts.active                REPLICA IDENTITY FULL;
 ### PGRST_DB_SCHEMAS (Supabase .env)
 
 ```
-PGRST_DB_SCHEMAS=public,storage,graphql_public,industrial,alerts,production
+PGRST_DB_SCHEMAS=public,storage,graphql_public,industrial,alerts,production,legacy
 ```
 
-Sin `production` → endpoint `/api/metrics/canchon` rompe (no expone schema).
+Sin `production` → endpoint `/api/metrics/canchon` rompe.
+Sin `legacy` → `fn_paradas_turno` no puede acceder a las tablas (paradas en reportes vacías).
 
 ---
 
@@ -488,6 +634,23 @@ NODERED_AUTH=...
 # AI
 OPENAI_API_KEY=sk-...
 
+# InfluxDB 3
+INFLUX_URL=http://influxdb3:8181         # interno Docker; dev Tailscale: http://100.114.203.70:18181
+INFLUX_TOKEN=...
+INFLUX_DATABASE=corona2026
+
+# Reportes de turno
+REPORTE_TURNO_ENABLED=true              # false para deshabilitar cron
+REPORTE_TURNO_RETRY_MAX_HOURS=2
+REPORTE_TURNO_WEBHOOK_URL=...           # URL destino (n8n o externo)
+REPORTE_TURNO_WEBHOOK_SECRET=...
+
+# Web Push VAPID (notificaciones push)
+VAPID_PUBLIC_KEY=...
+VAPID_PRIVATE_KEY=...
+VAPID_SUBJECT=mailto:alerts@ingenio.com
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=...        # debe coincidir con VAPID_PUBLIC_KEY (se hornea en build)
+
 # Comms (opcional)
 EVOLUTION_API_URL=http://evolution-api:8080
 EVOLUTION_API_KEY=...
@@ -498,7 +661,7 @@ MAIL_FROM=alerts@ingenio.com
 ### Supabase stack `.env`
 
 ```bash
-PGRST_DB_SCHEMAS=public,storage,graphql_public,industrial,alerts,production
+PGRST_DB_SCHEMAS=public,storage,graphql_public,industrial,alerts,production,legacy
 JWT_SECRET=...                          # debe matchear con backend
 SERVICE_ROLE_KEY=eyJ...                 # debe matchear con backend SUPABASE_SERVICE_ROLE_KEY
 ANON_KEY=eyJ...
@@ -573,6 +736,7 @@ WHERE area='trapiche'
 | Sin notificación push | Alertas solo en panel UI | KpiHero pulse | Integrar Evolution API WhatsApp (S1+) |
 | ✅ RESUELTO: Turno previo mostraba -3h (02:00 en vez de 05:00) | `v_resumen_turno_previo` devuelve `timestamp without time zone`, PostgREST serializa con `.000Z` falso → parseDate lo trata UTC | `tagART()` en `guardia.service.ts` agrega `-03:00` a strings sin TZ | — |
 | ✅ RESUELTO: MSSQL canchón devolvía 117 camiones | `fecha_salida IS NULL` incluye rows históricas de importación incorrecta | Agregar `AND fecha_entrada = CONVERT(varchar(10), GETDATE(), 103)` | Limpiar rows históricas con NULL |
+| ✅ RESUELTO: Panel mostraba 22-24 camiones vs 30 del sistema anterior | Flujo Node-RED usaba ventana de 2 días; `v_canchon_resumen` no deduplicaba por (patente, chofer) | Flujo con ventana 5 días + `DISTINCT ON (patente, chofer)` en la vista + sync cada 1 min | — |
 
 ### DNS Kong colisión (caso resuelto, documentar para futuro)
 
@@ -739,7 +903,9 @@ feat(alertas): engine completo umbrales — visual frontend + cron backend
 
 **Query MSSQL canchón (SQL Server 2008 R2)**:
 - `fecha_salida IS NULL` solo devuelve 117 por rows históricas con NULL por error de importación
-- Fix: agregar `AND fecha_entrada = CONVERT(varchar(10), GETDATE(), 103)` para filtrar solo hoy
+- Fix original: agregar `AND fecha_entrada = CONVERT(varchar(10), GETDATE(), 103)` para filtrar solo hoy
+- **Fix definitivo (2026-06-07)**: ventana de 5 días alineada al sistema anterior: `CONVERT(date, fecha_entrada, 103) >= CAST(DATEADD(day, -5, CAST(GETDATE() AS date)) AS date)`. Motivo: hay camiones que llevan varios días en canchón y el filtro "solo hoy" los excluye incorrectamente
+- Vista `production.v_canchon_resumen` usa `DISTINCT ON (upper(trim(patente)), upper(trim(chofer)))` para deduplicar camiones con múltiples viajes abiertos
 - Nota: `TRY_CONVERT` no disponible en SQL 2008 R2, usar `CONVERT` directo
 
 ---
