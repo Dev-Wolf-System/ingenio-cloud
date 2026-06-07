@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { m, AnimatePresence } from 'motion/react';
 import { IconLayoutDashboard } from '@tabler/icons-react';
 import { cn } from '@/lib/utils/cn';
@@ -78,6 +79,35 @@ const ESTADO_CONFIG = {
   },
 } as const;
 
+// ─── Parada duration helpers ──────────────────────────────────────────────────
+
+async function fetchParadaAbierta(): Promise<{ id: number; inicio_sensor: string } | null> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+  try {
+    const res = await fetch(
+      `${url}/rest/v1/paradas_inferidas?fin=is.null&order=inicio_sensor.desc&limit=1&select=id,inicio_sensor`,
+      { headers: { apikey: key, Authorization: `Bearer ${key}`, 'Accept-Profile': 'production' } },
+    );
+    if (!res.ok) return null;
+    const rows = (await res.json()) as { id: number; inicio_sensor: string }[];
+    return rows[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function formatDuracion(inicio: string): string {
+  const diffMs = Date.now() - new Date(inicio).getTime();
+  const totalMin = Math.floor(diffMs / 60_000);
+  const dias = Math.floor(totalMin / 1440);
+  const horas = Math.floor((totalMin % 1440) / 60);
+  const min = totalMin % 60;
+  if (dias > 0) return `${dias}d ${horas}h ${min}min`;
+  if (horas > 0) return `${horas}h ${min}min`;
+  return `${min}min`;
+}
+
 // ─── Trapiche estado bar ──────────────────────────────────────────────────────
 
 function TrapicheEstadoBar() {
@@ -91,6 +121,19 @@ function TrapicheEstadoBar() {
     if (derived) return derived;
     return 'parado';
   }, [trapiche, energia]);
+
+  const paradaQ = useQuery({
+    queryKey: ['paradas-inferidas', 'abierta'],
+    queryFn: fetchParadaAbierta,
+    refetchInterval: 60_000,
+    staleTime: 60_000,
+  });
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick((n) => n + 1), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const paradaDuracion = paradaQ.data?.inicio_sensor ? formatDuracion(paradaQ.data.inicio_sensor) : null;
 
   const config = ESTADO_CONFIG[estado];
 
@@ -140,14 +183,23 @@ function TrapicheEstadoBar() {
           </span>
 
           <span
-            className="text-2xl lg:text-3xl font-extrabold uppercase tracking-[0.18em] relative"
-            style={{
-              color: config.color,
-              textShadow: `0 0 10px ${config.bg}`,
-              fontFamily: 'var(--font-body)',
-            }}
+            className="relative flex flex-col items-center gap-0.5"
+            style={{ fontFamily: 'var(--font-body)' }}
           >
-            {config.label}
+            <span
+              className="text-2xl lg:text-3xl font-extrabold uppercase tracking-[0.18em]"
+              style={{ color: config.color, textShadow: `0 0 10px ${config.bg}` }}
+            >
+              {config.label}
+            </span>
+            {estado === 'parado' && paradaDuracion && (
+              <span
+                className="text-2xs font-medium tracking-wide normal-case"
+                style={{ color: config.color, opacity: 0.7 }}
+              >
+                ⏱ {paradaDuracion}
+              </span>
+            )}
           </span>
         </m.div>
       </AnimatePresence>
