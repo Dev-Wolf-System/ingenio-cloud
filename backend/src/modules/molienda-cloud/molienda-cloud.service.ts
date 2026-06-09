@@ -250,9 +250,9 @@ export class MoliendaCloudService {
             d.setDate(d.getDate() + 1);
             fin = d.toISOString();
           }
-          const minutos = fin
-            ? Math.round((new Date(fin).getTime() - new Date(inicio).getTime()) / 60_000)
-            : null;
+          const minutos = Math.round(
+            ((fin ? new Date(fin).getTime() : Date.now()) - new Date(inicio).getTime()) / 60_000,
+          );
           return { inicio, fin, minutos, motivo: p.motivo, maquina: p.maquina, origen: p.origen_descripcion, alertas_relacionadas: [] };
         });
       }
@@ -287,20 +287,33 @@ export class MoliendaCloudService {
         if (iniMs >= hastaMs) continue;  // empieza después del período → skip
 
         // Parada multidía (empezó antes del período): las entradas MSSQL dentro de su rango
-        // son solo el "fragmento del último día" → eliminarlas para evitar doble conteo.
+        // son solo el "fragmento del último día" → heredar su motivo/área y luego eliminarlas.
         if (iniMs < desdeMs) {
+          const fragmento = paradas.find((p) => {
+            const pIni = new Date(p.inicio).getTime();
+            return pIni >= desdeMs && pIni < finMs;
+          });
           paradas = paradas.filter((p) => {
             const pIni = new Date(p.inicio).getTime();
             return pIni < desdeMs || pIni >= finMs;
           });
+          const minutos = Math.round((finMs - iniMs) / 60_000);
+          paradas.push({
+            inicio: inf.inicio_sensor,
+            fin: inf.fin,
+            minutos,
+            motivo: fragmento?.motivo ?? (inf.fin ? 'Parada sensor (cerrada)' : 'En curso (sensor)'),
+            maquina: fragmento?.maquina ?? null,
+            origen: fragmento?.origen ?? 'Trapiche',
+            alertas_relacionadas: [],
+          });
+          continue;
         }
 
         // Parada dentro del período (abierta o cerrada): skip si MSSQL ya la tiene (±15 min).
         // Evita duplicar cuando el operador cargó en MSSQL la misma parada que la inferida.
-        if (iniMs >= desdeMs) {
-          const yaEnMssql = paradas.some((p) => Math.abs(new Date(p.inicio).getTime() - iniMs) < 15 * 60_000);
-          if (yaEnMssql) continue;
-        }
+        const yaEnMssql = paradas.some((p) => Math.abs(new Date(p.inicio).getTime() - iniMs) < 15 * 60_000);
+        if (yaEnMssql) continue;
 
         const minutos = Math.round((finMs - iniMs) / 60_000);
         paradas.push({
