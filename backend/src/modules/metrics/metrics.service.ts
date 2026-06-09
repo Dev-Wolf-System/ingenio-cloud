@@ -67,11 +67,11 @@ export class MetricsService {
     try {
       const production = this.supabase.schema('production');
 
-      // Día industrial especiales/bolsas: 08:00–08:00 ART (MIGRACION_SUPABASE.md §13.5).
+      // Día industrial: 07:00–07:00 ART.
       // Servidor corre en ART → getHours() devuelve hora ART.
       const now = new Date();
       const ref = new Date(now);
-      if (ref.getHours() < 8) ref.setDate(ref.getDate() - 1);
+      if (ref.getHours() < 7) ref.setDate(ref.getDate() - 1);
       const pad = (n: number) => String(n).padStart(2, '0');
       const fechaIndustrial = `${ref.getFullYear()}-${pad(ref.getMonth() + 1)}-${pad(ref.getDate())}`;
 
