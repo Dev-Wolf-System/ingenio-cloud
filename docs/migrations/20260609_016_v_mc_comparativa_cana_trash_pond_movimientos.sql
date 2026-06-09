@@ -1,0 +1,5 @@
+-- trash_pond ahora usa v_mc_movimientos_cana en lugar de v_mc_muestras_lab.
+-- v_mc_movimientos_cana tiene COALESCE(lab_trash, movimientos.trash) como fallback,
+-- lo que permite mostrar trash_pond del día actual incluso cuando muestras_lab
+-- aún no sincronizó desde MSSQL (latencia Node-RED).
+-- rto/brix/pol/pureza siguen usando v_mc_muestras_lab (no tienen fallback en movimientos).
