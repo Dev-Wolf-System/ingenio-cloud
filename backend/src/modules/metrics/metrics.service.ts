@@ -66,11 +66,20 @@ export class MetricsService {
   async bolsasDia() {
     try {
       const production = this.supabase.schema('production');
+
+      // Fecha industrial actual: día ART si hora >= 07:00 ART, si no el día anterior.
+      const nowUtc = new Date();
+      const artHour = (nowUtc.getUTCHours() - 3 + 24) % 24;
+      const diaBase = new Date(nowUtc);
+      diaBase.setUTCHours(0, 0, 0, 0);
+      if (artHour < 7) diaBase.setUTCDate(diaBase.getUTCDate() - 1);
+      // fecha_industrial en la vista es medianoche UTC del día calendario ART (= 03:00 UTC)
+      const diaIndustrialIso = new Date(diaBase.getTime() + 3 * 60 * 60 * 1000).toISOString();
+
       const { data, error } = await production
         .from('v_bolsas_dia')
         .select('fecha_industrial, total_bolsas, horas_cargadas, ultima_hora')
-        .order('fecha_industrial', { ascending: false })
-        .limit(1)
+        .eq('fecha_industrial', diaIndustrialIso)
         .maybeSingle();
       if (error) {
         this.logger.warn(`bolsas-dia fail: ${error.message}`);
@@ -87,11 +96,15 @@ export class MetricsService {
         const n = typeof v === 'string' ? parseFloat(v) : v;
         return Number.isFinite(n) ? n : null;
       };
+      // Sin datos hoy → 0 bolsas (no mostrar dato de ayer)
+      if (!row) {
+        return { fecha_industrial: diaIndustrialIso, total_bolsas: 0, horas_cargadas: 0, ultima_hora: null };
+      }
       return {
-        fecha_industrial: row?.fecha_industrial ?? null,
-        total_bolsas: toNum(row?.total_bolsas),
-        horas_cargadas: toNum(row?.horas_cargadas),
-        ultima_hora: row?.ultima_hora ?? null,
+        fecha_industrial: row.fecha_industrial ?? null,
+        total_bolsas: toNum(row.total_bolsas),
+        horas_cargadas: toNum(row.horas_cargadas),
+        ultima_hora: row.ultima_hora ?? null,
       };
     } catch (err) {
       this.logger.warn(`bolsas-dia exception: ${(err as Error).message}`);
