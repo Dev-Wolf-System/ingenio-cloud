@@ -75,14 +75,21 @@ function truncate(s: string, max = 18): string {
 }
 
 function extractCanchonKpis(resumen: CanchonResumen | null | undefined) {
-  if (!resumen) return { total: null, esperando: null, espPromedio: null, espMax: null };
+  if (!resumen) return { total: null, esperando: null, espPromedio: null, intervProm: null, intervMin: null, intervMax: null };
   const r = resumen;
   const k = Object.keys(r);
   function findNum(...patterns: string[]): number | null {
     for (const p of patterns) for (const key of k) if (key.toLowerCase().includes(p.toLowerCase())) { const v = r[key]; if (typeof v === 'number' && Number.isFinite(v)) return v; }
     return null;
   }
-  return { total: findNum('total_camiones', 'total'), esperando: findNum('esperando', 'en_espera', 'espera'), espPromedio: findNum('espera_promedio', 'minutos_espera_prom', 'prom_espera'), espMax: findNum('espera_max', 'max_espera', 'minutos_espera_max') };
+  return {
+    total: findNum('total_camiones', 'total'),
+    esperando: findNum('esperando', 'en_espera', 'espera'),
+    espPromedio: findNum('espera_promedio', 'minutos_espera_prom', 'prom_espera'),
+    intervProm: findNum('intervalo_prom'),
+    intervMin:  findNum('intervalo_min'),
+    intervMax:  findNum('intervalo_max'),
+  };
 }
 
 // ─── Finca chart (horizontal bar) ────────────────────────────────────────────
@@ -287,7 +294,15 @@ export function CanchonModal({ open, onClose }: CanchonModalProps) {
                   <KpiTile label="Total hoy" value={n(kpis.total)} sub="camiones en el día" color="#00D4FF" icon={<IconTruck size={13} />} />
                   {kpis.esperando != null && <KpiTile label="Esperando" value={n(kpis.esperando)} sub="en este momento" color="#FFB800" icon={<IconUsers size={13} />} />}
                   {kpis.espPromedio != null && <KpiTile label="Espera prom." value={`${n(kpis.espPromedio, 1)} min`} sub="tiempo en canchón" color="#00E5A0" icon={<IconClock size={13} />} />}
-                  {kpis.espMax != null && <KpiTile label="Espera máx." value={`${n(kpis.espMax, 1)} min`} color="#FF6B35" icon={<IconActivity size={13} />} />}
+                  {kpis.intervProm != null && (
+                    <KpiTile
+                      label="Intervalo llegadas"
+                      value={`${n(kpis.intervProm, 1)} min`}
+                      sub={kpis.intervMin != null && kpis.intervMax != null ? `mín ${n(kpis.intervMin, 1)} · máx ${n(kpis.intervMax, 1)} min` : undefined}
+                      color="#FF6B35"
+                      icon={<IconActivity size={13} />}
+                    />
+                  )}
                 </div>
               </div>
 
