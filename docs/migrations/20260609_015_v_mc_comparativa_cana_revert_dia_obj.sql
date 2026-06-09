@@ -1,0 +1,5 @@
+-- Revertir ventana 5 días → dia_obj para fila actual.
+-- La ventana de 5 días sobrecontaba camiones de días de parada.
+-- Caña neta y trash_kg de actual deben ser solo los camiones del día industrial corriente.
+-- (La view fue restaurada al estado original con dia_obj para actual, ult_cierre y acumulado.)
+-- Ver: 20260609_014_v_mc_comparativa_cana_ventana5d.sql (reemplazada por esta)
