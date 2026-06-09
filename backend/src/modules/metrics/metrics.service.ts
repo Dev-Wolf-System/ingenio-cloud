@@ -67,19 +67,18 @@ export class MetricsService {
     try {
       const production = this.supabase.schema('production');
 
-      // Fecha industrial actual: día ART si hora >= 07:00 ART, si no el día anterior.
-      const nowUtc = new Date();
-      const artHour = (nowUtc.getUTCHours() - 3 + 24) % 24;
-      const diaBase = new Date(nowUtc);
-      diaBase.setUTCHours(0, 0, 0, 0);
-      if (artHour < 7) diaBase.setUTCDate(diaBase.getUTCDate() - 1);
-      // fecha_industrial en la vista es medianoche UTC del día calendario ART (= 03:00 UTC)
-      const diaIndustrialIso = new Date(diaBase.getTime() + 3 * 60 * 60 * 1000).toISOString();
+      // Día industrial especiales/bolsas: 08:00–08:00 ART (MIGRACION_SUPABASE.md §13.5).
+      // Servidor corre en ART → getHours() devuelve hora ART.
+      const now = new Date();
+      const ref = new Date(now);
+      if (ref.getHours() < 8) ref.setDate(ref.getDate() - 1);
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const fechaIndustrial = `${ref.getFullYear()}-${pad(ref.getMonth() + 1)}-${pad(ref.getDate())}`;
 
       const { data, error } = await production
         .from('v_bolsas_dia')
         .select('fecha_industrial, total_bolsas, horas_cargadas, ultima_hora')
-        .eq('fecha_industrial', diaIndustrialIso)
+        .eq('fecha_industrial', fechaIndustrial)
         .maybeSingle();
       if (error) {
         this.logger.warn(`bolsas-dia fail: ${error.message}`);
@@ -98,7 +97,7 @@ export class MetricsService {
       };
       // Sin datos hoy → 0 bolsas (no mostrar dato de ayer)
       if (!row) {
-        return { fecha_industrial: diaIndustrialIso, total_bolsas: 0, horas_cargadas: 0, ultima_hora: null };
+        return { fecha_industrial: fechaIndustrial, total_bolsas: 0, horas_cargadas: 0, ultima_hora: null };
       }
       return {
         fecha_industrial: row.fecha_industrial ?? null,
