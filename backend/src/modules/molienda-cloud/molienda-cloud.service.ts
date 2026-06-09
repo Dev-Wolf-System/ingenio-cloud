@@ -270,66 +270,6 @@ export class MoliendaCloudService {
       return ini >= desdeMs && ini < hastaMs;
     });
 
-    // Complementar con paradas_inferidas: fuente autoritativa para paradas multidía
-    // que MSSQL solo registra como fragmento del último día (operador carga solo el tramo del día).
-    // También incluye paradas abiertas no registradas aún en MSSQL.
-    try {
-      const { data: inferidas } = await this.supabase.schema('production')
-        .from('paradas_inferidas')
-        .select('id, inicio_sensor, fin')
-        .or(`fin.is.null,fin.gte.${rango.desde.toISOString()}`);
-      const nowMs = Date.now();
-      for (const inf of (inferidas ?? []) as Array<{ id: number; inicio_sensor: string; fin: string | null }>) {
-        const iniMs = new Date(inf.inicio_sensor).getTime();
-        const finMs = inf.fin ? new Date(inf.fin).getTime() : nowMs;
-
-        if (finMs <= desdeMs) continue;  // cerrada antes del período → skip
-        if (iniMs >= hastaMs) continue;  // empieza después del período → skip
-
-        // Parada multidía (empezó antes del período): las entradas MSSQL dentro de su rango
-        // son solo el "fragmento del último día" → heredar su motivo/área y luego eliminarlas.
-        if (iniMs < desdeMs) {
-          const fragmento = paradas.find((p) => {
-            const pIni = new Date(p.inicio).getTime();
-            return pIni >= desdeMs && pIni < finMs;
-          });
-          paradas = paradas.filter((p) => {
-            const pIni = new Date(p.inicio).getTime();
-            return pIni < desdeMs || pIni >= finMs;
-          });
-          const minutos = Math.round((finMs - iniMs) / 60_000);
-          paradas.push({
-            inicio: inf.inicio_sensor,
-            fin: inf.fin,
-            minutos,
-            motivo: fragmento?.motivo ?? (inf.fin ? 'Parada sensor (cerrada)' : 'En curso (sensor)'),
-            maquina: fragmento?.maquina ?? null,
-            origen: fragmento?.origen ?? 'Trapiche',
-            alertas_relacionadas: [],
-          });
-          continue;
-        }
-
-        // Parada dentro del período (abierta o cerrada): skip si MSSQL ya la tiene (±15 min).
-        // Evita duplicar cuando el operador cargó en MSSQL la misma parada que la inferida.
-        const yaEnMssql = paradas.some((p) => Math.abs(new Date(p.inicio).getTime() - iniMs) < 15 * 60_000);
-        if (yaEnMssql) continue;
-
-        const minutos = Math.round((finMs - iniMs) / 60_000);
-        paradas.push({
-          inicio: inf.inicio_sensor,
-          fin: inf.fin,
-          minutos,
-          motivo: inf.fin ? 'Parada sensor (cerrada)' : 'En curso (sensor)',
-          maquina: null,
-          origen: 'Trapiche',
-          alertas_relacionadas: [],
-        });
-      }
-    } catch (err) {
-      this.logger.warn(`paradasAnalisis inferidas fail: ${(err as Error).message}`);
-    }
-
     const reliab = reliabilidad([], paradas, spanMin);
 
     const porAreaMap = new Map<string, { n: number; minutos_total: number }>();

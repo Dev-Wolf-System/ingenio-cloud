@@ -81,16 +81,16 @@ const ESTADO_CONFIG = {
 
 // ─── Parada duration helpers ──────────────────────────────────────────────────
 
-async function fetchParadaAbierta(): Promise<{ id: number; inicio_sensor: string } | null> {
+async function fetchParadaAbierta(): Promise<{ inicio_ts: string } | null> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
   try {
     const res = await fetch(
-      `${url}/rest/v1/paradas_inferidas?fin=is.null&order=inicio_sensor.desc&limit=1&select=id,inicio_sensor`,
+      `${url}/rest/v1/v_parada_activa?select=inicio_ts,motivo,maquina&limit=1`,
       { headers: { apikey: key, Authorization: `Bearer ${key}`, 'Accept-Profile': 'production' } },
     );
     if (!res.ok) return null;
-    const rows = (await res.json()) as { id: number; inicio_sensor: string }[];
+    const rows = (await res.json()) as { inicio_ts: string }[];
     return rows[0] ?? null;
   } catch {
     return null;
@@ -123,7 +123,7 @@ function TrapicheEstadoBar() {
   }, [trapiche, energia]);
 
   const paradaQ = useQuery({
-    queryKey: ['paradas-inferidas', 'abierta'],
+    queryKey: ['parada-activa'],
     queryFn: fetchParadaAbierta,
     refetchInterval: 60_000,
     staleTime: 60_000,
@@ -133,7 +133,7 @@ function TrapicheEstadoBar() {
     const t = setInterval(() => setTick((n) => n + 1), 60_000);
     return () => clearInterval(t);
   }, []);
-  const paradaDuracion = paradaQ.data?.inicio_sensor ? formatDuracion(paradaQ.data.inicio_sensor) : null;
+  const paradaDuracion = paradaQ.data?.inicio_ts ? formatDuracion(paradaQ.data.inicio_ts) : null;
 
   const config = ESTADO_CONFIG[estado];
 
