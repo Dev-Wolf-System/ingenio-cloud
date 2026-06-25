@@ -6,6 +6,7 @@ import type { CanaAgg } from './comparativa';
 import { rangoPeriodo, type Periodo } from '../alerts/analisis/periodo';
 import { reliabilidad } from '../alerts/analisis/aggregate';
 import type { ParadaRow } from '../alerts/analisis/analisis.types';
+import { parseGasHoras, gasEnIntervalo } from '../alerts/analisis/gas-paradas.util';
 
 // Cache entrada para paradasAnalisis
 interface ParadasCacheEntry {
@@ -270,6 +271,9 @@ export class MoliendaCloudService {
       return ini >= desdeMs && ini < hastaMs;
     });
 
+    // Gas quemado durante cada parada (muta p.gas_m3) + total del período
+    const gas_en_paradas_m3 = await this.gasEnParadas(paradas, desdeMs, hastaMs);
+
     const reliab = reliabilidad([], paradas, spanMin);
 
     const porAreaMap = new Map<string, { n: number; minutos_total: number }>();
@@ -401,8 +405,40 @@ export class MoliendaCloudService {
       por_categoria,
       series_dia,
       impacto,
+      gas_en_paradas_m3,
       insight,
     };
+  }
+
+  /**
+   * Gas consumido (m³) durante cada parada, prorrateando por solape horario.
+   * Fuente: production.gas_hora_estimado (ts_cierre = hora ART local naive, m3_estimado = m³ de esa hora).
+   * Muta p.gas_m3 en cada parada y devuelve el total del período.
+   */
+  private async gasEnParadas(paradas: ParadaRow[], desdeMs: number, hastaMs: number): Promise<number> {
+    if (paradas.length === 0) return 0;
+    // ts_cierre es "wall clock ART" sin TZ; el rango viene en UTC → convertir para filtrar.
+    const artNaive = (utcMs: number) => new Date(utcMs - 3 * 3600_000).toISOString().slice(0, 19);
+    const { data, error } = await this.supabase.schema('production')
+      .from('gas_hora_estimado')
+      .select('ts_cierre, m3_estimado')
+      .gte('ts_cierre', artNaive(desdeMs - 4 * 3600_000))
+      .lte('ts_cierre', artNaive(hastaMs + 4 * 3600_000));
+    if (error || !Array.isArray(data)) {
+      this.logger.warn(`gasEnParadas: ${error?.message ?? 'sin datos'}`);
+      paradas.forEach((p) => { p.gas_m3 = null; });
+      return 0;
+    }
+    const horas = parseGasHoras(data as Array<{ ts_cierre: string; m3_estimado: number }>);
+    let total = 0;
+    for (const p of paradas) {
+      const ini = new Date(p.inicio).getTime();
+      const fin = p.fin ? new Date(p.fin).getTime() : Date.now();
+      const g = gasEnIntervalo(horas, ini, fin);
+      p.gas_m3 = Math.round(g);
+      total += g;
+    }
+    return Math.round(total);
   }
 
   async alcoholDia(offset = 0) {

@@ -7,6 +7,7 @@ export interface AlertaRow {
 export interface ParadaRow {
   inicio: string; fin: string | null; minutos: number | null;
   motivo: string; maquina: string | null; origen: string | null;
+  gas_m3?: number | null;   // gas quemado durante la parada (prorrateo horario)
   alertas_relacionadas: Array<{ id: string; titulo: string; severidad: string; detected_at: string; offset_min: number }>;
 }
 

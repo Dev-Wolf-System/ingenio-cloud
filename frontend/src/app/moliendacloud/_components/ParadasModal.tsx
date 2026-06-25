@@ -23,6 +23,7 @@ import {
   IconBulb,
   IconSparkles,
   IconWaveSine,
+  IconFlame,
 } from '@tabler/icons-react';
 import { useParadasMC } from '../_hooks/useParadasMC';
 
@@ -396,6 +397,34 @@ function ImpactoKpiTile({ impacto }: { impacto: ImpactoData | null | undefined }
   );
 }
 
+function GasParadasKpiTile({ gasM3 }: { gasM3: number | null | undefined }) {
+  return (
+    <div
+      className="flex-1 min-w-[150px] rounded-xl border p-4 lg:p-5 flex flex-col gap-1"
+      style={{
+        background: 'linear-gradient(135deg, rgba(255,107,53,0.10), rgba(255,184,0,0.05))',
+        borderColor: 'rgba(255,107,53,0.35)',
+      }}
+    >
+      <div className="flex items-center gap-1.5 mb-0.5">
+        <IconFlame size={13} style={{ color: '#FF6B35' }} />
+        <span
+          className="text-[10px] font-semibold uppercase tracking-wider"
+          style={{ color: 'var(--text-muted, #6B7A9E)' }}
+        >
+          Gas en paradas
+        </span>
+      </div>
+      <span className="text-xl lg:text-2xl xl:text-3xl font-bold tabular-nums" style={{ color: '#FF6B35' }}>
+        {gasM3 != null ? `${gasM3.toLocaleString('es-AR')} m³` : '—'}
+      </span>
+      <span className="text-[11px] lg:text-xs" style={{ color: 'var(--text-muted, #6B7A9E)' }}>
+        quemado sin moler
+      </span>
+    </div>
+  );
+}
+
 // ─── Gráfico por categoría ────────────────────────────────────────────────────
 
 const CATEGORIA_COLORS = ['#00D4FF', '#FF6B35', '#00E5A0', '#FFB800', '#7C6AFA', '#F43F5E', '#0EA5E9', '#F59E0B'];
@@ -632,6 +661,7 @@ interface ParadaRow {
   motivo: string;
   maquina: string | null;
   origen: string | null;
+  gas_m3?: number | null;
 }
 
 function ParadasTable({ rows }: { rows: ParadaRow[] }) {
@@ -654,7 +684,7 @@ function ParadasTable({ rows }: { rows: ParadaRow[] }) {
           style={{ background: 'var(--bg-card, #1A2236)', zIndex: 1 }}
         >
           <tr style={{ borderBottom: '1px solid var(--border, #1E3A5F)' }}>
-            {['Inicio', 'Fin', 'Duración', 'Área', 'Máquina', 'Motivo'].map((h) => (
+            {['Inicio', 'Fin', 'Duración', 'Gas', 'Área', 'Máquina', 'Motivo'].map((h) => (
               <th
                 key={h}
                 className="px-3 lg:px-4 py-2.5 lg:py-3 text-left text-xs lg:text-sm font-semibold uppercase tracking-wider"
@@ -700,6 +730,12 @@ function ParadasTable({ rows }: { rows: ParadaRow[] }) {
                 }}
               >
                 {fmtMin(row.minutos)}
+              </td>
+              <td
+                className="px-3 py-2 lg:py-2.5 tabular-nums text-xs lg:text-sm font-medium"
+                style={{ color: row.gas_m3 ? '#FF6B35' : 'var(--text-muted, #6B7A9E)' }}
+              >
+                {row.gas_m3 != null ? `${row.gas_m3.toLocaleString('es-AR')} m³` : '—'}
               </td>
               <td
                 className="px-3 py-2 lg:py-2.5 text-xs lg:text-sm"
@@ -905,6 +941,7 @@ export function ParadasModal({ open: controlledOpen, onClose: controlledClose }:
                           icon={<IconActivity size={13} />}
                         />
                         <ImpactoKpiTile impacto={data.impacto} />
+                        <GasParadasKpiTile gasM3={data.gas_en_paradas_m3} />
                       </div>
                     </section>
 

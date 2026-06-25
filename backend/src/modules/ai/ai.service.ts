@@ -33,6 +33,7 @@ export class AiService implements OnModuleInit {
     gas_avg_m3_h?: number | null;
     paradas_count?: number | null;
     paradas_minutos?: number | null;
+    gas_en_paradas_m3?: number | null;
     paradas_detalle?: Array<{
       desde: string;
       hasta: string;
@@ -56,9 +57,11 @@ Análisis turno operativo en base a:
 - Paradas de fábrica con DETALLE por evento (motivo, hora, duración)
 - Molienda promedio (t/h)
 - Consumo de gas total y promedio (m³, m³/h)
+- Gas quemado DURANTE las paradas (combustible consumido sin moler = costo/desperdicio)
 
 Tu trabajo: dar un comentario operativo profesional, claro y conciso para gerentes/jefes turno.
 Si hay paradas, mencioná los motivos más relevantes y su impacto en tiempo.
+Si hubo gas quemado durante paradas, destacalo como costo/desperdicio (combustible consumido con la fábrica detenida).
 Tono: directo, técnico, en español rioplatense.
 Salida JSON estricto con campos:
 - resumen (string 2-3 oraciones)
@@ -86,6 +89,7 @@ Periodo: ${payload.turno_inicio ?? '?'} → ${payload.turno_fin ?? '?'}
 Molienda promedio: ${payload.molienda_avg_t_h ?? '—'} t/h
 Gas total: ${payload.gas_total_m3 ?? '—'} m³ (promedio ${payload.gas_avg_m3_h ?? '—'} m³/h)
 Paradas: ${payload.paradas_count ?? 0} evento(s), ${payload.paradas_minutos ?? 0} min total
+Gas quemado durante paradas: ${payload.gas_en_paradas_m3 != null ? `${payload.gas_en_paradas_m3} m³${payload.gas_total_m3 ? ` (${Math.round((payload.gas_en_paradas_m3 / payload.gas_total_m3) * 100)}% del consumo del turno)` : ''}` : '—'}
 
 Detalle de paradas:
 ${paradasFmt}

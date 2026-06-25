@@ -7,6 +7,7 @@ import { AiService } from '../ai/ai.service';
 import { InfluxGasService } from '../influx/influx-gas.service';
 import { InfluxVaporService } from '../influx/influx-vapor.service';
 import { getCurrentShift, getPreviousShift, shiftDateKey, type Shift } from '../../common/shift';
+import { parseGasHoras, gasEnIntervalo } from '../alerts/analisis/gas-paradas.util';
 
 export interface ResumenGuardia {
   turno_anterior: string;
@@ -321,6 +322,44 @@ export class GuardiaService {
       const paradasMinutos = row.paradas_minutos ?? 0;
       const paradaEnCurso: { inicio_sensor: string; duracion_horas: number } | null = null;
 
+      // Gas quemado durante las paradas del turno (misma fuente/cálculo que el modal molienda-cloud).
+      let gasEnParadasM3: number | null = null;
+      try {
+        const iniTurno = tagART(row.turno_inicio);
+        const finTurno = tagART(row.turno_fin);
+        if (iniTurno && finTurno && paradasDetalle.length > 0) {
+          const turnoIniMs = Date.parse(iniTurno);
+          const turnoFinMs = Date.parse(finTurno);
+          const baseDate = String(row.turno_inicio).slice(0, 10); // YYYY-MM-DD ART
+          const mkMs = (hhmm: string) => {
+            let ms = Date.parse(`${baseDate}T${hhmm}:00-03:00`);
+            if (ms < turnoIniMs) ms += 86400_000; // parada tras medianoche
+            return ms;
+          };
+          const clamp = (ms: number) => Math.min(Math.max(ms, turnoIniMs), turnoFinMs);
+          const artNaive = (utcMs: number) => new Date(utcMs - 3 * 3600_000).toISOString().slice(0, 19);
+          const { data: gasRows } = await this.supabase.schema('production')
+            .from('gas_hora_estimado')
+            .select('ts_cierre, m3_estimado')
+            .gte('ts_cierre', artNaive(turnoIniMs - 4 * 3600_000))
+            .lte('ts_cierre', artNaive(turnoFinMs + 4 * 3600_000));
+          if (Array.isArray(gasRows) && gasRows.length > 0) {
+            const horas = parseGasHoras(gasRows as Array<{ ts_cierre: string; m3_estimado: number }>);
+            let total = 0;
+            for (const p of paradasDetalle) {
+              const ini = clamp(mkMs(p.desde));
+              const fin = p.hasta === 'abierta'
+                ? Math.min(Date.now(), turnoFinMs)
+                : clamp(mkMs(p.hasta));
+              total += gasEnIntervalo(horas, ini, fin);
+            }
+            gasEnParadasM3 = Math.round(total);
+          }
+        }
+      } catch (err) {
+        this.logger.warn(`resumen gas-en-paradas: ${(err as Error).message}`);
+      }
+
       return {
         turno: row.turno ?? null,
         turno_inicio: tagART(row.turno_inicio),
@@ -332,6 +371,7 @@ export class GuardiaService {
         paradas_minutos: paradasMinutos,
         paradas_detalle: paradasDetalle,
         parada_en_curso: paradaEnCurso,
+        gas_en_paradas_m3: gasEnParadasM3,
       };
     } catch (err) {
       this.logger.warn(`resumen-turno-previo exception: ${(err as Error).message}`);

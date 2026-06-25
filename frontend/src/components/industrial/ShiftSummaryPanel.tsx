@@ -27,6 +27,7 @@ interface TurnoPrevio {
   gas_avg_m3_h?: number | null;
   paradas_count?: number | null;
   paradas_minutos?: number | null;
+  gas_en_paradas_m3?: number | null;
   paradas_detalle?: ParadaDetalle[];
   stale?: boolean;
   error?: string;
@@ -158,9 +159,17 @@ export function ShiftSummaryPanel() {
           onClick={tieneParadas ? () => setParadasOpen(true) : undefined}
           hint={
             tieneParadas
-              ? tp?.paradas_minutos != null && tp.paradas_minutos > 0
-                ? `${formatNumber(tp.paradas_minutos, 0)} min · ver detalle`
-                : 'ver detalle'
+              ? [
+                  tp?.paradas_minutos != null && tp.paradas_minutos > 0
+                    ? `${formatNumber(tp.paradas_minutos, 0)} min`
+                    : null,
+                  tp?.gas_en_paradas_m3 != null && tp.gas_en_paradas_m3 > 0
+                    ? `${formatNumber(tp.gas_en_paradas_m3, 0)} m³ gas`
+                    : null,
+                  'ver detalle',
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
               : undefined
           }
         />
