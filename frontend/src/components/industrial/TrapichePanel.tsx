@@ -45,9 +45,9 @@ interface TrapicheSlot {
 }
 
 const TRAPICHE_SLOTS: TrapicheSlot[] = [
-  { id: 'caudal_imbibicion',       label: 'Caudal imbibición',     match: ['bb_imbibicion_caudal', 'caudal_imbibicion', 'caudal_imb'], unit: 'm³/h', precision: 2 },
-  { id: 'nivel_imbibicion',        label: 'Nivel imbibición',      match: ['bb_imbibicion_nivel', 'nivel_imbibicion'],                unit: '%',     precision: 1 },
-  { id: 'temperatura_imbibicion',  label: 'Temp. imbibición',      match: ['bb_imbibicion_temp', 'temperatura_imbibicion', 'temp_imbibicion'], unit: '°C', precision: 1 },
+  { id: 'caudal_imbibicion',       label: 'Caudal imbibición',     match: ['agua_imbibicion_caudal', 'bb_imbibicion_caudal', 'caudal_imbibicion', 'caudal_imb'], unit: 'm³/h', precision: 2 },
+  { id: 'nivel_imbibicion',        label: 'Nivel imbibición',      match: ['agua_imbibicion_nivel', 'bb_imbibicion_nivel', 'nivel_imbibicion'],                unit: '%',     precision: 1 },
+  { id: 'temperatura_imbibicion',  label: 'Temp. imbibición',      match: ['agua_imbibicion_temp', 'bb_imbibicion_temp', 'temperatura_imbibicion', 'temp_imbibicion'], unit: '°C', precision: 1 },
 ];
 
 // Slot especial combinado — Presión 6° molino Este + Oeste en un solo tile
