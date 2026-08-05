@@ -11,8 +11,11 @@ import { SupabaseService } from '../supabase/supabase.service';
  * Señales SIN equivalente en Influx (confirmado: 0 datos) quedan fuera de
  * este mapeo y siguen dependiendo del WebSocket si algún día vuelve:
  *   trapiche:   Bagazo_Humedad, Bagazo_Pol%, Molienda_Kilos, Molino1_Velocidad
- *   produccion: Color_Cinta_{Corta,Larga}, Humedad_Cinta_{Corta,Larga},
- *               Nivel_Cristalizador, Nivel_Melado_{1,2,Tratado}, Produccion_Bolsas_Dia
+ *   produccion: Color_Cinta_{Corta,Larga}, Humedad_Cinta_{Corta,Larga}, Produccion_Bolsas_Dia
+ *
+ * Nivel_Cristalizador / Nivel_Melado_{1,2,Tratado} ← tabla dashboard-general-produccion,
+ * variables Tacho1ra.*/tacho2da3ra.* — no existían al mapeo inicial, agregadas
+ * cuando aparecieron con datos en vivo.
  *
  * Trapiche_Estado ← trap_conductor (motor conductor principal). Tabla nueva
  * (datos desde 2026-08-05), verificado consistente con parada real abierta
@@ -63,6 +66,10 @@ const PRODUCCION_MAP: TagMap[] = [
   { variable: 'Clarificacion3.Clarificacion3.clar3_sulfitado_presion', key: 'Presion_Sulfitado', unit: 'Bar' },
   { variable: 'caldera.Caldera.cald_aire_presion', key: 'Presion_Aire', unit: 'Bar' },
   { variable: 'Clarificacion3.Clarificacion3.clar3_calentador13_temp', key: 'Temperatura_Calentador', unit: '°C' },
+  { variable: 'Tacho1ra.Tacho1ra.Tacho_cristalizador1ra_nivel', key: 'Nivel_Cristalizador', unit: '%' },
+  { variable: 'Tacho1ra.Tacho1ra.Tacho_melado_tachos_nivel1', key: 'Nivel_Melado_1', unit: '%' },
+  { variable: 'Tacho1ra.Tacho1ra.Tacho_melado_tachos_nivel2', key: 'Nivel_Melado_2', unit: '%' },
+  { variable: 'tacho2da3ra.tacho2da3ra.Tacho_melado_tratado', key: 'Nivel_Melado_Tratado', unit: '%' },
 ];
 
 const AREAS: Array<{ area: 'energia' | 'trapiche' | 'produccion'; map: TagMap[] }> = [
