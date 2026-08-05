@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useMemo, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { m, AnimatePresence } from 'motion/react';
 import { IconLayoutDashboard } from '@tabler/icons-react';
@@ -13,8 +13,8 @@ import { ComparativaCana } from './_components/ComparativaCana';
 import { AnalisisAzucarModal } from './_components/AnalisisAzucarModal';
 import { ResumenFabricaModal } from './_components/ResumenFabricaModal';
 import { MovimientosCana } from './_components/MovimientosCana';
-import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
-import { useTrapicheEstado, type EstadoTrapiche } from '@/lib/hooks/useTrapicheEstado';
+import { useDashboardData } from '@/lib/hooks/useDashboardData';
+import { useTrapicheEstado } from '@/lib/hooks/useTrapicheEstado';
 
 // ─── Trapiche estado config (same as TrapichePanel) ──────────────────────────
 
