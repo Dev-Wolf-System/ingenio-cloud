@@ -24,8 +24,10 @@ export const VAPOR_CAUDAL_DEFS = [
   { variable: 'vapor.vapor.vapor_usina_baja_caudal',    label: 'Usina Baja',     sector: 'Usina',       presion: 'alta' as const },
 ];
 
-const VAR_PRESION_ALTA = 'vapor.vapor.vapor_alta_presion';
-const VAR_PRESION_BAJA = 'vapor.vapor.vapor_baja_presion';
+// Colector alta/baja: viven en "dashboard-general-energia" (medición de caldera),
+// NO en "dashboard-vapor-caudales" (donde están los 7 caudales de consumo).
+const VAR_PRESION_ALTA = 'caldera.Caldera.cald_vapor_alta_presion';
+const VAR_PRESION_BAJA = 'caldera.Caldera.cald_vapor_baja_presion';
 const VAR_PRODUCCION = [
   'caldera2.caldera2.cald2_vapor_caudal',
   'caldera3.caldera3.cald3_vapor_caudal',
@@ -77,20 +79,29 @@ export class InfluxVaporService {
 
   /** Consumo de vapor actual (últimos 60s avg) por sector + total compensado. */
   async fetchVaporActual(): Promise<VaporActualResult | null> {
-    const allVars = [
-      ...VAPOR_CAUDAL_DEFS.map((d) => d.variable),
-      VAR_PRESION_ALTA,
-      VAR_PRESION_BAJA,
-    ];
-    const inList = allVars.map((v) => `'${v}'`).join(',');
-    const sql = `
+    const caudalVars = VAPOR_CAUDAL_DEFS.map((d) => `'${d.variable}'`).join(',');
+    const presionVars = `'${VAR_PRESION_ALTA}','${VAR_PRESION_BAJA}'`;
+
+    // Caudales de los 7 consumidores y presiones de colector viven en tablas distintas.
+    const sqlCaudales = `
       SELECT variable, AVG(value) AS valor
-      FROM "calderas"
+      FROM "dashboard-vapor-caudales"
       WHERE time >= now() - INTERVAL '10 seconds'
-        AND variable IN (${inList})
+        AND variable IN (${caudalVars})
       GROUP BY variable
     `;
-    const rows = await this.influx.query<{ variable: string; valor: number | null }>(sql);
+    const sqlPresiones = `
+      SELECT variable, AVG(value) AS valor
+      FROM "dashboard-general-energia"
+      WHERE time >= now() - INTERVAL '10 seconds'
+        AND variable IN (${presionVars})
+      GROUP BY variable
+    `;
+    const [rowsCaudales, rowsPresiones] = await Promise.all([
+      this.influx.query<{ variable: string; valor: number | null }>(sqlCaudales),
+      this.influx.query<{ variable: string; valor: number | null }>(sqlPresiones),
+    ]);
+    const rows = [...rowsCaudales, ...rowsPresiones];
     if (!rows.length) return null;
 
     const valores = new Map<string, number>();
@@ -178,22 +189,28 @@ export class InfluxVaporService {
     const caudalVars = VAPOR_CAUDAL_DEFS.map((d) => `'${d.variable}'`).join(',');
     const prodVars = VAR_PRODUCCION.map((v) => `'${v}'`).join(',');
 
-    // Consumo: por hora x variable (para aplicar factor en JS según presión promedio del bucket)
-    const sqlConsumo = `
-      WITH datos AS (
-        SELECT
-          date_bin(INTERVAL '1 hour', time, TIMESTAMP '1970-01-01T00:00:00Z') AS hora_utc,
-          variable,
-          AVG(value) AS m3h
-        FROM "calderas"
-        WHERE time >= now() - INTERVAL '${safeHoras} hours'
-          AND time < date_bin(INTERVAL '1 hour', now(), TIMESTAMP '1970-01-01T00:00:00Z')
-          AND variable IN (${caudalVars}, '${VAR_PRESION_ALTA}', '${VAR_PRESION_BAJA}')
-        GROUP BY 1, variable
-      )
-      SELECT hora_utc, variable, m3h
-      FROM datos
-      ORDER BY hora_utc, variable
+    // Caudales de consumo y presiones de colector viven en tablas Influx distintas.
+    const sqlCaudalesHist = `
+      SELECT
+        date_bin(INTERVAL '1 hour', time, TIMESTAMP '1970-01-01T00:00:00Z') AS hora_utc,
+        variable,
+        AVG(value) AS m3h
+      FROM "dashboard-vapor-caudales"
+      WHERE time >= now() - INTERVAL '${safeHoras} hours'
+        AND time < date_bin(INTERVAL '1 hour', now(), TIMESTAMP '1970-01-01T00:00:00Z')
+        AND variable IN (${caudalVars})
+      GROUP BY 1, variable
+    `;
+    const sqlPresionesHist = `
+      SELECT
+        date_bin(INTERVAL '1 hour', time, TIMESTAMP '1970-01-01T00:00:00Z') AS hora_utc,
+        variable,
+        AVG(value) AS m3h
+      FROM "dashboard-general-energia"
+      WHERE time >= now() - INTERVAL '${safeHoras} hours'
+        AND time < date_bin(INTERVAL '1 hour', now(), TIMESTAMP '1970-01-01T00:00:00Z')
+        AND variable IN ('${VAR_PRESION_ALTA}', '${VAR_PRESION_BAJA}')
+      GROUP BY 1, variable
     `;
 
     const sqlProduccion = `
@@ -209,10 +226,12 @@ export class InfluxVaporService {
       ORDER BY 1
     `;
 
-    const [rowsConsumo, rowsProd] = await Promise.all([
-      this.influx.query<VaporSerieRow>(sqlConsumo),
+    const [rowsCaudalesHist, rowsPresionesHist, rowsProd] = await Promise.all([
+      this.influx.query<VaporSerieRow>(sqlCaudalesHist),
+      this.influx.query<VaporSerieRow>(sqlPresionesHist),
       this.influx.query<{ hora_utc: string; variable: string; m3h: number }>(sqlProduccion),
     ]);
+    const rowsConsumo = [...rowsCaudalesHist, ...rowsPresionesHist];
 
     // Agregar consumo aplicando compensación por bucket
     const consumoPorHora = new Map<string, { caudales: Map<string, number>; pAlta?: number; pBaja?: number }>();
