@@ -10,11 +10,19 @@ export interface DashboardItem {
   unit: string | null;
   raw: number | null;
   updated_at: string;
+  /**
+   * Epoch ms (reloj del cliente) de la última vez que ESTE cliente vio cambiar
+   * el valor. Usado para detectar "sensor caído" sin comparar contra el reloj
+   * del servidor — inmune a desincronización de hora entre cliente y servidor.
+   */
+  receivedAt: number;
 }
 
+type IncomingItem = Omit<DashboardItem, 'receivedAt'>;
+
 type Action =
-  | { type: 'init'; payload: DashboardItem[] }
-  | { type: 'update'; payload: DashboardItem };
+  | { type: 'init'; payload: IncomingItem[] }
+  | { type: 'update'; payload: IncomingItem };
 
 function reducer(state: Map<string, DashboardItem>, action: Action) {
   switch (action.type) {
@@ -32,7 +40,7 @@ function reducer(state: Map<string, DashboardItem>, action: Action) {
           prev.updated_at !== item.updated_at ||
           prev.value !== item.value
         ) {
-          next.set(item.key, item);
+          next.set(item.key, { ...item, receivedAt: Date.now() });
           changed = true;
         }
       }
@@ -40,7 +48,7 @@ function reducer(state: Map<string, DashboardItem>, action: Action) {
     }
     case 'update': {
       const next = new Map(state);
-      next.set(action.payload.key, action.payload);
+      next.set(action.payload.key, { ...action.payload, receivedAt: Date.now() });
       return next;
     }
   }
@@ -67,7 +75,7 @@ export function useDashboardData(area: 'energia' | 'produccion' | 'trapiche') {
           cache: 'no-store',
         });
         if (!res.ok) return;
-        const json = (await res.json()) as { data: DashboardItem[] };
+        const json = (await res.json()) as { data: IncomingItem[] };
         if (!mounted) return;
         dispatch({ type: 'init', payload: json.data ?? [] });
       } catch (err) {
@@ -98,7 +106,7 @@ export function useDashboardData(area: 'energia' | 'produccion' | 'trapiche') {
           table: 'dashboard_data',
           filter: `area=eq.${area}`,
         },
-        (payload: { new: DashboardItem & { area: string } }) => {
+        (payload: { new: IncomingItem & { area: string } }) => {
           if (!mounted) return;
           if (payload.new && payload.new.area === area) {
             dispatch({

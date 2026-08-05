@@ -3,17 +3,21 @@
 import { useEffect, useRef, useState } from 'react';
 import { IconCircleFilled, IconAlertCircle } from '@tabler/icons-react';
 import { cn } from '@/lib/utils/cn';
-import { formatNumber, parseServerDate } from '@/lib/utils/format';
+import { formatNumber } from '@/lib/utils/format';
 import { m } from 'motion/react';
 
-const STALE_WARN_SEC = 15;   // > 15s = amarillo (sensor demorado)
-const STALE_DEAD_SEC = 30;   // > 30s = rojo (sensor caído)
+const STALE_WARN_SEC = 15;   // > 15s sin cambios = amarillo (sensor demorado)
+const STALE_DEAD_SEC = 30;   // > 30s sin cambios = rojo (sensor caído)
 
-function getStaleness(updatedAt?: string): 'fresh' | 'warn' | 'dead' {
-  if (!updatedAt) return 'fresh';
-  const d = parseServerDate(updatedAt);
-  if (!d) return 'fresh';
-  const age = (Date.now() - d.getTime()) / 1000;
+/**
+ * Staleness = tiempo desde que ESTE cliente vio cambiar el valor por última
+ * vez (receivedAt, reloj propio). Nunca compara contra un timestamp del
+ * servidor — inmune a desincronización de hora cliente/servidor. Si el
+ * sensor deja de mandar datos nuevos, el reloj local lo detecta solo.
+ */
+function getStaleness(receivedAt?: number): 'fresh' | 'warn' | 'dead' {
+  if (receivedAt == null) return 'fresh';
+  const age = (Date.now() - receivedAt) / 1000;
   if (age > STALE_DEAD_SEC) return 'dead';
   if (age > STALE_WARN_SEC) return 'warn';
   return 'fresh';
@@ -94,7 +98,8 @@ export interface PremiumTileProps {
   /** @deprecated usar size='lg' o size='hero' */
   big?: boolean;
   size?: TileSize;
-  updatedAt?: string;
+  /** Epoch ms (reloj cliente) — usar item.receivedAt de useDashboardData, NO item.updated_at */
+  updatedAt?: number;
   hint?: string;
   alert?: { severity: AlertSeverity; reason: 'low' | 'high'; min?: number | null; max?: number | null } | null;
   /** Si se define, el tile es clickeable (cursor pointer + handler) */

@@ -208,7 +208,7 @@ export function TrapichePanel() {
       este: este?.value ?? null,
       oeste: oeste?.value ?? null,
       unit: este?.unit ?? oeste?.unit ?? 'kg/cm²',
-      updatedAt: este?.updated_at ?? oeste?.updated_at,
+      updatedAt: este?.receivedAt ?? oeste?.receivedAt,
     };
   }, [data]);
 
@@ -348,7 +348,7 @@ export function TrapichePanel() {
         unit={item.unit ?? slot.unit}
         precision={slot.precision}
         accent={accentForKey(slot.id)}
-        updatedAt={item.updated_at}
+        updatedAt={item.receivedAt}
         alert={
           evalResult.status === 'out' && evalResult.severity && evalResult.reason
             ? {

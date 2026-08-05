@@ -103,7 +103,7 @@ export function ProductionPanel() {
                     unit={item.unit ?? ''}
                     precision={2}
                     accent={accentForKey(key)}
-                    updatedAt={item.updated_at}
+                    updatedAt={item.receivedAt}
                     alert={
                       evalResult.status === 'out' && evalResult.severity && evalResult.reason
                         ? {

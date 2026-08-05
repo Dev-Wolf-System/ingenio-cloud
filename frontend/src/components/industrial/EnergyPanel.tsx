@@ -166,7 +166,7 @@ export function EnergyPanel() {
                         unit={unit}
                         precision={1}
                         accent="accent"
-                        updatedAt={potSiemens?.updated_at ?? potWeg?.updated_at}
+                        updatedAt={potSiemens?.receivedAt ?? potWeg?.receivedAt}
                         hint={
                           `Siemens ${ps != null ? ps.toFixed(1) : '—'} · ` +
                           `WEG ${pw != null ? pw.toFixed(1) : '—'} · ver detalle`
@@ -189,7 +189,7 @@ export function EnergyPanel() {
                         unit={alta?.unit ?? baja?.unit ?? 'Kg/cm²'}
                         precision={2}
                         accent="accent"
-                        updatedAt={alta?.updated_at ?? baja?.updated_at}
+                        updatedAt={alta?.receivedAt ?? baja?.receivedAt}
                         hint={
                           `Alta ${a != null ? a.toFixed(2) : '—'} · ` +
                           `Baja ${b != null ? b.toFixed(2) : '—'} · ver detalle`
@@ -240,7 +240,7 @@ export function EnergyPanel() {
                         unit={caud2?.unit ?? caud6?.unit ?? 'Tn/H'}
                         precision={1}
                         accent="warn"
-                        updatedAt={caud2?.updated_at ?? caud3?.updated_at ?? caud6?.updated_at}
+                        updatedAt={caud2?.receivedAt ?? caud3?.receivedAt ?? caud6?.receivedAt}
                         hint={
                           `C2 ${c2 != null ? c2.toFixed(1) : '—'} · ` +
                           `C3 ${c3 != null ? c3.toFixed(1) : '—'} · ` +
@@ -263,7 +263,7 @@ export function EnergyPanel() {
                       unit={item.unit ?? ''}
                       precision={2}
                       accent={accentForKey(key)}
-                      updatedAt={item.updated_at}
+                      updatedAt={item.receivedAt}
                       alert={
                         evalResult.status === 'out' && evalResult.severity && evalResult.reason
                           ? {
