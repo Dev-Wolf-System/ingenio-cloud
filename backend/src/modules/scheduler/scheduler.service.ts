@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import { Cron, CronExpression, Interval } from '@nestjs/schedule';
 import { GuardiaService } from '../guardia/guardia.service';
 import { InfluxGasService } from '../influx/influx-gas.service';
+import { InfluxDashboardSyncService } from '../influx/influx-dashboard-sync.service';
 
 /**
  * Cron jobs internos del backend.
@@ -10,11 +11,32 @@ import { InfluxGasService } from '../influx/influx-gas.service';
 @Injectable()
 export class SchedulerService {
   private readonly logger = new Logger(SchedulerService.name);
+  private dashboardSyncRunning = false;
 
   constructor(
     private readonly guardia: GuardiaService,
     private readonly influxGas: InfluxGasService,
+    private readonly influxDashboard: InfluxDashboardSyncService,
   ) {}
+
+  /**
+   * Refresco de señales dashboard (energía/trapiche/producción) leyendo
+   * directo de InfluxDB cada 1s — reemplaza la ingesta por WebSocket de Node-RED
+   * para las señales que existen en Influx. Guard anti-solape: si una corrida
+   * tarda más de 1s, se saltea el siguiente tick en vez de amontonar requests.
+   */
+  @Interval(1000)
+  async syncDashboardFromInflux() {
+    if (this.dashboardSyncRunning) return;
+    this.dashboardSyncRunning = true;
+    try {
+      await this.influxDashboard.syncAll();
+    } catch (err) {
+      this.logger.warn('Cron sync dashboard influx failed', err as Error);
+    } finally {
+      this.dashboardSyncRunning = false;
+    }
+  }
 
   /**
    * Refrescar resumen guardia desde Node-RED a los 15 min de cada cambio de turno.

@@ -17,6 +17,7 @@ import {
   IconFlask,
 } from '@tabler/icons-react';
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
+import { useTrapicheEstado, type EstadoTrapiche } from '@/lib/hooks/useTrapicheEstado';
 import { useThresholds, evaluateValue } from '@/lib/hooks/useThresholds';
 import { useTileOrder } from '@/lib/hooks/useTileOrder';
 import { useKanbanLock } from '@/lib/hooks/useKanbanLock';
@@ -25,12 +26,6 @@ import { PremiumTile, type TileAccent } from './PremiumTile';
 import { SortableGroup } from './SortableGroup';
 import { SortableTile } from './SortableTile';
 import { cn } from '@/lib/utils/cn';
-
-type EstadoTrapiche = 'funcionando' | 'parado';
-
-const ESTADO_KEYS = ['trapiche_estado', 'estado', 'estado_trapiche', 'status'];
-const VAPOR_VG1_KEY_PATTERNS = ['presion_vapor_vg1', 'vapor_vg1', 'p_vapor_vg1'];
-const VAPOR_VG1_THRESHOLD = 1.9; // Vg1 > 1.9 (Kg/cm² ≈ Bar) ⇒ Funcionamiento
 
 /**
  * Whitelist KPIs del trapiche real. Solo keys del whitelist se renderizan.
@@ -60,30 +55,6 @@ function pickItem(map: Map<string, DashboardItem>, candidates: string[]): Dashbo
     const lower = cand.toLowerCase();
     for (const [key, item] of entries) {
       if (key.toLowerCase() === lower) return item;
-    }
-  }
-  return null;
-}
-
-function parseEstadoExplicit(item: DashboardItem | null): EstadoTrapiche | null {
-  if (!item) return null;
-  if (typeof item.value === 'number') {
-    if (item.value === 1) return 'funcionando';
-    if (item.value === 0) return 'parado';
-  }
-  const s = (item.display ?? '').toString().toLowerCase();
-  if (s.includes('func') || s === 'on' || s === 'true' || s === '1') return 'funcionando';
-  if (s.includes('par') || s === 'off' || s === 'false' || s === '0') return 'parado';
-  return null;
-}
-
-function deriveEstadoFromVaporVg1(energia: Map<string, DashboardItem>): EstadoTrapiche | null {
-  const entries = Array.from(energia.entries());
-  for (const pattern of VAPOR_VG1_KEY_PATTERNS) {
-    for (const [k, item] of entries) {
-      if (k.toLowerCase().includes(pattern)) {
-        return item.value > VAPOR_VG1_THRESHOLD ? 'funcionando' : 'parado';
-      }
     }
   }
   return null;
@@ -221,14 +192,7 @@ export function TrapichePanel() {
   const velPromedio = velRealtime?.value ?? velCachedPromedio;
   const velIsRealtime = !!velRealtime;
 
-  const estado = useMemo<EstadoTrapiche>(() => {
-    // Prioridad: 1) Trapiche_Estado explícito  2) Presion_Vapor_Vg1 > 1.9  3) Parado
-    const explicit = parseEstadoExplicit(pickItem(data, ESTADO_KEYS));
-    if (explicit) return explicit;
-    const derived = deriveEstadoFromVaporVg1(energia);
-    if (derived) return derived;
-    return 'parado';
-  }, [data, energia]);
+  const estado = useTrapicheEstado(data, energia);
 
   const resolvedSlots = useMemo(
     () => TRAPICHE_SLOTS.map((slot) => ({ slot, item: pickBySlot(data, slot) })),

@@ -14,49 +14,7 @@ import { AnalisisAzucarModal } from './_components/AnalisisAzucarModal';
 import { ResumenFabricaModal } from './_components/ResumenFabricaModal';
 import { MovimientosCana } from './_components/MovimientosCana';
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
-
-// ─── Trapiche estado helpers (same logic as TrapichePanel) ────────────────────
-
-type EstadoTrapiche = 'funcionando' | 'parado';
-
-const ESTADO_KEYS = ['trapiche_estado', 'estado', 'estado_trapiche', 'status'];
-const VAPOR_VG1_KEY_PATTERNS = ['presion_vapor_vg1', 'vapor_vg1', 'p_vapor_vg1'];
-const VAPOR_VG1_THRESHOLD = 1.9;
-
-function pickItem(map: Map<string, DashboardItem>, candidates: string[]): DashboardItem | null {
-  const entries = Array.from(map.entries());
-  for (const cand of candidates) {
-    const lower = cand.toLowerCase();
-    for (const [key, item] of entries) {
-      if (key.toLowerCase() === lower) return item;
-    }
-  }
-  return null;
-}
-
-function parseEstadoExplicit(item: DashboardItem | null): EstadoTrapiche | null {
-  if (!item) return null;
-  if (typeof item.value === 'number') {
-    if (item.value === 1) return 'funcionando';
-    if (item.value === 0) return 'parado';
-  }
-  const s = (item.display ?? '').toString().toLowerCase();
-  if (s.includes('func') || s === 'on' || s === 'true' || s === '1') return 'funcionando';
-  if (s.includes('par') || s === 'off' || s === 'false' || s === '0') return 'parado';
-  return null;
-}
-
-function deriveEstadoFromVaporVg1(energia: Map<string, DashboardItem>): EstadoTrapiche | null {
-  const entries = Array.from(energia.entries());
-  for (const pattern of VAPOR_VG1_KEY_PATTERNS) {
-    for (const [k, item] of entries) {
-      if (k.toLowerCase().includes(pattern)) {
-        return item.value > VAPOR_VG1_THRESHOLD ? 'funcionando' : 'parado';
-      }
-    }
-  }
-  return null;
-}
+import { useTrapicheEstado, type EstadoTrapiche } from '@/lib/hooks/useTrapicheEstado';
 
 // ─── Trapiche estado config (same as TrapichePanel) ──────────────────────────
 
@@ -114,13 +72,7 @@ function TrapicheEstadoBar() {
   const trapiche = useDashboardData('trapiche');
   const energia = useDashboardData('energia');
 
-  const estado = useMemo<EstadoTrapiche>(() => {
-    const explicit = parseEstadoExplicit(pickItem(trapiche, ESTADO_KEYS));
-    if (explicit) return explicit;
-    const derived = deriveEstadoFromVaporVg1(energia);
-    if (derived) return derived;
-    return 'parado';
-  }, [trapiche, energia]);
+  const estado = useTrapicheEstado(trapiche, energia);
 
   const paradaQ = useQuery({
     queryKey: ['parada-activa'],

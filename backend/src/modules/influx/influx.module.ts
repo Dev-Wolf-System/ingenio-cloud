@@ -5,12 +5,13 @@ import { InfluxGasService } from './influx-gas.service';
 import { InfluxVaporService } from './influx-vapor.service';
 import { InfluxQueryService } from './influx-query.service';
 import { InfluxAlcoholService } from './influx-alcohol.service';
+import { InfluxDashboardSyncService } from './influx-dashboard-sync.service';
 import { InfluxHealthController } from './influx-health.controller';
 
 @Module({
   imports: [ConfigModule, SupabaseModule],
   controllers: [InfluxHealthController],
-  providers: [InfluxQueryService, InfluxGasService, InfluxVaporService, InfluxAlcoholService],
-  exports: [InfluxQueryService, InfluxGasService, InfluxVaporService, InfluxAlcoholService],
+  providers: [InfluxQueryService, InfluxGasService, InfluxVaporService, InfluxAlcoholService, InfluxDashboardSyncService],
+  exports: [InfluxQueryService, InfluxGasService, InfluxVaporService, InfluxAlcoholService, InfluxDashboardSyncService],
 })
 export class InfluxModule {}
