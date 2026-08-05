@@ -103,7 +103,7 @@ export class InfluxDashboardSyncService {
       )
       SELECT variable, value FROM ranked WHERE rn = 1
     `;
-    const rows = await this.influx.query<{ variable: string; value: number }>(sql, { timeoutMs: 900 });
+    const rows = await this.influx.query<{ variable: string; value: number }>(sql, { timeoutMs: 3000 });
     const map = new Map<string, number>();
     for (const r of rows) {
       const v = Number(r.value);
