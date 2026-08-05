@@ -14,7 +14,7 @@ import { SupabaseService } from '../supabase/supabase.service';
  *   produccion: Color_Cinta_{Corta,Larga}, Humedad_Cinta_{Corta,Larga}, Produccion_Bolsas_Dia
  *
  * Nivel_Cristalizador / Nivel_Melado_{1,2,Tratado} ← tabla dashboard-general-produccion,
- * variables Tacho1ra.*/tacho2da3ra.* — no existían al mapeo inicial, agregadas
+ * variables Tacho1ra y tacho2da3ra — no existían al mapeo inicial, agregadas
  * cuando aparecieron con datos en vivo.
  *
  * Trapiche_Estado ← trap_conductor (motor conductor principal). Tabla nueva
