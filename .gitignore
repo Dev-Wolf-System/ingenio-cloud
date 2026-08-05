@@ -6,8 +6,10 @@
 .env.dev
 backend/.env*
 frontend/.env*
-!**/.env.example
-!**/.env.*.example
+.env.example
+.env.*.example
+GUIA_OPERATIVA.md
+
 
 # ─── Node ───
 node_modules/
@@ -57,4 +59,7 @@ drizzle/
 
 # Carpetas
 .superpowers/
+docs/
+plan/
+
 
