@@ -11,11 +11,33 @@ import {
   IconBell,
   IconChartBar,
   IconChevronRight,
+  IconFlask,
+  type Icon as TablerIcon,
 } from '@tabler/icons-react';
 
-const NAV_ITEMS = [
+interface NavLeaf {
+  href: string;
+  label: string;
+  icon?: TablerIcon;
+}
+
+interface NavParent {
+  label: string;
+  icon: TablerIcon;
+  children: NavLeaf[];
+}
+
+const NAV_ITEMS: (NavLeaf | NavParent)[] = [
   { href: '/', label: 'Dashboard', icon: IconLayoutDashboard },
   { href: '/moliendacloud', label: 'Molienda Cloud', icon: IconDropletFilled },
+  {
+    label: 'Laboratorio',
+    icon: IconFlask,
+    children: [
+      { href: '/laboratorio/azucar', label: 'Análisis de Azúcar' },
+      { href: '/laboratorio/resumen-fabrica', label: 'Resumen de Fábrica' },
+    ],
+  },
   { href: '/alertas', label: 'Alertas', icon: IconBell },
   { href: '/alertas/analisis', label: 'Análisis', icon: IconChartBar },
 ];
@@ -24,6 +46,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [hint, setHint] = useState(false);
+  const [labExpanded, setLabExpanded] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cancelClose = () => {
@@ -139,7 +162,50 @@ export function Sidebar() {
             </div>
 
             <div className="flex-1 space-y-1 px-2 py-3">
-              {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+              {NAV_ITEMS.map((item) => {
+                if ('children' in item) {
+                  const Icon = item.icon;
+                  const childActive = item.children.some((c) => pathname === c.href);
+                  return (
+                    <div key={item.label}>
+                      <button
+                        type="button"
+                        onClick={() => setLabExpanded((v) => !v)}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                          childActive ? 'text-text-primary' : 'text-text-muted hover:text-text-primary'
+                        }`}
+                      >
+                        <Icon size={16} />
+                        {item.label}
+                        <IconChevronRight
+                          size={12}
+                          className="ml-auto transition-transform"
+                          style={{ transform: labExpanded ? 'rotate(90deg)' : 'rotate(0deg)', color: labExpanded ? 'var(--primary)' : undefined }}
+                        />
+                      </button>
+                      {labExpanded && (
+                        <div className="pl-6 space-y-0.5">
+                          {item.children.map((child) => {
+                            const active = pathname === child.href;
+                            return (
+                              <Link
+                                key={child.href}
+                                href={child.href}
+                                onClick={() => setOpen(false)}
+                                className={`block px-3 py-1.5 rounded-lg text-2xs font-medium transition-colors ${
+                                  active ? 'text-primary-light' : 'text-text-muted hover:text-text-primary'
+                                }`}
+                              >
+                                {child.label}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                const { href, label, icon: Icon } = item;
                 const active = pathname === href;
                 return (
                   <Link
@@ -156,7 +222,7 @@ export function Sidebar() {
                         style={{ boxShadow: '0 0 6px var(--primary)' }}
                       />
                     )}
-                    <Icon size={16} />
+                    {Icon && <Icon size={16} />}
                     {label}
                   </Link>
                 );
