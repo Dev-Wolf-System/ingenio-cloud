@@ -19,12 +19,8 @@ import {
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
 import { useTrapicheEstado, type EstadoTrapiche } from '@/lib/hooks/useTrapicheEstado';
 import { useThresholds, evaluateValue } from '@/lib/hooks/useThresholds';
-import { useTileOrder } from '@/lib/hooks/useTileOrder';
-import { useKanbanLock } from '@/lib/hooks/useKanbanLock';
 import { PremiumPanel } from './PremiumPanel';
 import { PremiumTile, type TileAccent } from './PremiumTile';
-import { SortableGroup } from './SortableGroup';
-import { SortableTile } from './SortableTile';
 import { cn } from '@/lib/utils/cn';
 
 /**
@@ -234,8 +230,6 @@ export function TrapichePanel() {
     resolvedSlots.filter((r) => r.item != null).forEach((r) => ids.push(r.slot.id));
     return ids;
   }, [velPromedio, presionCombinada, polBagazo, humedadBagazo, fibraBagazo, polCachaza, humedadCachaza, resolvedSlots]);
-  const { ordered: orderedIds, saveOrder } = useTileOrder('trapiche', tileIds);
-  const { locked } = useKanbanLock();
 
   const renderTileById = (id: string) => {
     if (id === 'bagazo_pol' && polBagazo != null) {
@@ -378,15 +372,11 @@ export function TrapichePanel() {
         {data.size === 0 ? (
           <EmptyState />
         ) : (
-          <SortableGroup items={orderedIds} onReorder={saveOrder} disabled={locked}>
-            <div className="grid grid-cols-3 gap-2">
-              {orderedIds.map((id) => (
-                <SortableTile key={id} id={id}>
-                  {renderTileById(id)}
-                </SortableTile>
-              ))}
-            </div>
-          </SortableGroup>
+          <div className="grid grid-cols-3 gap-2">
+            {tileIds.map((id) => (
+              <div key={id}>{renderTileById(id)}</div>
+            ))}
+          </div>
         )}
       </div>
     </PremiumPanel>
