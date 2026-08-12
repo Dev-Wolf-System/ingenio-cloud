@@ -7,7 +7,6 @@ import { usePathname } from 'next/navigation';
 import { m, AnimatePresence } from 'motion/react';
 import {
   IconLayoutDashboard,
-  IconDropletFilled,
   IconBell,
   IconChartBar,
   IconChevronRight,
@@ -29,7 +28,6 @@ interface NavParent {
 
 const NAV_ITEMS: (NavLeaf | NavParent)[] = [
   { href: '/', label: 'Dashboard', icon: IconLayoutDashboard },
-  { href: '/moliendacloud', label: 'Molienda Cloud', icon: IconDropletFilled },
   {
     label: 'Laboratorio',
     icon: IconFlask,
