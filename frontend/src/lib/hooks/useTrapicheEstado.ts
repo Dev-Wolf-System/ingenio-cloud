@@ -6,7 +6,7 @@ export type EstadoTrapiche = 'funcionando' | 'parado';
 const ESTADO_KEYS = ['trapiche_estado', 'estado', 'estado_trapiche', 'status'];
 const VAPOR_VG1_KEY_PATTERNS = ['presion_vapor_vg1', 'vapor_vg1', 'p_vapor_vg1'];
 const VAPOR_VG1_THRESHOLD = 1.9; // Vg1 > 1.9 (Kg/cm² ≈ Bar) ⇒ Funcionamiento
-const DEBOUNCE_MS = 30_000; // evita falsos banners por glitch puntual del sensor
+const DEBOUNCE_MS = 10_000; // evita falsos banners por glitch puntual del sensor
 
 function pickItem(map: Map<string, DashboardItem>, candidates: string[]): DashboardItem | null {
   const entries = Array.from(map.entries());
@@ -44,9 +44,9 @@ function deriveEstadoFromVaporVg1(energia: Map<string, DashboardItem>): EstadoTr
 }
 
 /**
- * Estado del trapiche con debounce simétrico de 30s: el cambio de estado
- * (en cualquier dirección) solo se confirma si se sostiene 30s seguidos.
- * Si el valor crudo vuelve al estado anterior antes de esos 30s, se cancela
+ * Estado del trapiche con debounce simétrico de 10s: el cambio de estado
+ * (en cualquier dirección) solo se confirma si se sostiene 10s seguidos.
+ * Si el valor crudo vuelve al estado anterior antes de esos 10s, se cancela
  * el cambio — evita que el banner parpadee por un glitch puntual del sensor.
  */
 export function useTrapicheEstado(
