@@ -27,9 +27,9 @@ import {
   type GasHoraEnCurso,
   mergeGasHoraEnCurso,
 } from '@/components/industrial/GasEstadoModal';
-import { ParadasModal } from './ParadasModal';
-import { CanchonModal } from './CanchonModal';
-import { useParadasMC } from '../_hooks/useParadasMC';
+import { ParadasModal } from '@/components/industrial/ParadasModal';
+import { CanchonModal } from '@/components/industrial/CanchonModal';
+import { useParadasMC } from '@/lib/hooks/useParadasMC';
 
 // ─── Fetchers (same as KpiHero) ───────────────────────────────────────────────
 
