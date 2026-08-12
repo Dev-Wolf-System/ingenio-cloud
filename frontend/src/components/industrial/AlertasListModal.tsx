@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { IconX, IconAlertTriangle } from '@tabler/icons-react';
 import { AlertGroup } from './AlertGroup';
@@ -17,11 +18,25 @@ const SEVERIDADES_ORDENADAS = (Object.keys(SEV_ORDER) as Severity[]).sort(
   (a, b) => SEV_ORDER[a] - SEV_ORDER[b]
 );
 
+// Etiquetas en español para el header de cada grupo (AlertGroup renderiza `titular` tal cual).
+const SEV_LABEL: Record<Severity, string> = {
+  critical: 'Crítica',
+  warn: 'Advertencia',
+  info: 'Info',
+};
+
+const panelStyle = { background: 'var(--bg-surface, #111827)', borderColor: 'var(--border, #1E3A5F)' };
+const cardStyle = { borderColor: 'var(--border, #1E3A5F)', background: 'var(--bg-card, #1A2236)' };
+
 export function AlertasListModal({ open, onClose, alerts }: AlertasListModalProps) {
-  const grouped = SEVERIDADES_ORDENADAS.map((sev) => ({
-    sev,
-    items: alerts.filter((a) => normalizeSeverity(a.severity) === sev),
-  })).filter((g) => g.items.length > 0);
+  const grouped = useMemo(
+    () =>
+      SEVERIDADES_ORDENADAS.map((sev) => ({
+        sev,
+        items: alerts.filter((a) => normalizeSeverity(a.severity) === sev),
+      })).filter((g) => g.items.length > 0),
+    [alerts]
+  );
 
   return (
     <AnimatePresence>
@@ -38,12 +53,12 @@ export function AlertasListModal({ open, onClose, alerts }: AlertasListModalProp
           />
           <motion.div
             className="relative w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-xl border"
-            style={{ background: 'var(--bg-surface, #111827)', borderColor: 'var(--border, #1E3A5F)' }}
+            style={panelStyle}
             initial={{ scale: 0.96, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.96, opacity: 0 }}
           >
-            <div className="sticky top-0 flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border, #1E3A5F)', background: 'var(--bg-surface, #111827)' }}>
+            <div className="sticky top-0 flex items-center justify-between px-4 py-3 border-b" style={panelStyle}>
               <div className="flex items-center gap-2">
                 <IconAlertTriangle size={16} className="text-warn" />
                 <h2 className="text-sm font-semibold text-text-primary">Alertas activas ({alerts.length})</h2>
@@ -59,13 +74,13 @@ export function AlertasListModal({ open, onClose, alerts }: AlertasListModalProp
               {grouped.map(({ sev, items }) => (
                 <AlertGroup
                   key={sev}
-                  titular={sev}
+                  titular={SEV_LABEL[sev]}
                   alerts={items}
                   renderItem={(a) => (
                     <div
                       key={a.id}
                       className="rounded-lg border p-3 text-sm"
-                      style={{ borderColor: 'var(--border, #1E3A5F)', background: 'var(--bg-card, #1A2236)' }}
+                      style={cardStyle}
                     >
                       <div className="flex items-center justify-between gap-2">
                         <p className="font-medium text-text-primary truncate">{a.title}</p>
