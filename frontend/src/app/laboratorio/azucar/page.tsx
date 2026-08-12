@@ -1,13 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { AnimatePresence, m } from 'motion/react';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts';
-import { IconX, IconFlask, IconChevronLeft, IconChevronRight, IconAlertTriangle } from '@tabler/icons-react';
-import { useAzucar } from '../_hooks/useMoliendaCloud';
-import type { EspRow } from '../_hooks/useMoliendaCloud';
+import { IconFlask, IconChevronLeft, IconChevronRight, IconAlertTriangle } from '@tabler/icons-react';
+import { TopBar } from '@/components/layout/TopBar';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { useAzucar } from '../../moliendacloud/_hooks/useMoliendaCloud';
+import type { EspRow } from '../../moliendacloud/_hooks/useMoliendaCloud';
 
 // ─── Param definitions ────────────────────────────────────────────────────────
 
@@ -216,12 +217,11 @@ function SilosTable({ rows, loading }: { rows: EspRow[]; loading: boolean }) {
   );
 }
 
-// ─── Main Modal ───────────────────────────────────────────────────────────────
+// ─── Página ───────────────────────────────────────────────────────────────────
 
 const MAX_OFFSET = 7;
 
-export function AnalisisAzucarModal() {
-  const [open, setOpen] = useState(false);
+export default function LaboratorioAzucarPage() {
   const [offset, setOffset] = useState(0);
 
   const { data: selRes, isLoading: selLoading } = useAzucar(offset);
@@ -238,151 +238,106 @@ export function AnalisisAzucarModal() {
 
   const fechaLabel = offset === 0 ? 'Día actual' : (selRes?.fecha ?? `Día −${offset}`);
 
-  function handleClose() { setOpen(false); setOffset(0); }
-
   return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 rounded-lg border text-[11px] sm:text-sm font-medium transition-all hover:brightness-110 whitespace-nowrap shrink-0"
-        style={{ borderColor: 'var(--primary)', color: 'var(--primary-light, #00D4FF)', background: 'var(--primary-soft, rgba(0,212,255,0.08))' }}
-      >
-        <IconFlask size={14} />
-        Análisis de Azúcar
-      </button>
+    <div className="relative min-h-screen flex flex-col">
+      <Sidebar />
+      <TopBar plant="Laboratorio · Análisis de Azúcar" showAlertas={false} showResumenTurno={false} />
 
-      <AnimatePresence>
-        {open && (
-          <m.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-[70] flex items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(6px)' }}
-            onClick={handleClose}
+      <div className="p-5 sm:p-6 pb-3 shrink-0 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 border" style={{ background: 'var(--primary-soft, rgba(0,212,255,0.08))', borderColor: 'var(--primary)', color: 'var(--primary-light, #00D4FF)' }}>
+            <IconFlask size={22} />
+          </div>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight leading-tight" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+              Análisis de Azúcar
+            </h2>
+            <p className="text-xs sm:text-sm mt-0.5" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
+              Parámetros de calidad · evolución horaria · día industrial
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            disabled={offset >= MAX_OFFSET}
+            onClick={() => setOffset((o) => Math.min(o + 1, MAX_OFFSET))}
+            className="p-1.5 rounded-lg border transition-all disabled:opacity-30"
+            style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
           >
-            <m.div
-              initial={{ y: 40, opacity: 0, scale: 0.96 }}
-              animate={{ y: 0, opacity: 1, scale: 1 }}
-              exit={{ y: 20, opacity: 0, scale: 0.97 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 30 }}
-              className="relative w-full max-w-[94vw] lg:max-w-7xl xl:max-w-[1600px] rounded-2xl overflow-hidden border-2 flex flex-col max-h-[92vh]"
-              style={{ background: 'linear-gradient(135deg, var(--surface-panel-from, #111827), var(--surface-panel-to, #1A2236))', borderColor: 'var(--border-strong, #1E3A5F)', boxShadow: '0 40px 120px rgba(0,0,0,0.45)' }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div aria-hidden className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: 'linear-gradient(90deg, var(--primary), var(--accent))' }} />
+            <IconChevronLeft size={16} />
+          </button>
 
-              <button onClick={handleClose} className="absolute top-3 right-3 p-1.5 rounded-md transition-colors z-10" style={{ color: 'var(--text-muted)' }} aria-label="Cerrar">
-                <IconX size={16} />
-              </button>
+          <div
+            className="px-3 py-1.5 rounded-lg border text-xs font-semibold min-w-[100px] text-center"
+            style={{ borderColor: offset === 0 ? 'var(--primary)' : 'var(--border)', color: offset === 0 ? 'var(--primary-light, #00D4FF)' : 'var(--text-primary)', background: offset === 0 ? 'var(--primary-soft, rgba(0,212,255,0.08))' : 'transparent' }}
+          >
+            {fechaLabel}
+          </div>
 
-              {/* Header */}
-              <div className="p-5 sm:p-6 pb-3 shrink-0 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 border" style={{ background: 'var(--primary-soft, rgba(0,212,255,0.08))', borderColor: 'var(--primary)', color: 'var(--primary-light, #00D4FF)' }}>
-                    <IconFlask size={22} />
-                  </div>
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-bold tracking-tight leading-tight" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
-                      Análisis de Azúcar
-                    </h2>
-                    <p className="text-xs sm:text-sm mt-0.5" style={{ color: 'var(--text-secondary, #A0B0C8)' }}>
-                      Parámetros de calidad · evolución horaria · día industrial
-                    </p>
-                  </div>
-                </div>
+          <button
+            type="button"
+            disabled={offset <= 0}
+            onClick={() => setOffset((o) => Math.max(o - 1, 0))}
+            className="p-1.5 rounded-lg border transition-all disabled:opacity-30"
+            style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
+          >
+            <IconChevronRight size={16} />
+          </button>
+        </div>
+      </div>
 
-                {/* Day selector */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    type="button"
-                    disabled={offset >= MAX_OFFSET}
-                    onClick={() => setOffset((o) => Math.min(o + 1, MAX_OFFSET))}
-                    className="p-1.5 rounded-lg border transition-all disabled:opacity-30"
-                    style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
-                  >
-                    <IconChevronLeft size={16} />
-                  </button>
+      <div className="px-5 sm:px-6 pb-6 flex-1 space-y-5">
+        <section>
+          <SectionHeader title={offset === 0 ? 'Promedios del día' : `Promedios — ${fechaLabel}${offset > 0 ? ' · delta vs hoy' : ''}`} />
+          {selLoading ? (
+            <div className="py-6 text-center text-sm" style={{ color: 'var(--text-muted)' }}>Cargando…</div>
+          ) : azucarSel.length === 0 ? (
+            <EmptyState msg="Sin lecturas para el período seleccionado." />
+          ) : (
+            <div className="grid grid-cols-3 sm:grid-cols-4 lg:flex lg:flex-wrap gap-2 sm:gap-3 lg:gap-4 xl:gap-5">
+              {activeParams.map((p) => (
+                <KpiCard
+                  key={p.key as string}
+                  label={p.label}
+                  value={avgField(azucarSel, p.key)}
+                  unit={p.unit}
+                  dec={p.dec}
+                  color={p.color}
+                  refValue={offset > 0 ? avgField(azucarHoy, p.key) : undefined}
+                />
+              ))}
+            </div>
+          )}
+        </section>
 
-                  <div
-                    className="px-3 py-1.5 rounded-lg border text-xs font-semibold min-w-[100px] text-center"
-                    style={{ borderColor: offset === 0 ? 'var(--primary)' : 'var(--border)', color: offset === 0 ? 'var(--primary-light, #00D4FF)' : 'var(--text-primary)', background: offset === 0 ? 'var(--primary-soft, rgba(0,212,255,0.08))' : 'transparent' }}
-                  >
-                    {fechaLabel}
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={offset <= 0}
-                    onClick={() => setOffset((o) => Math.max(o - 1, 0))}
-                    className="p-1.5 rounded-lg border transition-all disabled:opacity-30"
-                    style={{ borderColor: 'var(--border)', color: 'var(--text-muted)' }}
-                  >
-                    <IconChevronRight size={16} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Body */}
-              <div className="px-5 sm:px-6 pb-6 overflow-y-auto flex-1 space-y-5">
-
-                {/* KPIs */}
-                <section>
-                  <SectionHeader title={offset === 0 ? 'Promedios del día' : `Promedios — ${fechaLabel}${offset > 0 ? ' · delta vs hoy' : ''}`} />
-                  {selLoading ? (
-                    <div className="py-6 text-center text-sm" style={{ color: 'var(--text-muted)' }}>Cargando…</div>
-                  ) : azucarSel.length === 0 ? (
-                    <EmptyState msg="Sin lecturas para el período seleccionado." />
-                  ) : (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:flex lg:flex-wrap gap-2 sm:gap-3 lg:gap-4 xl:gap-5">
-                      {activeParams.map((p) => (
-                        <KpiCard
-                          key={p.key as string}
-                          label={p.label}
-                          value={avgField(azucarSel, p.key)}
-                          unit={p.unit}
-                          dec={p.dec}
-                          color={p.color}
-                          refValue={offset > 0 ? avgField(azucarHoy, p.key) : undefined}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </section>
-
-                {/* Evolución horaria */}
-                {!selLoading && azucarSel.length > 0 && activeParams.length > 0 && (
-                  <section>
-                    <SectionHeader title="Evolución horaria por proceso" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      {activeParams.map((p) => (
-                        <EvoChart key={p.key as string} rows={azucarSel} param={p} procs={activeProcs} />
-                      ))}
-                    </div>
-                  </section>
-                )}
-
-                {/* Estado silos */}
-                <section>
-                  <SectionHeader title="Estado Silos" color="#7C6AFA" />
-                  <SilosTable rows={selRows} loading={selLoading} />
-                </section>
-
-                {/* Cal/Soda note */}
-                {selRows.some((r) => r.proceso_codigo === 'Soda_Cal') && (
-                  <section>
-                    <SectionHeader title="Cal / Soda / ART" color="#FFB800" />
-                    <div className="flex items-start gap-2 rounded-lg px-3 py-2.5 text-xs border" style={{ background: 'rgba(255,183,0,0.06)', borderColor: 'rgba(255,183,0,0.25)', color: 'var(--text-muted)' }}>
-                      <IconAlertTriangle size={13} style={{ color: '#FFB800', flexShrink: 0, marginTop: 1 }} />
-                      <span><span style={{ color: '#FFB800', fontWeight: 600 }}>ART: </span>fuente destilería (pendiente de integración).</span>
-                    </div>
-                  </section>
-                )}
-
-              </div>
-            </m.div>
-          </m.div>
+        {!selLoading && azucarSel.length > 0 && activeParams.length > 0 && (
+          <section>
+            <SectionHeader title="Evolución horaria por proceso" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {activeParams.map((p) => (
+                <EvoChart key={p.key as string} rows={azucarSel} param={p} procs={activeProcs} />
+              ))}
+            </div>
+          </section>
         )}
-      </AnimatePresence>
-    </>
+
+        <section>
+          <SectionHeader title="Estado Silos" color="#7C6AFA" />
+          <SilosTable rows={selRows} loading={selLoading} />
+        </section>
+
+        {selRows.some((r) => r.proceso_codigo === 'Soda_Cal') && (
+          <section>
+            <SectionHeader title="Cal / Soda / ART" color="#FFB800" />
+            <div className="flex items-start gap-2 rounded-lg px-3 py-2.5 text-xs border" style={{ background: 'rgba(255,183,0,0.06)', borderColor: 'rgba(255,183,0,0.25)', color: 'var(--text-muted)' }}>
+              <IconAlertTriangle size={13} style={{ color: '#FFB800', flexShrink: 0, marginTop: 1 }} />
+              <span><span style={{ color: '#FFB800', fontWeight: 600 }}>ART: </span>fuente destilería (pendiente de integración).</span>
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
   );
 }
