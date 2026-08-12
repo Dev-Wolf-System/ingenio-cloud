@@ -8,6 +8,7 @@ import {
   IconRefresh,
 } from '@tabler/icons-react';
 import { TopBar } from '@/components/layout/TopBar';
+import { Sidebar } from '@/components/layout/Sidebar';
 import { PasswordGate } from '@/components/ui/PasswordGate';
 import { useAlertasConfig } from './_hooks/useAlertasConfig';
 import { AvisosConfigPanel } from './_components/AvisosConfigPanel';
@@ -53,6 +54,7 @@ export default function AlertasConfigPage() {
       />
 
       <div className="relative z-10">
+        <Sidebar />
         <TopBar plant="Sala de Monitoreo · Configuración Alertas" />
 
         <main className="px-3 sm:px-4 py-3 sm:py-4 max-w-[1600px] mx-auto space-y-3 sm:space-y-4">

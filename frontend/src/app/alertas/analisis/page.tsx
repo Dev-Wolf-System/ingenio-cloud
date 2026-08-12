@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { IconArrowLeft, IconLoader2 } from '@tabler/icons-react';
 import { TopBar } from '@/components/layout/TopBar';
+import { Sidebar } from '@/components/layout/Sidebar';
 import { useAnalisis } from './_hooks/useAnalisis';
 import { useHistorial } from './_hooks/useHistorial';
 import { PeriodSelector } from './_components/PeriodSelector';
@@ -51,6 +52,7 @@ export default function AnalisisPage() {
       />
 
       <div className="relative z-10">
+        <Sidebar />
         <TopBar plant="Sala de Monitoreo · Análisis de Alertas" />
 
         <main className="px-3 sm:px-4 py-3 sm:py-4 max-w-[1600px] mx-auto space-y-3 sm:space-y-4">

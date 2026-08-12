@@ -6,6 +6,7 @@ import { m, AnimatePresence } from 'motion/react';
 import { IconLayoutDashboard } from '@tabler/icons-react';
 import { cn } from '@/lib/utils/cn';
 import { TopBar } from '@/components/layout/TopBar';
+import { Sidebar } from '@/components/layout/Sidebar';
 import { HeightMatchedGrid } from '@/components/industrial/HeightMatchedGrid';
 import { MoliendaProduccionHora } from '@/components/industrial/MoliendaProduccionHora';
 import { MoliendaHero } from './_components/MoliendaHero';
@@ -175,6 +176,7 @@ export default function MoliendaCloudPage() {
       />
 
       <div className="relative z-10 flex flex-col flex-1">
+        <Sidebar />
         <TopBar plant="Molienda Cloud" showAlertas={false} showResumenTurno={false} />
 
         {/* Header strip */}

@@ -1,4 +1,5 @@
 import { TopBar } from '@/components/layout/TopBar';
+import { Sidebar } from '@/components/layout/Sidebar';
 import { ConnectionBanner } from '@/components/layout/ConnectionBanner';
 import { ShiftTimeline } from '@/components/industrial/ShiftTimeline';
 import { ShiftWelcomeBanner } from '@/components/industrial/ShiftWelcomeBanner';
@@ -28,6 +29,7 @@ export default function DashboardPage() {
       <ShiftWelcomeBanner />
 
       <div className="relative z-10 flex flex-col flex-1">
+        <Sidebar />
         <TopBar plant="Sala de Monitoreo" />
         <ShiftTimeline />
         <KpiHero />
