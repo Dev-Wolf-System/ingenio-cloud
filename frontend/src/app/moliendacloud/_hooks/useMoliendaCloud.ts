@@ -4,8 +4,6 @@ import type { BalanzaHoraRow, MovimientoRow, MoliendaBloque, LabRow } from '../_
 import { useCanchon, useAnalisCana } from '@/lib/hooks/useCanchon';
 
 export { useCanchon, useAnalisCana };
-// Re-exporte de tipos: CanchonModal.tsx aún los importa desde acá (se actualiza en la tarea que lo mueve).
-export type { FincaAnalisRow, CañeroAnalisRow } from '@/lib/hooks/useCanchon';
 
 export interface CanaAgg {
   molienda_kg: number;
