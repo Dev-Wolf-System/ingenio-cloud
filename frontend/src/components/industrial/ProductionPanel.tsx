@@ -14,12 +14,8 @@ import {
 } from '@tabler/icons-react';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import { useThresholds, evaluateValue } from '@/lib/hooks/useThresholds';
-import { useTileOrder } from '@/lib/hooks/useTileOrder';
-import { useKanbanLock } from '@/lib/hooks/useKanbanLock';
 import { PremiumPanel } from './PremiumPanel';
 import { PremiumTile, type TileAccent } from './PremiumTile';
-import { SortableGroup } from './SortableGroup';
-import { SortableTile } from './SortableTile';
 
 function iconFor(key: string): React.ReactNode {
   const k = key.toLowerCase();
@@ -67,9 +63,7 @@ export function ProductionPanel() {
       return !HIDDEN_KEYS.includes(lk) && !HIDDEN_SUBSTRINGS.some((s) => lk.includes(s));
     })
     .sort();
-  const { ordered, saveOrder } = useTileOrder('produccion', baseKeys);
-  const { locked } = useKanbanLock();
-  const entries = ordered
+  const entries = baseKeys
     .map((k) => [k, data.get(k)!] as const)
     .filter(([, item]) => item != null);
   const count = entries.length;
@@ -90,13 +84,12 @@ export function ProductionPanel() {
       {count === 0 ? (
         <EmptyState />
       ) : (
-        <SortableGroup items={ordered} onReorder={saveOrder} disabled={locked}>
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-2">
             {entries.map(([key, item]) => {
               const evalResult = evaluateValue(thresholds, 'produccion', key, item.value);
               return (
-                <SortableTile key={key} id={key}>
                   <PremiumTile
+                    key={key}
                     icon={iconFor(key)}
                     label={key.replaceAll('_', ' ')}
                     value={item.value}
@@ -115,11 +108,9 @@ export function ProductionPanel() {
                         : null
                     }
                   />
-                </SortableTile>
               );
             })}
           </div>
-        </SortableGroup>
       )}
     </PremiumPanel>
   );
