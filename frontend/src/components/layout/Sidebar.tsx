@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { m, AnimatePresence } from 'motion/react';
@@ -44,7 +45,7 @@ export function Sidebar() {
     <>
       {/* Franja de detección — desktop, invisible, borde izquierdo */}
       <div
-        className="hidden md:block fixed left-0 top-16 bottom-0 w-3.5 z-40"
+        className="hidden md:block fixed left-0 top-0 bottom-0 w-3.5 z-40"
         onMouseEnter={() => {
           cancelClose();
           setHint(true);
@@ -105,7 +106,7 @@ export function Sidebar() {
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
             onMouseEnter={cancelClose}
             onMouseLeave={scheduleClose}
-            className="fixed left-0 top-16 bottom-0 z-40 w-[190px] flex flex-col px-2 py-3 border-r border-border"
+            className="fixed left-0 top-0 bottom-0 z-40 w-[190px] flex flex-col border-r border-border"
             style={{
               background: 'var(--header-bg)',
               backdropFilter: 'blur(16px)',
@@ -113,7 +114,29 @@ export function Sidebar() {
               boxShadow: '8px 0 24px rgba(0,0,0,0.4)',
             }}
           >
-            <div className="flex-1 space-y-1">
+            {/* Header propio — logo + nombre, no depende del scroll del TopBar */}
+            <div className="flex items-center gap-2.5 px-3 h-16 border-b border-border shrink-0">
+              <div
+                className="relative w-8 h-8 flex items-center justify-center rounded-lg overflow-hidden p-1 shrink-0"
+                style={{
+                  background: 'var(--logo-plate-bg)',
+                  boxShadow: '0 0 0 1px var(--logo-plate-ring), 0 2px 8px rgba(0,0,0,0.18)',
+                }}
+              >
+                <Image
+                  src="/logo-ingenio-cloud.png"
+                  alt="Ingenio Cloud"
+                  width={28}
+                  height={28}
+                  className="object-contain"
+                />
+              </div>
+              <span className="text-sm font-semibold text-text-primary tracking-tight leading-tight">
+                Ingenio <span className="text-primary-light">Cloud</span>
+              </span>
+            </div>
+
+            <div className="flex-1 space-y-1 px-2 py-3">
               {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
                 const active = pathname === href;
                 return (
