@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { IconArrowLeft, IconLoader2 } from '@tabler/icons-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { Footer } from '@/components/layout/Footer';
 import { useAnalisis } from './_hooks/useAnalisis';
 import { useHistorial } from './_hooks/useHistorial';
 import { PeriodSelector } from './_components/PeriodSelector';
@@ -154,6 +155,7 @@ export default function AnalisisPage() {
           />
         </main>
       </div>
+      <Footer />
     </div>
   );
 }

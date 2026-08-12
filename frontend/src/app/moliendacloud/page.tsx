@@ -7,6 +7,7 @@ import { IconLayoutDashboard, IconFlask, IconBuildingFactory2 } from '@tabler/ic
 import { cn } from '@/lib/utils/cn';
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { Footer } from '@/components/layout/Footer';
 import { HeightMatchedGrid } from '@/components/industrial/HeightMatchedGrid';
 import { MoliendaProduccionHora } from '@/components/industrial/MoliendaProduccionHora';
 import { MoliendaHero } from './_components/MoliendaHero';
@@ -237,6 +238,7 @@ export default function MoliendaCloudPage() {
         </div>
 
       </div>
+      <Footer />
     </div>
   );
 }

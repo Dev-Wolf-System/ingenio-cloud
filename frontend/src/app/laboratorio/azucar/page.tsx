@@ -7,6 +7,7 @@ import {
 import { IconFlask, IconChevronLeft, IconChevronRight, IconAlertTriangle } from '@tabler/icons-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { Footer } from '@/components/layout/Footer';
 import { useAzucar } from '../../moliendacloud/_hooks/useMoliendaCloud';
 import type { EspRow } from '../../moliendacloud/_hooks/useMoliendaCloud';
 
@@ -338,6 +339,7 @@ export default function LaboratorioAzucarPage() {
           </section>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

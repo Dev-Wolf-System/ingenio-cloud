@@ -1,5 +1,6 @@
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { Footer } from '@/components/layout/Footer';
 import { ConnectionBanner } from '@/components/layout/ConnectionBanner';
 import { ShiftTimeline } from '@/components/industrial/ShiftTimeline';
 import { ShiftWelcomeBanner } from '@/components/industrial/ShiftWelcomeBanner';
@@ -50,6 +51,7 @@ export default function DashboardPage() {
         </main>
 
         <CopilotBanner />
+        <Footer />
       </div>
     </div>
   );

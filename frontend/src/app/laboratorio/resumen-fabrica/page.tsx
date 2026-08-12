@@ -13,6 +13,7 @@ import {
 import { IconBuildingFactory2, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { Footer } from '@/components/layout/Footer';
 import { useLab } from '../../moliendacloud/_hooks/useMoliendaCloud';
 import type { LabRow } from '../../moliendacloud/_types';
 
@@ -429,6 +430,7 @@ export default function LaboratorioResumenFabricaPage() {
           </>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

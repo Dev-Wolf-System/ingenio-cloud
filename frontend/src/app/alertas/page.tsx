@@ -9,6 +9,7 @@ import {
 } from '@tabler/icons-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { Footer } from '@/components/layout/Footer';
 import { PasswordGate } from '@/components/ui/PasswordGate';
 import { useAlertasConfig } from './_hooks/useAlertasConfig';
 import { AvisosConfigPanel } from './_components/AvisosConfigPanel';
@@ -142,6 +143,7 @@ export default function AlertasConfigPage() {
         title="Configuración protegida"
         description="Ingresá la contraseña para modificar esta configuración."
       />
+      <Footer />
     </div>
   );
 }
