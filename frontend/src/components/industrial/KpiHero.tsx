@@ -12,13 +12,9 @@ import {
   IconPlayerPause,
 } from '@tabler/icons-react';
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
-import { useTileOrder } from '@/lib/hooks/useTileOrder';
-import { useKanbanLock } from '@/lib/hooks/useKanbanLock';
 import { useParadasMC } from '@/lib/hooks/useParadasMC';
 import { formatHoraAR } from '@/lib/utils/format';
 import { PremiumTile } from './PremiumTile';
-import { SortableGroup } from './SortableGroup';
-import { SortableTile } from './SortableTile';
 import { MoliendaEstadoModal, type MoliendaBloquesPayload } from './MoliendaEstadoModal';
 import { GasEstadoModal, type GasBloquesPayload, type GasHoraEnCurso, mergeGasHoraEnCurso } from './GasEstadoModal';
 import { AlertasModalAuto, type ActiveAlert } from './AlertasModalAuto';
@@ -188,9 +184,6 @@ export function KpiHero() {
     () => mergeGasHoraEnCurso(gasBloques.data, gasHoraCurso.data ?? null),
     [gasBloques.data, gasHoraCurso.data],
   );
-  const { ordered, saveOrder } = useTileOrder('kpi-hero', [...HERO_KEYS]);
-  const { locked } = useKanbanLock();
-
   const moliendaKg = molienda.data?.molienda_kg ?? null;
   const moliendaHora = molienda.data?.etiqueta ?? null;
   const moliendaAcum = molienda.data?.acumulado_kg ?? null;
@@ -348,25 +341,11 @@ export function KpiHero() {
 
   return (
     <>
-      <SortableGroup items={ordered} onReorder={saveOrder} disabled={locked}>
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
-          {ordered.map((id) => {
-            const pulseClass =
-              id === 'alertas'
-                ? criticalCount > 0
-                  ? 'kpi-alert-pulse-critical'
-                  : activeCount > 0
-                  ? 'kpi-alert-pulse'
-                  : ''
-                : '';
-            return (
-              <SortableTile key={id} id={id} className={pulseClass}>
-                {renderTile(id)}
-              </SortableTile>
-            );
-          })}
-        </div>
-      </SortableGroup>
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
+        {HERO_KEYS.map((id) => (
+          <div key={id}>{renderTile(id)}</div>
+        ))}
+      </div>
       {activeCount > 0 ? (
         <button
           onClick={() => setAlertasListOpen(true)}
