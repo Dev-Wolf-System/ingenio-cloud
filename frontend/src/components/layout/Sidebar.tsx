@@ -67,21 +67,23 @@ export function Sidebar() {
             }}
             onClick={() => setOpen(true)}
             aria-label="Abrir navegación"
-            className="hidden md:flex fixed left-0.5 top-1/2 -translate-y-1/2 z-40 w-4 h-4 rounded-full items-center justify-center bg-bg-card border border-border-strong text-primary-light"
-            style={{ boxShadow: '0 0 8px var(--primary-glow)' }}
+            className="hidden md:flex fixed left-1 top-1/2 -translate-y-1/2 z-40 w-7 h-7 rounded-full items-center justify-center bg-bg-card border border-border-strong text-primary-light"
+            style={{ boxShadow: '0 0 10px var(--primary-glow)' }}
           >
-            <IconChevronRight size={11} />
+            <IconChevronRight size={18} />
           </m.button>
         )}
       </AnimatePresence>
 
-      {/* Pestaña fija — mobile/touch, siempre visible (no hay hover) */}
+      {/* Pestaña fija — mobile/touch, siempre visible (no hay hover), con ícono para que se note */}
       <button
         onClick={() => setOpen(true)}
         aria-label="Abrir navegación"
-        className="md:hidden fixed left-0 top-1/2 -translate-y-1/2 z-40 w-2.5 h-12 rounded-r-lg bg-bg-card border border-border-strong border-l-0"
+        className="md:hidden fixed left-0 top-1/2 -translate-y-1/2 z-40 w-5 h-14 rounded-r-lg flex items-center justify-center bg-bg-card border border-border-strong border-l-0 text-primary-light"
         style={{ boxShadow: '0 0 10px var(--primary-glow)' }}
-      />
+      >
+        <IconChevronRight size={14} />
+      </button>
 
       {/* Backdrop — mobile, solo mientras está abierto */}
       <AnimatePresence>
