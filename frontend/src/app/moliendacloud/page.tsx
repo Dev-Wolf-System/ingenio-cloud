@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { m, AnimatePresence } from 'motion/react';
-import { IconLayoutDashboard } from '@tabler/icons-react';
+import { IconLayoutDashboard, IconFlask, IconBuildingFactory2 } from '@tabler/icons-react';
 import { cn } from '@/lib/utils/cn';
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -11,8 +11,6 @@ import { HeightMatchedGrid } from '@/components/industrial/HeightMatchedGrid';
 import { MoliendaProduccionHora } from '@/components/industrial/MoliendaProduccionHora';
 import { MoliendaHero } from './_components/MoliendaHero';
 import { ComparativaCana } from './_components/ComparativaCana';
-import { AnalisisAzucarModal } from './_components/AnalisisAzucarModal';
-import { ResumenFabricaModal } from './_components/ResumenFabricaModal';
 import { MovimientosCana } from './_components/MovimientosCana';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import { useTrapicheEstado } from '@/lib/hooks/useTrapicheEstado';
@@ -197,8 +195,22 @@ export default function MoliendaCloudPage() {
             <IconLayoutDashboard size={16} />
             → Dashboard de Monitoreo
           </Link>
-          <AnalisisAzucarModal />
-          <ResumenFabricaModal />
+          <Link
+            href="/laboratorio/azucar"
+            className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 rounded-lg border text-[11px] sm:text-sm font-medium transition-all hover:brightness-110 whitespace-nowrap shrink-0"
+            style={{ borderColor: 'var(--primary)', color: 'var(--primary-light, #00D4FF)', background: 'var(--primary-soft, rgba(0,212,255,0.08))' }}
+          >
+            <IconFlask size={14} />
+            Análisis de Azúcar
+          </Link>
+          <Link
+            href="/laboratorio/resumen-fabrica"
+            className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1 sm:py-2 rounded-lg border text-[11px] sm:text-sm font-medium transition-colors hover:brightness-110 whitespace-nowrap shrink-0"
+            style={{ borderColor: 'var(--accent, #FF6B35)', color: 'var(--accent, #FF6B35)', background: 'rgba(255,107,53,0.08)' }}
+          >
+            <IconBuildingFactory2 size={15} />
+            Resumen de Fábrica
+          </Link>
         </div>
 
         {/* Hero — KPI tiles with Paradas tile */}
