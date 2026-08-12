@@ -323,7 +323,7 @@ export function KpiHero() {
             value={paradasHoy ?? undefined}
             unit="evt"
             precision={0}
-            accent={paradasHoy != null && paradasHoy > 0 ? 'warn' : 'accent'}
+            accent={paradasHoy != null && paradasHoy > 0 ? 'danger' : 'accent'}
             size="hero"
             onClick={() => setParadasModalOpen(true)}
             hint={
