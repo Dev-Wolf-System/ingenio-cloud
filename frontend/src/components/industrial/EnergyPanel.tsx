@@ -14,12 +14,8 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { useDashboardData } from '@/lib/hooks/useDashboardData';
 import { useThresholds, evaluateValue } from '@/lib/hooks/useThresholds';
-import { useTileOrder } from '@/lib/hooks/useTileOrder';
-import { useKanbanLock } from '@/lib/hooks/useKanbanLock';
 import { PremiumPanel } from './PremiumPanel';
 import { PremiumTile, type TileAccent } from './PremiumTile';
-import { SortableGroup } from './SortableGroup';
-import { SortableTile } from './SortableTile';
 import { DesgloceModal } from './DesgloceModal';
 import { VaporConsumoModal, type VaporActualResult, type VaporHxHResult } from './VaporConsumoModal';
 
@@ -109,8 +105,6 @@ export function EnergyPanel() {
     ...(hasPotencia ? [POTENCIA_COMBO_ID] : []),
     ...baseKeys,
   ];
-  const { ordered, saveOrder } = useTileOrder('energia', allKeys);
-  const { locked } = useKanbanLock();
   const count = baseKeys.length + (hasVapor ? 1 : 0) + (hasCaudal ? 1 : 0) + (hasPotencia ? 1 : 0);
 
   const [caudalModalOpen, setCaudalModalOpen] = useState(false);
@@ -149,137 +143,135 @@ export function EnergyPanel() {
         {count === 0 ? (
           <EmptyState />
         ) : (
-          <SortableGroup items={ordered} onReorder={saveOrder} disabled={locked}>
-            <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-2">
-              {ordered.map((key) => {
-                if (key === POTENCIA_COMBO_ID) {
-                  const ps = potSiemens?.value ?? null;
-                  const pw = potWeg?.value ?? null;
-                  const total = [ps, pw].filter((v): v is number => v != null).reduce((a, b) => a + b, 0);
-                  const unit = potSiemens?.unit ?? potWeg?.unit ?? 'Kw';
-                  return (
-                    <SortableTile key={key} id={key}>
-                      <PremiumTile
-                        icon={<IconBolt size={14} />}
-                        label="Potencia Total"
-                        value={hasPotencia ? total : undefined}
-                        unit={unit}
-                        precision={1}
-                        accent="accent"
-                        updatedAt={potSiemens?.receivedAt ?? potWeg?.receivedAt}
-                        hint={
-                          `Siemens ${ps != null ? ps.toFixed(1) : '—'} · ` +
-                          `WEG ${pw != null ? pw.toFixed(1) : '—'} · ver detalle`
-                        }
-                        onClick={() => setPotenciaModalOpen(true)}
-                      />
-                    </SortableTile>
-                  );
-                }
-                if (key === VAPOR_COMBO_ID) {
-                  const a = alta?.value ?? null;
-                  const b = baja?.value ?? null;
-                  const prom = a != null && b != null ? (a + b) / 2 : a ?? b ?? null;
-                  return (
-                    <SortableTile key={key} id={key}>
-                      <PremiumTile
-                        icon={<IconGauge size={14} />}
-                        label="Presión Vapor A/B"
-                        value={prom ?? undefined}
-                        unit={alta?.unit ?? baja?.unit ?? 'Kg/cm²'}
-                        precision={2}
-                        accent="accent"
-                        updatedAt={alta?.receivedAt ?? baja?.receivedAt}
-                        hint={
-                          `Alta ${a != null ? a.toFixed(2) : '—'} · ` +
-                          `Baja ${b != null ? b.toFixed(2) : '—'} · ver detalle`
-                        }
-                        onClick={() => setVaporModalOpen(true)}
-                      />
-                    </SortableTile>
-                  );
-                }
-                if (key === VAPOR_CONSUMO_ID) {
-                  const va = vaporActual.data;
-                  const total = va?.total_tnh ?? null;
-                  const pAlta = va?.presion_alta ?? null;
-                  const pBaja = va?.presion_baja ?? null;
-                  const nValid = va?.por_caudal.filter((c) => c.compensado_tnh > 0).length ?? 0;
-                  return (
-                    <SortableTile key={key} id={key}>
-                      <PremiumTile
-                        icon={<IconWind size={14} />}
-                        label="Vapor Consumo"
-                        value={total ?? undefined}
-                        unit="Tn/H"
-                        precision={1}
-                        accent="accent"
-                        onClick={() => setVaporConsumoModalOpen(true)}
-                        hint={
-                          total != null
-                            ? `${nValid} caudales · alta ${pAlta?.toFixed(1) ?? '—'} / baja ${pBaja?.toFixed(1) ?? '—'} · ver detalle`
-                            : 'Sin datos · ver detalle'
-                        }
-                      />
-                    </SortableTile>
-                  );
-                }
-                if (key === CAUDAL_COMBO_ID) {
-                  const c2 = caud2?.value ?? null;
-                  const c3 = caud3?.value ?? null;
-                  const c6 = caud6?.value ?? null;
-                  const total = [c2, c3, c6]
-                    .filter((v): v is number => v != null)
-                    .reduce((a, b) => a + b, 0);
-                  return (
-                    <SortableTile key={key} id={key}>
-                      <PremiumTile
-                        icon={<IconRipple size={14} />}
-                        label="Caudal Vapor Calderas"
-                        value={total}
-                        unit={caud2?.unit ?? caud6?.unit ?? 'Tn/H'}
-                        precision={1}
-                        accent="warn"
-                        updatedAt={caud2?.receivedAt ?? caud3?.receivedAt ?? caud6?.receivedAt}
-                        hint={
-                          `C2 ${c2 != null ? c2.toFixed(1) : '—'} · ` +
-                          `C3 ${c3 != null ? c3.toFixed(1) : '—'} · ` +
-                          `C6 ${c6 != null ? c6.toFixed(1) : '—'} · ver detalle`
-                        }
-                        onClick={() => setCaudalModalOpen(true)}
-                      />
-                    </SortableTile>
-                  );
-                }
-                const item = data.get(key);
-                if (!item) return null;
-                const evalResult = evaluateValue(thresholds, 'energia', key, item.value);
+          <div className="grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3 gap-2">
+            {allKeys.map((key) => {
+              if (key === POTENCIA_COMBO_ID) {
+                const ps = potSiemens?.value ?? null;
+                const pw = potWeg?.value ?? null;
+                const total = [ps, pw].filter((v): v is number => v != null).reduce((a, b) => a + b, 0);
+                const unit = potSiemens?.unit ?? potWeg?.unit ?? 'Kw';
                 return (
-                  <SortableTile key={key} id={key}>
+                  <div key={key}>
                     <PremiumTile
-                      icon={iconFor(key)}
-                      label={key.replaceAll('_', ' ')}
-                      value={item.value}
-                      unit={item.unit ?? ''}
+                      icon={<IconBolt size={14} />}
+                      label="Potencia Total"
+                      value={hasPotencia ? total : undefined}
+                      unit={unit}
+                      precision={1}
+                      accent="accent"
+                      updatedAt={potSiemens?.receivedAt ?? potWeg?.receivedAt}
+                      hint={
+                        `Siemens ${ps != null ? ps.toFixed(1) : '—'} · ` +
+                        `WEG ${pw != null ? pw.toFixed(1) : '—'} · ver detalle`
+                      }
+                      onClick={() => setPotenciaModalOpen(true)}
+                    />
+                  </div>
+                );
+              }
+              if (key === VAPOR_COMBO_ID) {
+                const a = alta?.value ?? null;
+                const b = baja?.value ?? null;
+                const prom = a != null && b != null ? (a + b) / 2 : a ?? b ?? null;
+                return (
+                  <div key={key}>
+                    <PremiumTile
+                      icon={<IconGauge size={14} />}
+                      label="Presión Vapor A/B"
+                      value={prom ?? undefined}
+                      unit={alta?.unit ?? baja?.unit ?? 'Kg/cm²'}
                       precision={2}
-                      accent={accentForKey(key)}
-                      updatedAt={item.receivedAt}
-                      alert={
-                        evalResult.status === 'out' && evalResult.severity && evalResult.reason
-                          ? {
-                              severity: evalResult.severity,
-                              reason: evalResult.reason,
-                              min: evalResult.threshold?.min_value,
-                              max: evalResult.threshold?.max_value,
-                            }
-                          : null
+                      accent="accent"
+                      updatedAt={alta?.receivedAt ?? baja?.receivedAt}
+                      hint={
+                        `Alta ${a != null ? a.toFixed(2) : '—'} · ` +
+                        `Baja ${b != null ? b.toFixed(2) : '—'} · ver detalle`
+                      }
+                      onClick={() => setVaporModalOpen(true)}
+                    />
+                  </div>
+                );
+              }
+              if (key === VAPOR_CONSUMO_ID) {
+                const va = vaporActual.data;
+                const total = va?.total_tnh ?? null;
+                const pAlta = va?.presion_alta ?? null;
+                const pBaja = va?.presion_baja ?? null;
+                const nValid = va?.por_caudal.filter((c) => c.compensado_tnh > 0).length ?? 0;
+                return (
+                  <div key={key}>
+                    <PremiumTile
+                      icon={<IconWind size={14} />}
+                      label="Vapor Consumo"
+                      value={total ?? undefined}
+                      unit="Tn/H"
+                      precision={1}
+                      accent="accent"
+                      onClick={() => setVaporConsumoModalOpen(true)}
+                      hint={
+                        total != null
+                          ? `${nValid} caudales · alta ${pAlta?.toFixed(1) ?? '—'} / baja ${pBaja?.toFixed(1) ?? '—'} · ver detalle`
+                          : 'Sin datos · ver detalle'
                       }
                     />
-                  </SortableTile>
+                  </div>
                 );
-              })}
-            </div>
-          </SortableGroup>
+              }
+              if (key === CAUDAL_COMBO_ID) {
+                const c2 = caud2?.value ?? null;
+                const c3 = caud3?.value ?? null;
+                const c6 = caud6?.value ?? null;
+                const total = [c2, c3, c6]
+                  .filter((v): v is number => v != null)
+                  .reduce((a, b) => a + b, 0);
+                return (
+                  <div key={key}>
+                    <PremiumTile
+                      icon={<IconRipple size={14} />}
+                      label="Caudal Vapor Calderas"
+                      value={total}
+                      unit={caud2?.unit ?? caud6?.unit ?? 'Tn/H'}
+                      precision={1}
+                      accent="warn"
+                      updatedAt={caud2?.receivedAt ?? caud3?.receivedAt ?? caud6?.receivedAt}
+                      hint={
+                        `C2 ${c2 != null ? c2.toFixed(1) : '—'} · ` +
+                        `C3 ${c3 != null ? c3.toFixed(1) : '—'} · ` +
+                        `C6 ${c6 != null ? c6.toFixed(1) : '—'} · ver detalle`
+                      }
+                      onClick={() => setCaudalModalOpen(true)}
+                    />
+                  </div>
+                );
+              }
+              const item = data.get(key);
+              if (!item) return null;
+              const evalResult = evaluateValue(thresholds, 'energia', key, item.value);
+              return (
+                <div key={key}>
+                  <PremiumTile
+                    icon={iconFor(key)}
+                    label={key.replaceAll('_', ' ')}
+                    value={item.value}
+                    unit={item.unit ?? ''}
+                    precision={2}
+                    accent={accentForKey(key)}
+                    updatedAt={item.receivedAt}
+                    alert={
+                      evalResult.status === 'out' && evalResult.severity && evalResult.reason
+                        ? {
+                            severity: evalResult.severity,
+                            reason: evalResult.reason,
+                            min: evalResult.threshold?.min_value,
+                            max: evalResult.threshold?.max_value,
+                          }
+                        : null
+                    }
+                  />
+                </div>
+              );
+            })}
+          </div>
         )}
       </PremiumPanel>
 
