@@ -11,6 +11,9 @@ frontend/.env*
 GUIA_OPERATIVA.md
 
 
+# ─── Claude Code (worktrees, sesión local) ───
+.claude/
+
 # ─── Node ───
 node_modules/
 .pnpm-store/
