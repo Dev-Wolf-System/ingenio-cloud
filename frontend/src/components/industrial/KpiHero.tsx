@@ -9,17 +9,22 @@ import {
   IconAlertTriangle,
   IconTruck,
   IconWaveSine,
+  IconPlayerPause,
 } from '@tabler/icons-react';
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
 import { useTileOrder } from '@/lib/hooks/useTileOrder';
 import { useKanbanLock } from '@/lib/hooks/useKanbanLock';
+import { useParadasMC } from '@/lib/hooks/useParadasMC';
 import { formatHoraAR } from '@/lib/utils/format';
-import { PremiumTile, type TileAccent } from './PremiumTile';
+import { PremiumTile } from './PremiumTile';
 import { SortableGroup } from './SortableGroup';
 import { SortableTile } from './SortableTile';
 import { MoliendaEstadoModal, type MoliendaBloquesPayload } from './MoliendaEstadoModal';
 import { GasEstadoModal, type GasBloquesPayload, type GasHoraEnCurso, mergeGasHoraEnCurso } from './GasEstadoModal';
 import { AlertasModalAuto, type ActiveAlert } from './AlertasModalAuto';
+import { CanchonModal } from './CanchonModal';
+import { ParadasModal } from './ParadasModal';
+import { AlertasListModal } from './AlertasListModal';
 
 async function fetchAlerts() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL!;
@@ -119,7 +124,7 @@ function sumKeysIncluding(map: Map<string, DashboardItem>, patterns: string[]): 
   return found ? total : null;
 }
 
-const HERO_KEYS = ['molienda', 'bolsas', 'gas', 'color', 'camiones', 'alertas'] as const;
+const HERO_KEYS = ['molienda', 'bolsas', 'gas', 'color', 'camiones', 'paradas'] as const;
 
 export function KpiHero() {
   const energia = useDashboardData('energia');
@@ -150,6 +155,10 @@ export function KpiHero() {
   });
   const [moliendaModalOpen, setMoliendaModalOpen] = useState(false);
   const [gasModalOpen, setGasModalOpen] = useState(false);
+  const [canchonModalOpen, setCanchonModalOpen] = useState(false);
+  const [paradasModalOpen, setParadasModalOpen] = useState(false);
+  const [alertasListOpen, setAlertasListOpen] = useState(false);
+  const paradasMC = useParadasMC();
   const moliendaBloques = useQuery({
     queryKey: ['guardia', 'molienda-bloques'],
     queryFn: fetchMoliendaBloques,
@@ -197,7 +206,6 @@ export function KpiHero() {
   const alertsList = (alerts.data as { alerts?: { severity: string }[] } | undefined)?.alerts ?? [];
   const activeCount = alertsList.length;
   const criticalCount = alertsList.filter((a) => a.severity === 'critical').length;
-  const alertAccent: TileAccent = criticalCount > 0 ? 'danger' : activeCount > 0 ? 'warn' : 'accent';
 
   const renderTile = (id: string) => {
     switch (id) {
@@ -303,33 +311,36 @@ export function KpiHero() {
             precision={0}
             accent={totalCamiones != null && totalCamiones > 0 ? 'primary' : 'warn'}
             size="hero"
+            onClick={() => setCanchonModalOpen(true)}
             hint={
               canchon.isLoading
                 ? 'Consultando…'
                 : totalCamiones != null
-                ? 'Actualiza c/ 30 seg'
+                ? 'Actualiza c/ 30 seg · ver detalle'
                 : 'Sin señal'
             }
           />
         );
-      case 'alertas':
+      case 'paradas': {
+        const paradasHoy = paradasMC.data?.reliabilidad?.paradas_n ?? null;
         return (
           <PremiumTile
-            icon={<IconAlertTriangle size={14} />}
-            label="Alertas activas"
-            value={activeCount}
+            icon={<IconPlayerPause size={14} />}
+            label="Paradas del día"
+            value={paradasHoy ?? undefined}
+            unit="evt"
             precision={0}
-            accent={alertAccent}
+            accent={paradasHoy != null && paradasHoy > 0 ? 'warn' : 'accent'}
             size="hero"
+            onClick={() => setParadasModalOpen(true)}
             hint={
-              criticalCount > 0
-                ? `${criticalCount} críticas`
-                : activeCount > 0
-                ? `${activeCount} pendientes`
-                : 'Operación normal'
+              paradasHoy != null
+                ? `${paradasHoy} evento${paradasHoy === 1 ? '' : 's'} hoy · ver detalle`
+                : 'Cargando…'
             }
           />
         );
+      }
       default:
         return null;
     }
@@ -356,6 +367,27 @@ export function KpiHero() {
           })}
         </div>
       </SortableGroup>
+      {activeCount > 0 ? (
+        <button
+          onClick={() => setAlertasListOpen(true)}
+          className="mx-3 sm:mx-4 mb-3 flex items-center gap-2.5 rounded-lg border px-4 py-2.5 text-left transition-colors hover:bg-white/5"
+          style={{
+            borderColor: criticalCount > 0 ? 'var(--danger, #FF4757)' : 'var(--warn, #FFB800)',
+            background: criticalCount > 0 ? 'rgba(255,71,87,0.06)' : 'rgba(255,184,0,0.06)',
+          }}
+        >
+          <IconAlertTriangle size={14} className={criticalCount > 0 ? 'text-danger' : 'text-warn'} />
+          <span className="text-xs font-semibold text-text-primary">Alertas activas: {activeCount}</span>
+          <span className="text-xs text-text-muted ml-auto">
+            {criticalCount > 0 ? `${criticalCount} críticas` : `${activeCount} pendientes`} · ver detalle
+          </span>
+        </button>
+      ) : (
+        <div className="mx-3 sm:mx-4 mb-3 flex items-center gap-2.5 rounded-lg border px-4 py-2.5" style={{ borderColor: 'var(--border, #1E3A5F)' }}>
+          <IconAlertTriangle size={14} className="text-text-muted" />
+          <span className="text-xs text-text-muted">Operación normal — sin alertas activas</span>
+        </div>
+      )}
       <MoliendaEstadoModal
         open={moliendaModalOpen}
         onClose={() => setMoliendaModalOpen(false)}
@@ -369,6 +401,9 @@ export function KpiHero() {
         loading={gasBloques.isLoading}
       />
       <AlertasModalAuto alerts={alertsList as ActiveAlert[]} />
+      <CanchonModal open={canchonModalOpen} onClose={() => setCanchonModalOpen(false)} />
+      <ParadasModal open={paradasModalOpen} onClose={() => setParadasModalOpen(false)} />
+      <AlertasListModal open={alertasListOpen} onClose={() => setAlertasListOpen(false)} alerts={alertsList as ActiveAlert[]} />
     </>
   );
 }
