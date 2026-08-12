@@ -11,12 +11,8 @@ import {
   IconAlertTriangle,
 } from '@tabler/icons-react';
 import { useDashboardData, type DashboardItem } from '@/lib/hooks/useDashboardData';
-import { useTileOrder } from '@/lib/hooks/useTileOrder';
-import { useKanbanLock } from '@/lib/hooks/useKanbanLock';
 import { formatHoraAR } from '@/lib/utils/format';
 import { PremiumTile } from '@/components/industrial/PremiumTile';
-import { SortableGroup } from '@/components/industrial/SortableGroup';
-import { SortableTile } from '@/components/industrial/SortableTile';
 import {
   MoliendaEstadoModal,
   type MoliendaBloquesPayload,
@@ -27,9 +23,9 @@ import {
   type GasHoraEnCurso,
   mergeGasHoraEnCurso,
 } from '@/components/industrial/GasEstadoModal';
-import { ParadasModal } from './ParadasModal';
-import { CanchonModal } from './CanchonModal';
-import { useParadasMC } from '../_hooks/useParadasMC';
+import { ParadasModal } from '@/components/industrial/ParadasModal';
+import { CanchonModal } from '@/components/industrial/CanchonModal';
+import { useParadasMC } from '@/lib/hooks/useParadasMC';
 
 // ─── Fetchers (same as KpiHero) ───────────────────────────────────────────────
 
@@ -196,9 +192,6 @@ export function MoliendaHero() {
   // Paradas tile data — small inline query for the tile summary (periodo=dia, offset=0)
   const paradasTile = useParadasMC();
 
-  const { ordered, saveOrder } = useTileOrder('molienda-hero', [...HERO_KEYS]);
-  const { locked } = useKanbanLock();
-
   // Derived values
   const moliendaKg = molienda.data?.molienda_kg ?? null;
   const moliendaHora = molienda.data?.etiqueta ?? null;
@@ -357,15 +350,11 @@ export function MoliendaHero() {
 
   return (
     <>
-      <SortableGroup items={ordered} onReorder={saveOrder} disabled={locked}>
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
-          {ordered.map((id) => (
-            <SortableTile key={id} id={id}>
-              {renderTile(id)}
-            </SortableTile>
-          ))}
-        </div>
-      </SortableGroup>
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2 sm:gap-3 px-3 sm:px-4 py-3">
+        {HERO_KEYS.map((id) => (
+          <div key={id}>{renderTile(id)}</div>
+        ))}
+      </div>
 
       <MoliendaEstadoModal
         open={moliendaModalOpen}

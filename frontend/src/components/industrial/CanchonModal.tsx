@@ -9,9 +9,7 @@ import {
   IconX, IconTruck, IconClock, IconUsers, IconActivity,
   IconBuildingWarehouse, IconLeaf, IconBrain, IconAlertTriangle,
 } from '@tabler/icons-react';
-import { useCanchon, useAnalisCana } from '../_hooks/useMoliendaCloud';
-import type { CanchonResumen } from '../_types';
-import type { FincaAnalisRow, CañeroAnalisRow } from '../_hooks/useMoliendaCloud';
+import { useCanchon, useAnalisCana, type CanchonResumen, type FincaAnalisRow, type CañeroAnalisRow } from '@/lib/hooks/useCanchon';
 
 // ─── Tooltip ─────────────────────────────────────────────────────────────────
 

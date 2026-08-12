@@ -3,8 +3,7 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { IconMaximize, IconCircleFilled, IconActivity, IconBell, IconLock, IconLockOpen, IconClipboardText } from '@tabler/icons-react';
-import { useKanbanLock } from '@/lib/hooks/useKanbanLock';
+import { IconMaximize, IconCircleFilled, IconActivity, IconBell, IconClipboardText } from '@tabler/icons-react';
 import { useShiftWelcome } from '@/lib/hooks/useShiftWelcome';
 import { useClock } from '@/lib/hooks/useClock';
 import { useShift } from '@/lib/hooks/useShift';
@@ -20,7 +19,6 @@ export function TopBar({
   useEffect(() => setMounted(true), []);
   const now = useClock();
   const shift = useShift();
-  const { locked, toggle } = useKanbanLock();
   const { openBanner } = useShiftWelcome();
 
   const toggleFullscreen = () => {
@@ -124,15 +122,6 @@ export function TopBar({
           </button>
         )}
 
-        {/* Toggle bloqueo kanban (drag-drop tiles) */}
-        <button
-          onClick={toggle}
-          className="p-2 rounded-md hover:bg-bg-hover transition-colors text-text-muted hover:text-primary-light"
-          aria-label={locked ? 'Desbloquear reordenar paneles' : 'Bloquear reordenar paneles'}
-          title={locked ? 'Paneles bloqueados (click para permitir reordenar)' : 'Paneles desbloqueados (drag para mover)'}
-        >
-          {locked ? <IconLock size={17} /> : <IconLockOpen size={17} className="text-primary-light" />}
-        </button>
 
         {/* Cambiar tema claro/oscuro */}
         <ThemeToggle />
