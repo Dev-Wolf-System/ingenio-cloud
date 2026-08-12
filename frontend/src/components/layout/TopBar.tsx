@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { IconMaximize, IconCircleFilled, IconActivity, IconBell, IconClipboardText } from '@tabler/icons-react';
+import { useRouter } from 'next/navigation';
+import { IconMaximize, IconCircleFilled, IconActivity, IconBell, IconClipboardText, IconLogout } from '@tabler/icons-react';
 import { useShiftWelcome } from '@/lib/hooks/useShiftWelcome';
 import { useClock } from '@/lib/hooks/useClock';
 import { useShift } from '@/lib/hooks/useShift';
 import { formatTime } from '@/lib/utils/format';
+import { getSupabaseBrowser } from '@/lib/supabase/client';
 import { ThemeToggle } from './ThemeToggle';
 
 export function TopBar({
@@ -20,6 +22,14 @@ export function TopBar({
   const now = useClock();
   const shift = useShift();
   const { openBanner } = useShiftWelcome();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const supabase = getSupabaseBrowser();
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
 
   const toggleFullscreen = () => {
     if (typeof document === 'undefined') return;
@@ -146,6 +156,16 @@ export function TopBar({
           title="Fullscreen (F)"
         >
           <IconMaximize size={17} />
+        </button>
+
+        {/* Cerrar sesión */}
+        <button
+          onClick={handleLogout}
+          className="p-2 rounded-md hover:bg-bg-hover transition-colors text-text-muted hover:text-danger"
+          aria-label="Cerrar sesión"
+          title="Cerrar sesión"
+        >
+          <IconLogout size={17} />
         </button>
       </div>
     </header>
