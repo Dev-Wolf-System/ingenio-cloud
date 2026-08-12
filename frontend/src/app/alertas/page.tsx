@@ -10,7 +10,6 @@ import {
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
-import { PasswordGate } from '@/components/ui/PasswordGate';
 import { useAlertasConfig } from './_hooks/useAlertasConfig';
 import { AvisosConfigPanel } from './_components/AvisosConfigPanel';
 import { ThresholdsPanel } from './_components/ThresholdsPanel';
@@ -36,11 +35,6 @@ export default function AlertasConfigPage() {
     toggleBeep,
     toggleVoice,
     stats,
-    unlock,
-    pwdGateOpen,
-    setPwdGateOpen,
-    setPendingAction,
-    handlePwdSuccess,
   } = useAlertasConfig();
 
   return (
@@ -134,15 +128,6 @@ export default function AlertasConfigPage() {
         </main>
       </div>
 
-      {/* Password gate */}
-      <PasswordGate
-        isOpen={pwdGateOpen}
-        onSuccess={handlePwdSuccess}
-        onClose={() => { setPwdGateOpen(false); setPendingAction(null); }}
-        unlock={unlock}
-        title="Configuración protegida"
-        description="Ingresá la contraseña para modificar esta configuración."
-      />
       <Footer />
     </div>
   );

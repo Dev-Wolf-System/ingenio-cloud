@@ -1,7 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { usePasswordSession } from '@/lib/hooks/usePasswordSession';
+import { useEffect, useMemo, useState } from 'react';
 import {
   type Area,
   type Severity,
@@ -73,11 +72,6 @@ export function useAlertasConfig() {
   const [areaFilter, setAreaFilter] = useState<Area | 'all'>('all');
   const [search, setSearch] = useState('');
 
-  // Password session
-  const { unlocked, unlock } = usePasswordSession();
-  const [pwdGateOpen, setPwdGateOpen] = useState(false);
-  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-
   // Audio & modal toggles (sincronizados con localStorage)
   const [modalEnabled, setModalEnabled] = useState(true);
   const [beepEnabled, setBeepEnabled] = useState(true);
@@ -88,23 +82,6 @@ export function useAlertasConfig() {
     setBeepEnabled(getLs(LS_BEEP, true));
     setVoiceEnabled(getLs(LS_VOICE, false));
   }, []);
-
-  const runProtected = useCallback((fn: () => void) => {
-    if (unlocked) {
-      fn();
-    } else {
-      setPendingAction(() => fn);
-      setPwdGateOpen(true);
-    }
-  }, [unlocked]);
-
-  const handlePwdSuccess = useCallback(() => {
-    setPwdGateOpen(false);
-    if (pendingAction) {
-      pendingAction();
-      setPendingAction(null);
-    }
-  }, [pendingAction]);
 
   const reload = async () => {
     setLoading(true);
@@ -171,25 +148,25 @@ export function useAlertasConfig() {
     }
   };
 
-  const onSave = () => runProtected(doSave);
+  const onSave = () => doSave();
 
-  const toggleModal = () => runProtected(() => {
+  const toggleModal = () => {
     const next = !modalEnabled;
     setModalEnabled(next);
     setLs(LS_MODAL, next);
-  });
+  };
 
-  const toggleBeep = () => runProtected(() => {
+  const toggleBeep = () => {
     const next = !beepEnabled;
     setBeepEnabled(next);
     setLs(LS_BEEP, next);
-  });
+  };
 
-  const toggleVoice = () => runProtected(() => {
+  const toggleVoice = () => {
     const next = !voiceEnabled;
     setVoiceEnabled(next);
     setLs(LS_VOICE, next);
-  });
+  };
 
   const stats = useMemo(() => {
     const enabled = Array.from(thresholds.values()).filter((t) => t.enabled).length;
@@ -222,11 +199,5 @@ export function useAlertasConfig() {
     toggleBeep,
     toggleVoice,
     stats,
-    // password gate
-    unlock,
-    pwdGateOpen,
-    setPwdGateOpen,
-    setPendingAction,
-    handlePwdSuccess,
   };
 }
