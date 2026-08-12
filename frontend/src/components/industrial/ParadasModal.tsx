@@ -25,7 +25,7 @@ import {
   IconWaveSine,
   IconFlame,
 } from '@tabler/icons-react';
-import { useParadasMC } from '../_hooks/useParadasMC';
+import { useParadasMC } from '@/lib/hooks/useParadasMC';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
