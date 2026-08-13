@@ -7,44 +7,59 @@ import { usePathname } from 'next/navigation';
 import { m, AnimatePresence } from 'motion/react';
 import {
   IconLayoutDashboard,
-  IconBell,
   IconChartBar,
   IconChevronRight,
   IconFlask,
+  IconSettings,
+  IconUsers,
   type Icon as TablerIcon,
 } from '@tabler/icons-react';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 
 interface NavLeaf {
   href: string;
   label: string;
   icon?: TablerIcon;
+  section: string;
+  adminOnly?: boolean;
 }
 
 interface NavParent {
   label: string;
   icon: TablerIcon;
+  section: string;
   children: NavLeaf[];
 }
 
 const NAV_ITEMS: (NavLeaf | NavParent)[] = [
-  { href: '/', label: 'Dashboard', icon: IconLayoutDashboard },
+  { href: '/', label: 'Dashboard', icon: IconLayoutDashboard, section: 'dashboard' },
   {
     label: 'Laboratorio',
     icon: IconFlask,
+    section: 'laboratorio',
     children: [
-      { href: '/laboratorio/azucar', label: 'Análisis de Azúcar' },
-      { href: '/laboratorio/resumen-fabrica', label: 'Resumen de Fábrica' },
+      { href: '/laboratorio/azucar', label: 'Análisis de Azúcar', section: 'laboratorio' },
+      { href: '/laboratorio/resumen-fabrica', label: 'Resumen de Fábrica', section: 'laboratorio' },
     ],
   },
-  { href: '/alertas', label: 'Alertas', icon: IconBell },
-  { href: '/alertas/analisis', label: 'Análisis', icon: IconChartBar },
+  {
+    label: 'Configuraciones',
+    icon: IconSettings,
+    section: 'alertas',
+    children: [
+      { href: '/alertas', label: 'Alertas', section: 'alertas' },
+      { href: '/configuraciones/usuarios', label: 'Usuarios', section: 'alertas', icon: IconUsers, adminOnly: true },
+    ],
+  },
+  { href: '/alertas/analisis', label: 'Análisis', icon: IconChartBar, section: 'analisis' },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { role, allowedSections } = useCurrentUser();
   const [open, setOpen] = useState(false);
   const [hint, setHint] = useState(false);
-  const [labExpanded, setLabExpanded] = useState(false);
+  const [expandedLabel, setExpandedLabel] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cancelClose = () => {
@@ -160,15 +175,18 @@ export function Sidebar() {
             </div>
 
             <div className="flex-1 space-y-1 px-2 py-3">
-              {NAV_ITEMS.map((item) => {
+              {NAV_ITEMS.filter((item) => role === 'admin' || allowedSections.includes(item.section)).map((item) => {
                 if ('children' in item) {
                   const Icon = item.icon;
-                  const childActive = item.children.some((c) => pathname === c.href);
+                  const visibleChildren = item.children.filter((c) => !c.adminOnly || role === 'admin');
+                  if (visibleChildren.length === 0) return null;
+                  const expanded = expandedLabel === item.label;
+                  const childActive = visibleChildren.some((c) => pathname === c.href);
                   return (
                     <div key={item.label}>
                       <button
                         type="button"
-                        onClick={() => setLabExpanded((v) => !v)}
+                        onClick={() => setExpandedLabel((v) => (v === item.label ? null : item.label))}
                         className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                           childActive ? 'text-text-primary' : 'text-text-muted hover:text-text-primary'
                         }`}
@@ -178,22 +196,23 @@ export function Sidebar() {
                         <IconChevronRight
                           size={12}
                           className="ml-auto transition-transform"
-                          style={{ transform: labExpanded ? 'rotate(90deg)' : 'rotate(0deg)', color: labExpanded ? 'var(--primary)' : undefined }}
+                          style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', color: expanded ? 'var(--primary)' : undefined }}
                         />
                       </button>
-                      {labExpanded && (
+                      {expanded && (
                         <div className="pl-6 space-y-0.5">
-                          {item.children.map((child) => {
+                          {visibleChildren.map((child) => {
                             const active = pathname === child.href;
                             return (
                               <Link
                                 key={child.href}
                                 href={child.href}
                                 onClick={() => setOpen(false)}
-                                className={`block px-3 py-1.5 rounded-lg text-2xs font-medium transition-colors ${
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-2xs font-medium transition-colors ${
                                   active ? 'text-primary-light' : 'text-text-muted hover:text-text-primary'
                                 }`}
                               >
+                                {child.icon && <child.icon size={12} />}
                                 {child.label}
                               </Link>
                             );
