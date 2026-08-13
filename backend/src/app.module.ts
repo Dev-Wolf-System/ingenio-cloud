@@ -16,6 +16,7 @@ import { ReportesModule } from './modules/reportes/reportes.module';
 import { InfluxModule } from './modules/influx/influx.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { MoliendaCloudModule } from './modules/molienda-cloud/molienda-cloud.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { MoliendaCloudModule } from './modules/molienda-cloud/molienda-cloud.mod
     InfluxModule,
     NotificationsModule,
     MoliendaCloudModule,
+    UsersModule,
   ],
 })
 export class AppModule {}
