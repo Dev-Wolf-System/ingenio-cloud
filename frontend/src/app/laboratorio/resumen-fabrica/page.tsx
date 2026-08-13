@@ -14,6 +14,7 @@ import { IconBuildingFactory2, IconChevronLeft, IconChevronRight } from '@tabler
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
+import { SectionGuard } from '@/components/layout/SectionGuard';
 import { useLab } from '../../moliendacloud/_hooks/useMoliendaCloud';
 import type { LabRow } from '../../moliendacloud/_types';
 
@@ -270,6 +271,7 @@ export default function LaboratorioResumenFabricaPage() {
 
   return (
     <div className="relative min-h-screen flex flex-col">
+      <SectionGuard section="laboratorio" />
       <Sidebar />
       <TopBar plant="Laboratorio · Resumen de Fábrica" showAlertas={false} showResumenTurno={false} />
 

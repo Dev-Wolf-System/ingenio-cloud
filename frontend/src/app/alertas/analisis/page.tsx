@@ -5,6 +5,7 @@ import { IconArrowLeft, IconLoader2 } from '@tabler/icons-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
+import { SectionGuard } from '@/components/layout/SectionGuard';
 import { useAnalisis } from './_hooks/useAnalisis';
 import { useHistorial } from './_hooks/useHistorial';
 import { PeriodSelector } from './_components/PeriodSelector';
@@ -42,6 +43,7 @@ export default function AnalisisPage() {
 
   return (
     <div className="min-h-screen relative">
+      <SectionGuard section="analisis" />
       {/* Background gradient — industrial dark */}
       <div
         aria-hidden

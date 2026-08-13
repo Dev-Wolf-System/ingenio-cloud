@@ -1,6 +1,7 @@
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
+import { SectionGuard } from '@/components/layout/SectionGuard';
 import { ConnectionBanner } from '@/components/layout/ConnectionBanner';
 import { ShiftTimeline } from '@/components/industrial/ShiftTimeline';
 import { ShiftWelcomeBanner } from '@/components/industrial/ShiftWelcomeBanner';
@@ -16,6 +17,7 @@ import { CopilotBanner } from '@/components/industrial/CopilotBanner';
 export default function DashboardPage() {
   return (
     <div className="relative min-h-screen flex flex-col">
+      <SectionGuard section="dashboard" />
       {/* Background accent */}
       <div
         aria-hidden

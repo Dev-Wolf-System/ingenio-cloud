@@ -8,6 +8,7 @@ import { IconFlask, IconChevronLeft, IconChevronRight, IconAlertTriangle } from 
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
+import { SectionGuard } from '@/components/layout/SectionGuard';
 import { useAzucar } from '../../moliendacloud/_hooks/useMoliendaCloud';
 import type { EspRow } from '../../moliendacloud/_hooks/useMoliendaCloud';
 
@@ -241,6 +242,7 @@ export default function LaboratorioAzucarPage() {
 
   return (
     <div className="relative min-h-screen flex flex-col">
+      <SectionGuard section="laboratorio" />
       <Sidebar />
       <TopBar plant="Laboratorio · Análisis de Azúcar" showAlertas={false} showResumenTurno={false} />
 

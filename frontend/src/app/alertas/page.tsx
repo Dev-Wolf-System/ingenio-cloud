@@ -10,6 +10,7 @@ import {
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
+import { SectionGuard } from '@/components/layout/SectionGuard';
 import { useAlertasConfig } from './_hooks/useAlertasConfig';
 import { AvisosConfigPanel } from './_components/AvisosConfigPanel';
 import { ThresholdsPanel } from './_components/ThresholdsPanel';
@@ -39,6 +40,7 @@ export default function AlertasConfigPage() {
 
   return (
     <div className="min-h-screen relative">
+      <SectionGuard section="alertas" />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"

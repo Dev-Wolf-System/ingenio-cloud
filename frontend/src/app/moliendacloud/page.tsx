@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils/cn';
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
+import { SectionGuard } from '@/components/layout/SectionGuard';
 import { HeightMatchedGrid } from '@/components/industrial/HeightMatchedGrid';
 import { MoliendaProduccionHora } from '@/components/industrial/MoliendaProduccionHora';
 import { MoliendaHero } from './_components/MoliendaHero';
@@ -164,6 +165,7 @@ function TrapicheEstadoBar() {
 export default function MoliendaCloudPage() {
   return (
     <div className="relative min-h-screen flex flex-col">
+      <SectionGuard section="laboratorio" />
       {/* Background accent */}
       <div
         aria-hidden
