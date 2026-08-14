@@ -69,8 +69,8 @@ export default function LoginPage() {
             filter: 'blur(44px)',
             opacity: 0.5,
           }}
-          animate={{ x: [0, 30, 0], y: [0, 20, 0] }}
-          transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
+          animate={{ x: [0, 50, 0], y: [0, 35, 0], scale: [1, 1.15, 1] }}
+          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
         />
         <m.div
           className="absolute rounded-full pointer-events-none"
@@ -83,8 +83,8 @@ export default function LoginPage() {
             filter: 'blur(44px)',
             opacity: 0.4,
           }}
-          animate={{ x: [0, -25, 0], y: [0, -20, 0] }}
-          transition={{ duration: 19, repeat: Infinity, ease: 'easeInOut' }}
+          animate={{ x: [0, -45, 0], y: [0, -35, 0], scale: [1, 1.15, 1] }}
+          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
         />
 
         <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 440" preserveAspectRatio="none">
@@ -97,8 +97,8 @@ export default function LoginPage() {
             key={i}
             className="absolute rounded-full pointer-events-none"
             style={{ top: n.top, left: n.left, width: 4, height: 4, background: 'var(--primary-light)' }}
-            animate={{ opacity: [0.3, 1, 0.3], scale: [1, 1.8, 1] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut', delay: n.delay }}
+            animate={{ opacity: [0.3, 1, 0.3], scale: [1, 2.2, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: n.delay }}
           />
         ))}
 
@@ -109,17 +109,20 @@ export default function LoginPage() {
           className="relative z-10 flex flex-col items-center"
         >
           <m.div
-            className="w-[76px] h-[76px] rounded-2xl flex items-center justify-center mb-5 p-2"
+            className="w-[96px] h-[96px] rounded-2xl flex items-center justify-center mb-5 p-2.5"
             style={{ background: 'var(--logo-plate-bg)', border: '1px solid var(--logo-plate-ring)' }}
-            animate={{ boxShadow: ['0 0 40px var(--primary-glow)', '0 0 56px var(--primary-glow)', '0 0 40px var(--primary-glow)'] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            animate={{
+              boxShadow: ['0 0 36px var(--primary-glow)', '0 0 64px var(--primary-glow)', '0 0 36px var(--primary-glow)'],
+              scale: [1, 1.05, 1],
+            }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <Image src="/logo-ingenio-cloud.png" alt="Ingenio Cloud" width={56} height={56} className="object-contain" priority />
+            <Image src="/logo-ingenio-cloud.png" alt="Ingenio Cloud" width={72} height={72} className="object-contain" priority />
           </m.div>
           <h1 className="text-[28px] font-bold tracking-tight mb-3.5" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
             Ingenio <span style={{ color: 'var(--primary-light)' }}>Cloud</span>
           </h1>
-          <p className="text-base max-w-[340px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-lg max-w-[340px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             Plataforma Inteligente de Monitoreo, Producción y Asistencia Operativa Industrial
           </p>
         </m.div>
@@ -141,17 +144,20 @@ export default function LoginPage() {
             className="flex md:hidden flex-col items-center text-center mb-7"
           >
             <m.div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 p-1.5"
+              className="w-[76px] h-[76px] rounded-2xl flex items-center justify-center mb-3 p-2"
               style={{ background: 'var(--logo-plate-bg)', border: '1px solid var(--logo-plate-ring)' }}
-              animate={{ boxShadow: ['0 0 24px var(--primary-glow)', '0 0 36px var(--primary-glow)', '0 0 24px var(--primary-glow)'] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              animate={{
+                boxShadow: ['0 0 24px var(--primary-glow)', '0 0 44px var(--primary-glow)', '0 0 24px var(--primary-glow)'],
+                scale: [1, 1.05, 1],
+              }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
             >
-              <Image src="/logo-ingenio-cloud.png" alt="Ingenio Cloud" width={44} height={44} className="object-contain" priority />
+              <Image src="/logo-ingenio-cloud.png" alt="Ingenio Cloud" width={58} height={58} className="object-contain" priority />
             </m.div>
             <h1 className="text-xl font-bold tracking-tight mb-1.5" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
               Ingenio <span style={{ color: 'var(--primary-light)' }}>Cloud</span>
             </h1>
-            <p className="text-sm max-w-[280px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            <p className="text-base max-w-[280px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               Plataforma Inteligente de Monitoreo, Producción y Asistencia Operativa Industrial
             </p>
           </m.div>
