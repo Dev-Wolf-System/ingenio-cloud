@@ -11,8 +11,17 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.use(helmet({ contentSecurityPolicy: false }));
 
+  const allowedOrigins = [process.env.FRONTEND_URL].filter(
+    (v): v is string => !!v,
+  );
+  if (process.env.NODE_ENV !== 'production') {
+    allowedOrigins.push('http://localhost:3000');
+  }
   app.enableCors({
-    origin: (_origin, cb) => cb(null, true),
+    origin: (origin, cb) => {
+      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      cb(new Error(`Origen no permitido por CORS: ${origin}`), false);
+    },
     credentials: true,
   });
 
