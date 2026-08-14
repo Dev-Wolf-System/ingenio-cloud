@@ -8,7 +8,7 @@ import { Footer } from '@/components/layout/Footer';
 import { SectionGuard } from '@/components/layout/SectionGuard';
 import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { SECTIONS } from '@/lib/constants/sections';
-import { getSupabaseBrowser } from '@/lib/supabase/client';
+import { authHeaders } from '@/lib/utils/authHeaders';
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -20,15 +20,6 @@ interface UserSummary {
   banned: boolean;
   createdAt: string | null;
   lastSignInAt: string | null;
-}
-
-async function authHeaders(): Promise<HeadersInit> {
-  const { data } = await getSupabaseBrowser().auth.getSession();
-  const token = data.session?.access_token;
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
 }
 
 async function fetchUsers(): Promise<UserSummary[]> {
