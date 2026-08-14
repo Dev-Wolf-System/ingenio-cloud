@@ -31,7 +31,10 @@ import { UsersModule } from './modules/users/users.module';
           process.env.NODE_ENV !== 'production'
             ? { target: 'pino-pretty', options: { singleLine: true } }
             : undefined,
-        redact: ['req.headers.authorization', 'req.headers["x-webhook-secret"]'],
+        redact: [
+          'req.headers.authorization',
+          'req.headers["x-webhook-secret"]',
+        ],
       },
     }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),

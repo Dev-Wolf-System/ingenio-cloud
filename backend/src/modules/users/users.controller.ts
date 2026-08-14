@@ -1,6 +1,19 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { AdminAuthGuard } from '../../common/guards/admin-auth.guard';
-import { UsersService, type CreateUserInput, type UpdateUserInput } from './users.service';
+import {
+  UsersService,
+  type CreateUserInput,
+  type UpdateUserInput,
+} from './users.service';
 
 @Controller('users')
 @UseGuards(AdminAuthGuard)

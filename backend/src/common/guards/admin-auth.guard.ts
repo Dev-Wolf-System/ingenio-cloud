@@ -30,7 +30,9 @@ export class AdminAuthGuard implements CanActivate {
 
     const role = (data.user.user_metadata as { role?: string } | null)?.role;
     if (role !== 'admin') {
-      this.logger.warn(`Acceso denegado a ${data.user.email} (role=${role ?? 'ninguno'})`);
+      this.logger.warn(
+        `Acceso denegado a ${data.user.email} (role=${role ?? 'ninguno'})`,
+      );
       throw new ForbiddenException('Requiere rol admin');
     }
 
