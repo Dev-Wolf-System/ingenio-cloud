@@ -11,6 +11,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
 import { SectionGuard } from '@/components/layout/SectionGuard';
+import { useCurrentUser } from '@/lib/hooks/useCurrentUser';
 import { useAlertasConfig } from './_hooks/useAlertasConfig';
 import { AvisosConfigPanel } from './_components/AvisosConfigPanel';
 import { ThresholdsPanel } from './_components/ThresholdsPanel';
@@ -37,6 +38,8 @@ export default function AlertasConfigPage() {
     toggleVoice,
     stats,
   } = useAlertasConfig();
+  const { role, editSections } = useCurrentUser();
+  const canEdit = role === 'admin' || editSections.includes('alertas');
 
   return (
     <div className="min-h-screen relative">
@@ -84,25 +87,27 @@ export default function AlertasConfigPage() {
               >
                 Ver análisis e historial →
               </Link>
-              <button
-                onClick={onSave}
-                disabled={saving}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-md border-2 transition-all"
-                style={{
-                  background: saveOk
-                    ? 'rgba(74,184,150,0.14)'
-                    : 'rgba(91,155,201,0.12)',
-                  borderColor: saveOk ? 'rgba(74,184,150,0.45)' : 'rgba(91,155,201,0.35)',
-                  color: saveOk ? '#4ab896' : '#5b9bc9',
-                  boxShadow: saveOk
-                    ? '0 0 18px rgba(74,184,150,0.28)'
-                    : '0 0 14px rgba(91,155,201,0.14)',
-                  opacity: saving ? 0.5 : 1,
-                }}
-              >
-                {saveOk ? <IconCheck size={14} /> : <IconDeviceFloppy size={14} />}
-                {saving ? 'Guardando…' : saveOk ? 'Guardado' : 'Guardar cambios'}
-              </button>
+              {canEdit && (
+                <button
+                  onClick={onSave}
+                  disabled={saving}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider px-4 py-2 rounded-md border-2 transition-all"
+                  style={{
+                    background: saveOk
+                      ? 'rgba(74,184,150,0.14)'
+                      : 'rgba(91,155,201,0.12)',
+                    borderColor: saveOk ? 'rgba(74,184,150,0.45)' : 'rgba(91,155,201,0.35)',
+                    color: saveOk ? '#4ab896' : '#5b9bc9',
+                    boxShadow: saveOk
+                      ? '0 0 18px rgba(74,184,150,0.28)'
+                      : '0 0 14px rgba(91,155,201,0.14)',
+                    opacity: saving ? 0.5 : 1,
+                  }}
+                >
+                  {saveOk ? <IconCheck size={14} /> : <IconDeviceFloppy size={14} />}
+                  {saving ? 'Guardando…' : saveOk ? 'Guardado' : 'Guardar cambios'}
+                </button>
+              )}
             </div>
           </header>
 

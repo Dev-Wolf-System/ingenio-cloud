@@ -14,6 +14,7 @@ import {
   getLs,
   setLs,
 } from '../_types';
+import { authHeaders } from '@/lib/utils/authHeaders';
 
 // ── fetch functions ──────────────────────────────────────────────────────────
 
@@ -54,7 +55,7 @@ async function fetchThresholds(): Promise<Threshold[]> {
 async function saveThresholds(thresholds: Threshold[]) {
   const res = await fetch(`${apiUrl}/alerts/thresholds`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await authHeaders(),
     body: JSON.stringify({ thresholds }),
   });
   if (!res.ok) throw new Error(`save ${res.status}`);
