@@ -6,27 +6,158 @@ import Image from 'next/image';
 import { m, AnimatePresence } from 'motion/react';
 import { IconAlertCircle, IconLoader2, IconEye, IconEyeOff } from '@tabler/icons-react';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
+import { Footer } from '@/components/layout/Footer';
 
+// Red de sensores animada — grilla de nodos (x/y en % de pantalla completa)
 const NODES = [
-  { top: '16%', left: '15%', delay: 0 },
-  { top: '34%', left: '35%', delay: -0.5 },
-  { top: '52%', left: '22%', delay: -1 },
-  { top: '41%', left: '58%', delay: -1.5 },
-  { top: '27%', left: '75%', delay: -2 },
-  { top: '70%', left: '40%', delay: -0.8 },
-  { top: '77%', left: '65%', delay: -1.3 },
-  { top: '59%', left: '78%', delay: -2.2 },
+  { x: 8, y: 12, hub: true, delay: 0 },
+  { x: 22, y: 28, hub: false, delay: -0.4 },
+  { x: 14, y: 52, hub: false, delay: -1.1 },
+  { x: 33, y: 64, hub: false, delay: -0.7 },
+  { x: 6, y: 78, hub: false, delay: -1.6 },
+  { x: 44, y: 18, hub: true, delay: -0.3 },
+  { x: 58, y: 34, hub: false, delay: -1.9 },
+  { x: 50, y: 52, hub: false, delay: -0.9 },
+  { x: 38, y: 86, hub: false, delay: -1.3 },
+  { x: 64, y: 72, hub: false, delay: -0.5 },
+  { x: 76, y: 20, hub: true, delay: -1.7 },
+  { x: 82, y: 44, hub: false, delay: -0.2 },
+  { x: 70, y: 58, hub: false, delay: -1.4 },
+  { x: 88, y: 66, hub: false, delay: -0.8 },
+  { x: 92, y: 84, hub: false, delay: -1.1 },
+  { x: 56, y: 88, hub: false, delay: -0.6 },
+  { x: 26, y: 8, hub: false, delay: -1.5 },
+  { x: 96, y: 10, hub: false, delay: -0.3 },
+] as const;
+
+// Pares de índices en NODES que se conectan
+const EDGES: [number, number][] = [
+  [0, 1], [0, 16], [1, 2], [1, 5], [2, 3], [2, 4], [3, 7], [3, 8], [4, 8],
+  [5, 6], [5, 16], [6, 7], [6, 10], [7, 9], [7, 12], [8, 15], [9, 12],
+  [9, 13], [10, 11], [10, 17], [11, 12], [11, 13], [12, 15], [13, 14], [14, 15],
 ];
 
-const LINES = [
-  'M 60,70 L 140,150',
-  'M 140,150 L 90,230',
-  'M 140,150 L 230,180',
-  'M 230,180 L 300,120',
-  'M 90,230 L 160,310',
-  'M 160,310 L 260,340',
-  'M 230,180 L 310,260',
-];
+// Subconjunto de EDGES por los que "viaja" un pulso de dato
+const PULSE_EDGES: [number, number][] = [[0, 1], [6, 7], [10, 11], [12, 15]];
+
+// Nodos hub que emiten un ping de señal
+const HUB_INDICES = NODES.reduce<number[]>((acc, n, i) => (n.hub ? [...acc, i] : acc), []);
+
+function SensorNetworkBackground() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ background: 'var(--bg-base, #12151c)' }}>
+      {/* Textura de puntos */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: 'radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
+          opacity: 0.35,
+        }}
+      />
+
+      {/* Blobs atmosféricos */}
+      <m.div
+        className="absolute rounded-full"
+        style={{
+          width: 320, height: 320, top: '-8%', left: '-6%',
+          background: 'radial-gradient(circle, var(--primary-glow), transparent 70%)',
+          filter: 'blur(50px)', opacity: 0.55,
+        }}
+        animate={{ x: [0, 50, 0], y: [0, 35, 0], scale: [1, 1.15, 1] }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <m.div
+        className="absolute rounded-full"
+        style={{
+          width: 280, height: 280, bottom: '-8%', right: '-4%',
+          background: 'radial-gradient(circle, var(--accent-glow), transparent 70%)',
+          filter: 'blur(50px)', opacity: 0.45,
+        }}
+        animate={{ x: [0, -45, 0], y: [0, -35, 0], scale: [1, 1.15, 1] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <m.div
+        className="absolute rounded-full"
+        style={{
+          width: 220, height: 220, bottom: '5%', left: '18%',
+          background: 'radial-gradient(circle, var(--primary-glow), transparent 70%)',
+          filter: 'blur(46px)', opacity: 0.3,
+        }}
+        animate={{ x: [0, 30, 0], y: [0, -25, 0], scale: [1, 1.1, 1] }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      {/* Líneas de la red */}
+      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+        {EDGES.map(([a, b], i) => {
+          const na = NODES[a];
+          const nb = NODES[b];
+          return (
+            <m.line
+              key={i}
+              x1={na.x} y1={na.y} x2={nb.x} y2={nb.y}
+              stroke="var(--primary-light)"
+              strokeWidth="0.12"
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={{ pathLength: 1, opacity: 0.22 }}
+              transition={{ duration: 1.4, delay: 0.3 + i * 0.04, ease: [0.16, 1, 0.3, 1] }}
+            />
+          );
+        })}
+      </svg>
+
+      {/* Nodos */}
+      {NODES.map((n, i) => (
+        <m.div
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            top: `${n.y}%`, left: `${n.x}%`,
+            width: n.hub ? 7 : 3.5, height: n.hub ? 7 : 3.5,
+            background: n.hub ? 'var(--primary-light)' : 'var(--text-secondary)',
+            boxShadow: n.hub ? '0 0 10px var(--primary-glow)' : undefined,
+          }}
+          animate={{ opacity: [0.3, 1, 0.3], scale: [1, n.hub ? 1.6 : 2.2, 1] }}
+          transition={{ duration: n.hub ? 2.6 : 2, repeat: Infinity, ease: 'easeInOut', delay: n.delay }}
+        />
+      ))}
+
+      {/* Pings de señal — solo nodos hub */}
+      {HUB_INDICES.map((idx, i) => {
+        const n = NODES[idx];
+        return (
+          <m.div
+            key={idx}
+            className="absolute rounded-full"
+            style={{ top: `${n.y}%`, left: `${n.x}%`, width: 26, height: 26, marginTop: -13, marginLeft: -13, border: '1px solid var(--primary-light)' }}
+            animate={{ scale: [0.4, 2.6], opacity: [0.55, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeOut', delay: i * 1 }}
+          />
+        );
+      })}
+
+      {/* Pulsos de datos viajando por la red */}
+      {PULSE_EDGES.map(([a, b], i) => {
+        const na = NODES[a];
+        const nb = NODES[b];
+        return (
+          <m.div
+            key={i}
+            className="absolute rounded-full"
+            style={{ width: 3, height: 3, marginTop: -1.5, marginLeft: -1.5, background: 'var(--accent)', boxShadow: '0 0 6px var(--accent-glow)' }}
+            animate={{
+              top: [`${na.y}%`, `${nb.y}%`],
+              left: [`${na.x}%`, `${nb.x}%`],
+              opacity: [0, 1, 1, 0],
+            }}
+            transition={{ duration: 2.6, repeat: Infinity, ease: 'linear', delay: i * 1.4, repeatDelay: 0.6 }}
+          />
+        );
+      })}
+    </div>
+  );
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -52,56 +183,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex" style={{ background: 'var(--bg-surface)' }}>
+    <div className="h-screen flex flex-col overflow-hidden relative" style={{ background: 'var(--bg-surface)' }}>
+    <SensorNetworkBackground />
+    <div className="flex-1 flex min-h-0 relative z-10">
       {/* Panel branding — oculto en mobile */}
-      <div
-        className="hidden md:flex flex-1 relative flex-col items-center justify-center px-10 text-center overflow-hidden"
-        style={{ background: 'var(--bg-base, #12151c)' }}
-      >
-        <m.div
-          className="absolute rounded-full pointer-events-none"
-          style={{
-            width: 280,
-            height: 280,
-            top: -60,
-            left: -40,
-            background: 'radial-gradient(circle, var(--primary-glow), transparent 70%)',
-            filter: 'blur(44px)',
-            opacity: 0.5,
-          }}
-          animate={{ x: [0, 50, 0], y: [0, 35, 0], scale: [1, 1.15, 1] }}
-          transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
-        />
-        <m.div
-          className="absolute rounded-full pointer-events-none"
-          style={{
-            width: 240,
-            height: 240,
-            bottom: -50,
-            right: -30,
-            background: 'radial-gradient(circle, var(--accent-glow), transparent 70%)',
-            filter: 'blur(44px)',
-            opacity: 0.4,
-          }}
-          animate={{ x: [0, -45, 0], y: [0, -35, 0], scale: [1, 1.15, 1] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-        />
-
-        <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 400 440" preserveAspectRatio="none">
-          {LINES.map((d, i) => (
-            <path key={i} d={d} stroke="var(--primary-light)" strokeWidth="1" fill="none" opacity="0.25" />
-          ))}
-        </svg>
-        {NODES.map((n, i) => (
-          <m.div
-            key={i}
-            className="absolute rounded-full pointer-events-none"
-            style={{ top: n.top, left: n.left, width: 4, height: 4, background: 'var(--primary-light)' }}
-            animate={{ opacity: [0.3, 1, 0.3], scale: [1, 2.2, 1] }}
-            transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut', delay: n.delay }}
-          />
-        ))}
-
+      <div className="hidden md:flex flex-1 relative flex-col items-center justify-center px-10 text-center overflow-hidden">
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -129,7 +215,7 @@ export default function LoginPage() {
       </div>
 
       {/* Panel form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-10">
+      <div className="flex-1 flex items-center justify-center px-6 py-6 overflow-y-auto">
         <m.div
           initial={{ opacity: 0, x: 24 }}
           animate={{ opacity: 1, x: 0 }}
@@ -242,6 +328,8 @@ export default function LoginPage() {
           </form>
         </m.div>
       </div>
+    </div>
+    <Footer />
     </div>
   );
 }

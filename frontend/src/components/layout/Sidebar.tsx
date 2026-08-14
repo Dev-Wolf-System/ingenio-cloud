@@ -58,7 +58,6 @@ export function Sidebar() {
   const pathname = usePathname();
   const { role, allowedSections } = useCurrentUser();
   const [open, setOpen] = useState(false);
-  const [hint, setHint] = useState(false);
   const [expandedLabel, setExpandedLabel] = useState<string | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -73,43 +72,20 @@ export function Sidebar() {
     cancelClose();
     closeTimer.current = setTimeout(() => {
       setOpen(false);
-      setHint(false);
     }, 300);
   };
 
   return (
     <>
-      {/* Franja de detección — desktop, invisible, borde izquierdo */}
+      {/* Franja de detección — desktop, invisible, borde izquierdo, abre directo al hacer hover */}
       <div
         className="hidden md:block fixed left-0 top-0 bottom-0 w-3.5 z-40"
         onMouseEnter={() => {
           cancelClose();
-          setHint(true);
+          setOpen(true);
         }}
         onMouseLeave={scheduleClose}
       />
-
-      {/* Flechita de hint — desktop */}
-      <AnimatePresence>
-        {hint && !open && (
-          <m.button
-            initial={{ opacity: 0, x: -6 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -6 }}
-            transition={{ duration: 0.15 }}
-            onMouseEnter={() => {
-              cancelClose();
-              setOpen(true);
-            }}
-            onClick={() => setOpen(true)}
-            aria-label="Abrir navegación"
-            className="hidden md:flex fixed left-1 top-1/2 -translate-y-1/2 z-40 w-7 h-7 rounded-full items-center justify-center bg-bg-card border border-border-strong text-primary-light"
-            style={{ boxShadow: '0 0 10px var(--primary-glow)' }}
-          >
-            <IconChevronRight size={18} />
-          </m.button>
-        )}
-      </AnimatePresence>
 
       {/* Pestaña fija — mobile/touch, siempre visible (no hay hover), con ícono para que se note */}
       <button
@@ -144,7 +120,7 @@ export function Sidebar() {
             transition={{ type: 'spring', damping: 28, stiffness: 300 }}
             onMouseEnter={cancelClose}
             onMouseLeave={scheduleClose}
-            className="fixed left-0 top-0 bottom-0 z-40 w-[190px] flex flex-col border-r border-border"
+            className="fixed left-0 top-0 bottom-0 z-40 w-[230px] flex flex-col border-r border-border"
             style={{
               background: 'var(--header-bg)',
               backdropFilter: 'blur(16px)',
@@ -153,9 +129,9 @@ export function Sidebar() {
             }}
           >
             {/* Header propio — logo + nombre, no depende del scroll del TopBar */}
-            <div className="flex items-center gap-2.5 px-3 h-16 border-b border-border shrink-0">
+            <div className="flex items-center gap-3 px-4 h-[72px] border-b border-border shrink-0">
               <div
-                className="relative w-8 h-8 flex items-center justify-center rounded-lg overflow-hidden p-1 shrink-0"
+                className="relative w-10 h-10 flex items-center justify-center rounded-lg overflow-hidden p-1 shrink-0"
                 style={{
                   background: 'var(--logo-plate-bg)',
                   boxShadow: '0 0 0 1px var(--logo-plate-ring), 0 2px 8px rgba(0,0,0,0.18)',
@@ -164,17 +140,17 @@ export function Sidebar() {
                 <Image
                   src="/logo-ingenio-cloud.png"
                   alt="Ingenio Cloud"
-                  width={28}
-                  height={28}
+                  width={34}
+                  height={34}
                   className="object-contain"
                 />
               </div>
-              <span className="text-sm font-semibold text-text-primary tracking-tight leading-tight">
+              <span className="text-base font-semibold text-text-primary tracking-tight leading-tight">
                 Ingenio <span className="text-primary-light">Cloud</span>
               </span>
             </div>
 
-            <div className="flex-1 space-y-1 px-2 py-3">
+            <div className="flex-1 space-y-1.5 px-3 py-4">
               {NAV_ITEMS.filter((item) => role === 'admin' || allowedSections.includes(item.section)).map((item) => {
                 if ('children' in item) {
                   const Icon = item.icon;
@@ -187,20 +163,20 @@ export function Sidebar() {
                       <button
                         type="button"
                         onClick={() => setExpandedLabel((v) => (v === item.label ? null : item.label))}
-                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                        className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
                           childActive ? 'text-text-primary' : 'text-text-muted hover:text-text-primary'
                         }`}
                       >
-                        <Icon size={16} />
+                        <Icon size={19} />
                         {item.label}
                         <IconChevronRight
-                          size={12}
+                          size={14}
                           className="ml-auto transition-transform"
                           style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', color: expanded ? 'var(--primary)' : undefined }}
                         />
                       </button>
                       {expanded && (
-                        <div className="pl-6 space-y-0.5">
+                        <div className="pl-7 space-y-1">
                           {visibleChildren.map((child) => {
                             const active = pathname === child.href;
                             return (
@@ -208,11 +184,11 @@ export function Sidebar() {
                                 key={child.href}
                                 href={child.href}
                                 onClick={() => setOpen(false)}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-2xs font-medium transition-colors ${
+                                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                                   active ? 'text-primary-light' : 'text-text-muted hover:text-text-primary'
                                 }`}
                               >
-                                {child.icon && <child.icon size={12} />}
+                                {child.icon && <child.icon size={14} />}
                                 {child.label}
                               </Link>
                             );
@@ -229,7 +205,7 @@ export function Sidebar() {
                     key={href}
                     href={href}
                     onClick={() => setOpen(false)}
-                    className={`relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                    className={`relative flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-semibold transition-colors ${
                       active ? 'text-text-primary bg-primary-soft' : 'text-text-muted hover:text-text-primary'
                     }`}
                   >
@@ -239,13 +215,13 @@ export function Sidebar() {
                         style={{ boxShadow: '0 0 6px var(--primary)' }}
                       />
                     )}
-                    {Icon && <Icon size={16} />}
+                    {Icon && <Icon size={19} />}
                     {label}
                   </Link>
                 );
               })}
             </div>
-            <div className="text-2xs text-text-muted px-3 pt-2 mt-2 border-t border-border">
+            <div className="text-xs text-text-muted px-4 pt-3 mt-2 border-t border-border">
               Ingenio Cloud · v2.0
             </div>
           </m.nav>
