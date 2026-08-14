@@ -6,6 +6,7 @@ export interface UserSummary {
   email: string;
   role: 'admin' | 'user';
   allowedSections: string[];
+  editSections: string[];
   banned: boolean;
   createdAt: string | null;
   lastSignInAt: string | null;
@@ -16,11 +17,13 @@ export interface CreateUserInput {
   password: string;
   role: 'admin' | 'user';
   allowedSections: string[];
+  editSections: string[];
 }
 
 export interface UpdateUserInput {
   role?: 'admin' | 'user';
   allowedSections?: string[];
+  editSections?: string[];
   banned?: boolean;
 }
 
@@ -39,12 +42,14 @@ export class UsersService {
     const meta = (u.user_metadata ?? {}) as {
       role?: string;
       allowed_sections?: string[];
+      edit_sections?: string[];
     };
     return {
       id: u.id,
       email: u.email ?? '',
       role: meta.role === 'admin' ? 'admin' : 'user',
       allowedSections: meta.allowed_sections ?? [],
+      editSections: meta.edit_sections ?? [],
       banned: !!u.banned_until && new Date(u.banned_until) > new Date(),
       createdAt: u.created_at ?? null,
       lastSignInAt: u.last_sign_in_at ?? null,
@@ -65,6 +70,7 @@ export class UsersService {
       user_metadata: {
         role: input.role,
         allowed_sections: input.allowedSections,
+        edit_sections: input.editSections,
       },
     });
     if (error || !data.user)
@@ -79,11 +85,18 @@ export class UsersService {
       user_metadata?: Record<string, unknown>;
       ban_duration?: string;
     } = {};
-    if (input.role !== undefined || input.allowedSections !== undefined) {
+    if (
+      input.role !== undefined ||
+      input.allowedSections !== undefined ||
+      input.editSections !== undefined
+    ) {
       patch.user_metadata = {
         ...(input.role !== undefined ? { role: input.role } : {}),
         ...(input.allowedSections !== undefined
           ? { allowed_sections: input.allowedSections }
+          : {}),
+        ...(input.editSections !== undefined
+          ? { edit_sections: input.editSections }
           : {}),
       };
     }
