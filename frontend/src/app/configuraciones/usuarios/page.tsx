@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { IconUserPlus, IconTrash, IconLock, IconLockOpen, IconX } from '@tabler/icons-react';
+import { IconUserPlus, IconTrash, IconLock, IconLockOpen, IconX, IconPencil } from '@tabler/icons-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Footer } from '@/components/layout/Footer';
@@ -17,6 +17,7 @@ interface UserSummary {
   email: string;
   role: 'admin' | 'user';
   allowedSections: string[];
+  editSections: string[];
   banned: boolean;
   createdAt: string | null;
   lastSignInAt: string | null;
@@ -38,6 +39,7 @@ export default function UsuariosPage() {
   const [users, setUsers] = useState<UserSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserSummary | null>(null);
 
   const reload = async () => {
     setLoading(true);
@@ -141,6 +143,9 @@ export default function UsuariosPage() {
                     <td className="px-4 py-2.5 tabular-nums" style={{ color: 'var(--text-secondary)' }}>{fmtDate(u.lastSignInAt)}</td>
                     <td className="px-4 py-2.5">
                       <div className="flex items-center gap-2 justify-end">
+                        <button onClick={() => setEditingUser(u)} title="Editar" className="p-1.5 rounded-md hover:bg-bg-hover" style={{ color: 'var(--text-muted)' }}>
+                          <IconPencil size={15} />
+                        </button>
                         <button onClick={() => toggleBan(u)} title={u.banned ? 'Desbloquear' : 'Bloquear'} className="p-1.5 rounded-md hover:bg-bg-hover" style={{ color: 'var(--text-muted)' }}>
                           {u.banned ? <IconLockOpen size={15} /> : <IconLock size={15} />}
                         </button>
@@ -158,10 +163,21 @@ export default function UsuariosPage() {
       </div>
 
       {showCreate && (
-        <CreateUserModal
+        <UserFormModal
           onClose={() => setShowCreate(false)}
-          onCreated={() => {
+          onSaved={() => {
             setShowCreate(false);
+            reload();
+          }}
+        />
+      )}
+
+      {editingUser && (
+        <UserFormModal
+          existingUser={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSaved={() => {
+            setEditingUser(null);
             reload();
           }}
         />
@@ -172,33 +188,59 @@ export default function UsuariosPage() {
   );
 }
 
-function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [email, setEmail] = useState('');
+function UserFormModal({
+  existingUser,
+  onClose,
+  onSaved,
+}: {
+  existingUser?: UserSummary;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const isEdit = !!existingUser;
+  const [email, setEmail] = useState(existingUser?.email ?? '');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'admin' | 'user'>('user');
-  const [sections, setSections] = useState<string[]>(SECTIONS.map((s) => s.key));
+  const [role, setRole] = useState<'admin' | 'user'>(existingUser?.role ?? 'user');
+  const [sections, setSections] = useState<string[]>(existingUser?.allowedSections ?? SECTIONS.map((s) => s.key));
+  const [editSections, setEditSectionsState] = useState<string[]>(existingUser?.editSections ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const toggleSection = (key: string) => {
-    setSections((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
+    setSections((prev) => {
+      const next = prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key];
+      if (!next.includes(key)) {
+        setEditSectionsState((es) => es.filter((k) => k !== key));
+      }
+      return next;
+    });
+  };
+
+  const toggleEditSection = (key: string) => {
+    setEditSectionsState((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError(null);
-    const res = await fetch(`${apiUrl}/users`, {
-      method: 'POST',
-      headers: await authHeaders(),
-      body: JSON.stringify({ email, password, role, allowedSections: sections }),
-    });
+    const res = isEdit
+      ? await fetch(`${apiUrl}/users/${existingUser.id}`, {
+          method: 'PATCH',
+          headers: await authHeaders(),
+          body: JSON.stringify({ role, allowedSections: sections, editSections }),
+        })
+      : await fetch(`${apiUrl}/users`, {
+          method: 'POST',
+          headers: await authHeaders(),
+          body: JSON.stringify({ email, password, role, allowedSections: sections, editSections }),
+        });
     setSaving(false);
     if (!res.ok) {
-      setError('No se pudo crear el usuario. Revisá los datos.');
+      setError(isEdit ? 'No se pudo actualizar el usuario.' : 'No se pudo crear el usuario. Revisá los datos.');
       return;
     }
-    onCreated();
+    onSaved();
   };
 
   return (
@@ -211,31 +253,34 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
         <button onClick={onClose} className="absolute top-3 right-3 p-1.5 rounded-md" style={{ color: 'var(--text-muted)' }}>
           <IconX size={16} />
         </button>
-        <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Crear usuario</h3>
+        <h3 className="text-lg font-bold mb-4" style={{ color: 'var(--text-primary)' }}>{isEdit ? 'Editar usuario' : 'Crear usuario'}</h3>
         <form onSubmit={submit} className="space-y-3">
           <div>
             <label className="block text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>Email</label>
             <input
               type="email"
               required
+              disabled={isEdit}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-9 rounded-lg px-3 text-sm outline-none"
+              className="w-full h-9 rounded-lg px-3 text-sm outline-none disabled:opacity-60"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)' }}
             />
           </div>
-          <div>
-            <label className="block text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>Contraseña</label>
-            <input
-              type="password"
-              required
-              minLength={6}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full h-9 rounded-lg px-3 text-sm outline-none"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)' }}
-            />
-          </div>
+          {!isEdit && (
+            <div>
+              <label className="block text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>Contraseña</label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full h-9 rounded-lg px-3 text-sm outline-none"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)' }}
+              />
+            </div>
+          )}
           <div>
             <label className="block text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: 'var(--text-secondary)' }}>Rol</label>
             <select
@@ -249,13 +294,25 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
             </select>
           </div>
           <div>
-            <label className="block text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Secciones visibles</label>
+            <label className="block text-[10px] uppercase tracking-wider font-semibold mb-2" style={{ color: 'var(--text-secondary)' }}>Secciones</label>
             <div className="space-y-1.5">
+              <div className="grid grid-cols-[1fr_auto_auto] gap-x-2 text-2xs uppercase tracking-wider font-semibold" style={{ color: 'var(--text-muted)' }}>
+                <span />
+                <span>Ver</span>
+                <span>Editar</span>
+              </div>
               {SECTIONS.map((s) => (
-                <label key={s.key} className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-primary)' }}>
+                <div key={s.key} className="grid grid-cols-[1fr_auto_auto] gap-x-2 items-center text-sm" style={{ color: 'var(--text-primary)' }}>
+                  <span>{s.label}</span>
                   <input type="checkbox" checked={sections.includes(s.key)} onChange={() => toggleSection(s.key)} />
-                  {s.label}
-                </label>
+                  <input
+                    type="checkbox"
+                    checked={editSections.includes(s.key)}
+                    disabled={!sections.includes(s.key)}
+                    onChange={() => toggleEditSection(s.key)}
+                    className="disabled:opacity-40"
+                  />
+                </div>
               ))}
             </div>
           </div>
@@ -266,7 +323,7 @@ function CreateUserModal({ onClose, onCreated }: { onClose: () => void; onCreate
             className="w-full h-10 rounded-lg text-sm font-semibold disabled:opacity-60"
             style={{ background: 'linear-gradient(135deg, var(--primary), var(--primary-dark))', color: '#fff' }}
           >
-            {saving ? 'Creando…' : 'Crear usuario'}
+            {saving ? 'Guardando…' : isEdit ? 'Guardar cambios' : 'Crear usuario'}
           </button>
         </form>
       </div>
