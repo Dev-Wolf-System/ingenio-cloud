@@ -45,5 +45,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|logo-ingenio-cloud.png|icon.png).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|logo-ingenio-cloud.png|icon.png|manifest.json|portada-ingenio-cloud.png).*)',
+  ],
 };

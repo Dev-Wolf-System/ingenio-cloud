@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { m, AnimatePresence } from 'motion/react';
-import { IconAlertCircle, IconLoader2 } from '@tabler/icons-react';
+import { IconAlertCircle, IconLoader2, IconEye, IconEyeOff } from '@tabler/icons-react';
 import { getSupabaseBrowser } from '@/lib/supabase/client';
 
 const NODES = [
@@ -34,6 +34,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,7 +119,7 @@ export default function LoginPage() {
           <h1 className="text-[28px] font-bold tracking-tight mb-3.5" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
             Ingenio <span style={{ color: 'var(--primary-light)' }}>Cloud</span>
           </h1>
-          <p className="text-sm max-w-[340px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-base max-w-[340px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
             Plataforma Inteligente de Monitoreo, Producción y Asistencia Operativa Industrial
           </p>
         </m.div>
@@ -132,6 +133,29 @@ export default function LoginPage() {
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
           className="w-full max-w-[320px]"
         >
+          {/* Branding compacto — solo mobile */}
+          <m.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="flex md:hidden flex-col items-center text-center mb-7"
+          >
+            <m.div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 p-1.5"
+              style={{ background: 'var(--logo-plate-bg)', border: '1px solid var(--logo-plate-ring)' }}
+              animate={{ boxShadow: ['0 0 24px var(--primary-glow)', '0 0 36px var(--primary-glow)', '0 0 24px var(--primary-glow)'] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Image src="/logo-ingenio-cloud.png" alt="Ingenio Cloud" width={44} height={44} className="object-contain" priority />
+            </m.div>
+            <h1 className="text-xl font-bold tracking-tight mb-1.5" style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+              Ingenio <span style={{ color: 'var(--primary-light)' }}>Cloud</span>
+            </h1>
+            <p className="text-sm max-w-[280px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              Plataforma Inteligente de Monitoreo, Producción y Asistencia Operativa Industrial
+            </p>
+          </m.div>
+
           <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>
             Iniciar sesión
           </h2>
@@ -158,15 +182,27 @@ export default function LoginPage() {
               <label className="block text-[10px] uppercase tracking-wider font-semibold mb-1.5" style={{ color: 'var(--text-secondary)' }}>
                 Contraseña
               </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full h-10 rounded-lg px-3 text-sm outline-none transition-shadow"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)' }}
-                placeholder="••••••••••"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full h-10 rounded-lg pl-3 pr-10 text-sm outline-none transition-shadow"
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border-strong)', color: 'var(--text-primary)' }}
+                  placeholder="••••••••••"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  tabIndex={-1}
+                  className="absolute right-0 top-0 h-10 w-10 flex items-center justify-center"
+                  style={{ color: 'var(--text-muted)' }}
+                  aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                >
+                  {showPassword ? <IconEyeOff size={16} /> : <IconEye size={16} />}
+                </button>
+              </div>
             </div>
 
             <AnimatePresence>
