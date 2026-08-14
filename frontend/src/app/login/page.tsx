@@ -187,7 +187,10 @@ export default function LoginPage() {
     <SensorNetworkBackground />
     <div className="flex-1 flex min-h-0 relative z-10">
       {/* Panel branding — oculto en mobile */}
-      <div className="hidden md:flex flex-1 relative flex-col items-center justify-center px-10 text-center overflow-hidden">
+      <div
+        className="hidden md:flex flex-1 relative flex-col items-center justify-center px-10 text-center overflow-hidden"
+        style={{ borderRight: '1px solid var(--border-strong)' }}
+      >
         <m.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -215,7 +218,7 @@ export default function LoginPage() {
       </div>
 
       {/* Panel form */}
-      <div className="flex-1 flex items-center justify-center px-6 py-6 overflow-y-auto">
+      <div className="flex-1 flex items-center justify-center px-6 py-6 min-h-0">
         <m.div
           initial={{ opacity: 0, x: 24 }}
           animate={{ opacity: 1, x: 0 }}
@@ -329,7 +332,9 @@ export default function LoginPage() {
         </m.div>
       </div>
     </div>
-    <Footer />
+    <div className="relative z-10">
+      <Footer />
+    </div>
     </div>
   );
 }
